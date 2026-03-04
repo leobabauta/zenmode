@@ -35,9 +35,6 @@ export function FocusTimer() {
   const [editValue, setEditValue] = useState('25');
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  const elapsed = totalSeconds - remainingSeconds;
-  const progress = totalSeconds > 0 ? elapsed / totalSeconds : 0;
-
   // Timer interval
   useEffect(() => {
     if (status !== 'running') return;
@@ -99,19 +96,23 @@ export function FocusTimer() {
   const buttonLabel = status === 'running' ? 'Pause' : status === 'paused' ? 'Resume' : status === 'done' ? 'Restart' : 'Start Session';
 
   // SVG dial constants
-  const size = 180;
+  const size = 220;
   const cx = size / 2;
   const cy = size / 2;
-  const radius = 72;
-  const tickOuter = radius + 8;
-  const tickInnerMajor = radius - 4;
-  const tickInnerMinor = radius;
-  const needleLength = radius - 10;
+  const innerRadius = 62;
+  const tickRadius = 82;
+  const tickOuter = tickRadius + 10;
+  const tickInnerMajor = tickRadius - 5;
+  const tickInnerMinor = tickRadius;
+  const needleLength = innerRadius + 14;
+
+  const accentDark = '#D46A6A';
+  const accentLight = '#F2B8B8';
 
   // Generate tick marks (60 ticks, major every 5)
   const ticks = [];
   for (let i = 0; i < 60; i++) {
-    const angle = (i / 60) * 360 - 90; // start at top
+    const angle = (i / 60) * 360 - 90;
     const rad = (angle * Math.PI) / 180;
     const isMajor = i % 5 === 0;
     const inner = isMajor ? tickInnerMajor : tickInnerMinor;
@@ -124,72 +125,69 @@ export function FocusTimer() {
         y2={cy + tickOuter * Math.sin(rad)}
         stroke="var(--color-text-muted)"
         strokeWidth={isMajor ? 2 : 1}
-        opacity={isMajor ? 0.6 : 0.3}
+        opacity={isMajor ? 0.5 : 0.25}
       />
     );
   }
 
-  // Arc sweep for elapsed time
-  const sweepAngle = progress * 360;
-  const startAngle = -90;
-  const endAngle = startAngle + sweepAngle;
-  const endRad = (endAngle * Math.PI) / 180;
-  const largeArc = sweepAngle > 180 ? 1 : 0;
-  const arcPath = sweepAngle > 0
-    ? `M ${cx} ${cy - radius} A ${radius} ${radius} 0 ${largeArc} 1 ${cx + radius * Math.cos(endRad)} ${cy + radius * Math.sin(endRad)}`
-    : '';
+  // Hand angle: remaining minutes mapped on 60-min dial, counterclockwise from start
+  // remainingSeconds/60 gives minutes remaining, each minute = 6 degrees clockwise from 12
+  const remainingMinutes = remainingSeconds / 60;
+  const handAngleDeg = -90 + remainingMinutes * 6;
+  const handRad = (handAngleDeg * Math.PI) / 180;
 
-  // Needle angle
-  const needleAngle = startAngle + sweepAngle;
-  const needleRad = (needleAngle * Math.PI) / 180;
+  // Total minutes angle (where the hand starts)
+  const totalMinutes = totalSeconds / 60;
+  const totalAngleDeg = -90 + totalMinutes * 6;
 
-  const accentColor = '#D46A6A';
+  // Pie wedge helper: filled arc from 12 o'clock (top) clockwise to a given angle
+  const pieWedge = (endAngleDeg: number, r: number) => {
+    if (endAngleDeg <= -90) return '';
+    const sweepDeg = endAngleDeg - (-90);
+    if (sweepDeg <= 0) return '';
+    const largeArc = sweepDeg > 180 ? 1 : 0;
+    const endR = (endAngleDeg * Math.PI) / 180;
+    return `M ${cx} ${cy} L ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 1 ${cx + r * Math.cos(endR)} ${cy + r * Math.sin(endR)} Z`;
+  };
+
+  // Light red: from 12 o'clock to the total duration mark (full session area)
+  const lightPiePath = pieWedge(totalAngleDeg, innerRadius);
+  // Dark red: from 12 o'clock to where the hand currently is (elapsed portion)
+  const darkPiePath = pieWedge(handAngleDeg, innerRadius);
 
   return (
-    <div className="flex flex-col items-center py-4 gap-3">
+    <div className="flex flex-col items-center py-4 gap-4">
       {/* SVG Dial */}
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Outer circle */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r={radius}
-          fill="none"
-          stroke="var(--color-border)"
-          strokeWidth={2}
-        />
+        {/* Light red pie: full session area */}
+        {lightPiePath && (
+          <path d={lightPiePath} fill={accentLight} opacity={0.5} />
+        )}
+
+        {/* Dark red pie: from 12 o'clock to hand (remaining portion) */}
+        {darkPiePath && (
+          <path d={darkPiePath} fill={accentDark} opacity={0.55} />
+        )}
 
         {/* Tick marks */}
         {ticks}
 
-        {/* Elapsed arc */}
-        {arcPath && (
-          <path
-            d={arcPath}
-            fill="none"
-            stroke={accentColor}
-            strokeWidth={4}
-            strokeLinecap="round"
-            opacity={0.8}
-          />
-        )}
-
-        {/* Needle */}
+        {/* Needle — red, thicker */}
         <line
           x1={cx}
           y1={cy}
-          x2={cx + needleLength * Math.cos(needleRad)}
-          y2={cy + needleLength * Math.sin(needleRad)}
-          stroke={status === 'done' ? accentColor : 'var(--color-text-primary)'}
-          strokeWidth={2}
+          x2={cx + needleLength * Math.cos(handRad)}
+          y2={cy + needleLength * Math.sin(handRad)}
+          stroke={accentDark}
+          strokeWidth={3.5}
           strokeLinecap="round"
         />
 
-        {/* Center dot */}
-        <circle cx={cx} cy={cy} r={4} fill={accentColor} />
+        {/* Center dot — white with subtle shadow */}
+        <circle cx={cx} cy={cy} r={8} fill="white" stroke={accentLight} strokeWidth={1} />
       </svg>
 
-      {/* Countdown / edit */}
+      {/* Countdown / edit — smaller, lighter */}
       {editingTime ? (
         <div className="flex items-center gap-1">
           <input
@@ -204,9 +202,9 @@ export function FocusTimer() {
               if (e.key === 'Enter') commitEdit();
               if (e.key === 'Escape') setEditingTime(false);
             }}
-            className="w-16 text-center text-2xl font-mono bg-transparent border-b-2 border-[var(--color-border)] text-[var(--color-text-primary)] outline-none"
+            className="w-14 text-center text-lg font-mono bg-transparent border-b-2 border-[var(--color-border)] text-[var(--color-text-muted)] outline-none"
           />
-          <span className="text-sm text-[var(--color-text-muted)]">min</span>
+          <span className="text-xs text-[var(--color-text-muted)]">min</span>
         </div>
       ) : (
         <button
@@ -216,11 +214,9 @@ export function FocusTimer() {
               setEditingTime(true);
             }
           }}
-          className={`text-2xl font-mono tracking-wider ${
-            status === 'done'
-              ? 'text-[#D46A6A]'
-              : 'text-[var(--color-text-primary)]'
-          } ${status === 'idle' ? 'cursor-pointer hover:opacity-70' : 'cursor-default'}`}
+          className={`text-xl font-light tracking-widest text-[var(--color-text-muted)] ${
+            status === 'idle' ? 'cursor-pointer hover:opacity-70' : 'cursor-default'
+          }`}
           title={status === 'idle' ? 'Click to edit duration' : undefined}
         >
           {formatTime(remainingSeconds)}
@@ -228,18 +224,18 @@ export function FocusTimer() {
       )}
 
       {/* Buttons */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mt-2">
         <button
           onClick={handleStartPauseResume}
-          className="px-5 py-1.5 rounded-full text-sm font-medium text-white transition-colors"
-          style={{ backgroundColor: accentColor }}
+          className="px-8 py-2.5 rounded-full text-sm font-semibold uppercase tracking-wider text-white transition-colors"
+          style={{ backgroundColor: accentDark }}
         >
           {buttonLabel}
         </button>
         {(status === 'paused' || status === 'done') && (
           <button
             onClick={handleReset}
-            className="px-4 py-1.5 rounded-full text-sm font-medium text-[var(--color-text-muted)] border border-[var(--color-border)] hover:bg-[var(--color-surface)] transition-colors"
+            className="px-5 py-2.5 rounded-full text-sm font-medium text-[var(--color-text-muted)] border border-[var(--color-border)] hover:bg-[var(--color-surface)] transition-colors"
           >
             Reset
           </button>
