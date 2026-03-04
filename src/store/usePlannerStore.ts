@@ -9,7 +9,7 @@ import { toDayKey } from '../lib/dates';
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
-  view: 'timeline' | 'today' | 'hashtag';
+  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later';
   activeHashtag: string | null;
   sidebarCollapsed: boolean;
   selectionAnchorId: string | null;
@@ -34,7 +34,7 @@ interface PlannerState {
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
-  setView: (view: 'timeline' | 'today' | 'hashtag') => void;
+  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later') => void;
   setHashtagView: (tag: string) => void;
   toggleSidebar: () => void;
   setShowMoveModal: (show: boolean) => void;

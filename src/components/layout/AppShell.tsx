@@ -4,9 +4,10 @@ import { Sidebar } from './Sidebar';
 import { ZenmodeLogo } from './ZenmodeLogo';
 import { MainContent } from './MainContent';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import { ProfileMenu } from '../ui/ProfileMenu';
 import { SettingsView } from '../settings/SettingsView';
 import { TodayView } from '../today/TodayView';
+import { InboxView } from '../inbox/InboxView';
+import { LaterView } from '../later/LaterView';
 import { HashtagView } from '../hashtag/HashtagView';
 import { TaskItem } from '../items/TaskItem';
 import { NoteItem } from '../items/NoteItem';
@@ -15,7 +16,7 @@ import { MoveModal } from '../ui/MoveModal';
 import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
-import { usePlannerStore, selectInboxItems, selectLaterItems, selectItemsForDay } from '../../store/usePlannerStore';
+import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 
 export function AppShell() {
@@ -37,6 +38,7 @@ export function AppShell() {
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   const [showFullConfetti, setShowFullConfetti] = useState(false);
+  const [commandPaletteAddTask, setCommandPaletteAddTask] = useState(false);
   const dismissConfetti = useCallback(() => setShowFullConfetti(false), []);
 
   // Track today's completion — fire full-screen confetti when all of today's tasks are done
@@ -62,7 +64,7 @@ export function AppShell() {
     }
   }, [items]);
 
-  // Global "gi" → go to Inbox, "gl" → go to Later
+  // Global "gi" → go to Inbox, "gl" → go to Later, "gt" → go to Today
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -75,40 +77,22 @@ export function AppShell() {
 
       const now = Date.now();
       if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
-        const store = usePlannerStore.getState();
         if (e.key === 'i') {
           e.preventDefault();
           lastKeyRef.current = { key: '', time: 0 };
-          // Ensure sidebar is open and in timeline view
-          if (store.view !== 'timeline') store.setView('timeline');
-          if (store.sidebarCollapsed) store.toggleSidebar();
-          // Select first inbox item
-          const inboxItems = selectInboxItems(store.items);
-          if (inboxItems.length > 0) store.startSelection(inboxItems[0].id);
+          usePlannerStore.getState().setView('inbox');
           return;
         }
         if (e.key === 'l') {
           e.preventDefault();
           lastKeyRef.current = { key: '', time: 0 };
-          if (store.view !== 'timeline') store.setView('timeline');
-          if (store.sidebarCollapsed) store.toggleSidebar();
-          if (!store.laterExpanded) store.setLaterExpanded(true);
-          const laterItems = selectLaterItems(store.items);
-          if (laterItems.length > 0) store.startSelection(laterItems[0].id);
+          usePlannerStore.getState().setView('later');
           return;
         }
         if (e.key === 't') {
           e.preventDefault();
           lastKeyRef.current = { key: '', time: 0 };
-          if (store.view !== 'timeline') store.setView('timeline');
-          // Scroll to today column
-          setTimeout(() => {
-            document.getElementById('today-column')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 50);
-          // Select first item of today
-          const todayKey = toDayKey(new Date());
-          const todayItems = selectItemsForDay(store.items, todayKey);
-          if (todayItems.length > 0) store.startSelection(todayItems[0].id);
+          usePlannerStore.getState().setView('today');
           return;
         }
       }
@@ -150,16 +134,42 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handler);
   }, [view, toggleSidebar]);
 
+  // Global "n" key → open CommandPalette in add-task mode
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'n' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setCommandPaletteAddTask(true);
+        setShowCommandPalette(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setShowCommandPalette]);
+
   // Cmd+K → toggle command palette (works even in inputs)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setShowCommandPalette(!usePlannerStore.getState().showCommandPalette);
+        const current = usePlannerStore.getState().showCommandPalette;
+        if (current) {
+          setShowCommandPalette(false);
+        } else {
+          setCommandPaletteAddTask(false);
+          setShowCommandPalette(true);
+        }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
+  }, [setShowCommandPalette]);
+
+  const handleCloseCommandPalette = useCallback(() => {
+    setShowCommandPalette(false);
+    setCommandPaletteAddTask(false);
   }, [setShowCommandPalette]);
 
   return (
@@ -174,7 +184,6 @@ export function AppShell() {
         className="flex flex-col h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]"
         onMouseDown={(e) => {
           const target = e.target as HTMLElement;
-          // Don't deselect if clicking on interactive elements or inside an item
           if (target.closest('button, input, textarea, [tabindex], [role="button"], .group')) return;
           clearSelection();
         }}
@@ -205,7 +214,6 @@ export function AppShell() {
               </button>
             )}
             <ThemeToggle />
-            <ProfileMenu />
           </div>
         </header>
 
@@ -213,6 +221,10 @@ export function AppShell() {
         <div className="flex flex-1 overflow-hidden">
           {view === 'today' ? (
             <TodayView />
+          ) : view === 'inbox' ? (
+            <InboxView />
+          ) : view === 'later' ? (
+            <LaterView />
           ) : view === 'hashtag' ? (
             <HashtagView />
           ) : (
@@ -231,7 +243,12 @@ export function AppShell() {
       {showMoveModal && <MoveModal />}
 
       {/* Command palette */}
-      {showCommandPalette && <CommandPalette />}
+      {showCommandPalette && (
+        <CommandPalette
+          addTaskMode={commandPaletteAddTask}
+          onClose={handleCloseCommandPalette}
+        />
+      )}
 
       {/* Settings modal */}
       {showSettings && <SettingsView />}
