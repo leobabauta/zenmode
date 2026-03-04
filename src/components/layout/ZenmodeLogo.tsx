@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 const WORD = 'zenmode';
 const DELAY_MS = 10000;
@@ -9,29 +9,35 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const widths = useRef<number[]>([]);
   const startedRef = useRef(false);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     widths.current = letterRefs.current.map(el => el?.offsetWidth ?? 0);
   }, []);
 
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-    let interval: ReturnType<typeof setInterval> | null = null;
+  const startHideAnimation = useCallback(() => {
+    // Clear any existing hide animation
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    if (hideIntervalRef.current) clearInterval(hideIntervalRef.current);
 
+    hideTimeoutRef.current = setTimeout(() => {
+      let removed = 0;
+      hideIntervalRef.current = setInterval(() => {
+        removed++;
+        setRemovedCount(removed);
+        if (removed >= WORD.length && hideIntervalRef.current) clearInterval(hideIntervalRef.current);
+      }, LETTER_DURATION_MS);
+    }, DELAY_MS);
+  }, []);
+
+  useEffect(() => {
     function startAnimation() {
       if (startedRef.current) return;
       startedRef.current = true;
-      timeout = setTimeout(() => {
-        let removed = 0;
-        interval = setInterval(() => {
-          removed++;
-          setRemovedCount(removed);
-          if (removed >= WORD.length && interval) clearInterval(interval);
-        }, LETTER_DURATION_MS);
-      }, DELAY_MS);
+      startHideAnimation();
     }
 
-    // Start immediately if document is already visible
     if (document.visibilityState === 'visible') {
       startAnimation();
     }
@@ -45,14 +51,22 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
-      if (timeout) clearTimeout(timeout);
-      if (interval) clearInterval(interval);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      if (hideIntervalRef.current) clearInterval(hideIntervalRef.current);
     };
-  }, []);
+  }, [startHideAnimation]);
+
+  const handleClick = () => {
+    onClick();
+    // Show the name again
+    setRemovedCount(0);
+    // Schedule hide after 10s
+    startHideAnimation();
+  };
 
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className="flex items-center gap-2 text-2xl font-semibold tracking-[0.2em] text-blue-700 dark:text-blue-400 hover:opacity-80 transition-opacity"
     >
       <img
