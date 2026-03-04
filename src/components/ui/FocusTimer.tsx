@@ -136,10 +136,6 @@ export function FocusTimer() {
   const handAngleDeg = -90 + remainingMinutes * 6;
   const handRad = (handAngleDeg * Math.PI) / 180;
 
-  // Total minutes angle (where the hand starts)
-  const totalMinutes = totalSeconds / 60;
-  const totalAngleDeg = -90 + totalMinutes * 6;
-
   // Pie wedge helper: filled arc from 12 o'clock (top) clockwise to a given angle
   const pieWedge = (endAngleDeg: number, r: number) => {
     if (endAngleDeg <= -90) return '';
@@ -150,19 +146,15 @@ export function FocusTimer() {
     return `M ${cx} ${cy} L ${cx} ${cy - r} A ${r} ${r} 0 ${largeArc} 1 ${cx + r * Math.cos(endR)} ${cy + r * Math.sin(endR)} Z`;
   };
 
-  // Light red: from 12 o'clock to the total duration mark (full session area)
-  const lightPiePath = pieWedge(totalAngleDeg, innerRadius);
-  // Dark red: from 12 o'clock to where the hand currently is (elapsed portion)
+  // Dark red: from 12 o'clock to where the hand currently is (remaining portion)
   const darkPiePath = pieWedge(handAngleDeg, innerRadius);
 
   return (
     <div className="flex flex-col items-center py-4 gap-4">
       {/* SVG Dial */}
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Light red pie: full session area */}
-        {lightPiePath && (
-          <path d={lightPiePath} fill={accentLight} opacity={0.5} />
-        )}
+        {/* Light red: entire inner circle */}
+        <circle cx={cx} cy={cy} r={innerRadius} fill={accentLight} opacity={0.4} />
 
         {/* Dark red pie: from 12 o'clock to hand (remaining portion) */}
         {darkPiePath && (
@@ -179,7 +171,7 @@ export function FocusTimer() {
           x2={cx + needleLength * Math.cos(handRad)}
           y2={cy + needleLength * Math.sin(handRad)}
           stroke={accentDark}
-          strokeWidth={3.5}
+          strokeWidth={7}
           strokeLinecap="round"
         />
 
