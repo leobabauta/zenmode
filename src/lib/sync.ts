@@ -1,0 +1,251 @@
+import { supabase } from './supabase';
+import { usePlannerStore } from '../store/usePlannerStore';
+import type { PlannerItem } from '../types';
+
+// --- Row <-> Item transforms ---
+
+interface ItemRow {
+  id: string;
+  user_id: string;
+  type: string;
+  text: string;
+  completed: boolean;
+  day_key: string | null;
+  is_later: boolean;
+  order: number;
+  created_at: string;
+  updated_at: string;
+  recurrence: unknown;
+  parent_id: string | null;
+  consecutive_moves: number;
+  is_priority: boolean;
+  is_practice: boolean;
+}
+
+export function itemToRow(item: PlannerItem, userId: string): ItemRow {
+  return {
+    id: item.id,
+    user_id: userId,
+    type: item.type,
+    text: item.text,
+    completed: item.completed,
+    day_key: item.dayKey,
+    is_later: item.isLater ?? false,
+    order: item.order,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
+    recurrence: item.recurrence ?? null,
+    parent_id: item.parentId ?? null,
+    consecutive_moves: item.consecutiveMoves ?? 0,
+    is_priority: item.isPriority ?? false,
+    is_practice: item.isPractice ?? false,
+  };
+}
+
+export function rowToItem(row: ItemRow): PlannerItem {
+  return {
+    id: row.id,
+    type: row.type as PlannerItem['type'],
+    text: row.text,
+    completed: row.completed,
+    dayKey: row.day_key,
+    isLater: row.is_later || undefined,
+    order: row.order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    recurrence: row.recurrence as PlannerItem['recurrence'],
+    parentId: row.parent_id ?? undefined,
+    consecutiveMoves: row.consecutive_moves || undefined,
+    isPriority: row.is_priority || undefined,
+    isPractice: row.is_practice || undefined,
+  };
+}
+
+// --- Pull from Supabase ---
+
+export async function pullFromSupabase(): Promise<void> {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: rows, error } = await supabase
+    .from('items')
+    .select('*')
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('pullFromSupabase error:', error);
+    return;
+  }
+
+  const remoteItems = (rows as ItemRow[]).map(rowToItem);
+  const localItems = usePlannerStore.getState().items;
+  const merged: Record<string, PlannerItem> = { ...localItems };
+  const localNewer: PlannerItem[] = [];
+
+  for (const remote of remoteItems) {
+    const local = localItems[remote.id];
+    if (!local) {
+      // Remote-only: take it
+      merged[remote.id] = remote;
+    } else if (new Date(remote.updatedAt) > new Date(local.updatedAt)) {
+      // Remote is newer
+      merged[remote.id] = remote;
+    } else if (new Date(local.updatedAt) > new Date(remote.updatedAt)) {
+      // Local is newer — push back later
+      localNewer.push(local);
+    }
+    // If equal timestamps, keep local (already in merged)
+  }
+
+  // Find items that exist locally but not remotely — push them
+  const remoteIds = new Set(remoteItems.map((r) => r.id));
+  for (const id of Object.keys(localItems)) {
+    if (!remoteIds.has(id)) {
+      localNewer.push(localItems[id]);
+    }
+  }
+
+  // Apply merged items to store
+  usePlannerStore.setState({ items: merged });
+
+  // Push local-newer items to Supabase
+  if (localNewer.length > 0) {
+    const rows = localNewer.map((item) => itemToRow(item, user.id));
+    const { error: upsertError } = await supabase
+      .from('items')
+      .upsert(rows, { onConflict: 'id' });
+    if (upsertError) console.error('push local-newer error:', upsertError);
+  }
+}
+
+// --- Debounced push for changed items ---
+
+let changedIds = new Set<string>();
+let changeTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function markChanged(ids: string[]): void {
+  if (!supabase) return;
+  for (const id of ids) changedIds.add(id);
+  if (changeTimer) clearTimeout(changeTimer);
+  changeTimer = setTimeout(flushChanged, 500);
+}
+
+async function flushChanged(): Promise<void> {
+  if (!supabase || changedIds.size === 0) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const ids = [...changedIds];
+  changedIds = new Set();
+  changeTimer = null;
+
+  const items = usePlannerStore.getState().items;
+  const rows = ids
+    .filter((id) => items[id])
+    .map((id) => itemToRow(items[id], user.id));
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from('items').upsert(rows, { onConflict: 'id' });
+    if (error) console.error('pushChanged error:', error);
+  }
+}
+
+// --- Debounced push for deleted items ---
+
+let deletedIds = new Set<string>();
+let deleteTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function markDeleted(ids: string[]): void {
+  if (!supabase) return;
+  for (const id of ids) deletedIds.add(id);
+  if (deleteTimer) clearTimeout(deleteTimer);
+  deleteTimer = setTimeout(flushDeleted, 500);
+}
+
+async function flushDeleted(): Promise<void> {
+  if (!supabase || deletedIds.size === 0) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const ids = [...deletedIds];
+  deletedIds = new Set();
+  deleteTimer = null;
+
+  const { error } = await supabase.from('items').delete().in('id', ids);
+  if (error) console.error('pushDeleted error:', error);
+}
+
+// --- Preferences sync ---
+
+interface PrefsRow {
+  user_id: string;
+  theme: string;
+  view: string;
+  active_hashtag: string | null;
+  sidebar_collapsed: boolean;
+  label_colors: Record<string, string>;
+  last_ritual_date: string | null;
+  updated_at: string;
+}
+
+export async function pullPreferences(): Promise<void> {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('pullPreferences error:', error);
+    return;
+  }
+
+  if (data) {
+    const row = data as PrefsRow;
+    usePlannerStore.setState({
+      theme: row.theme as 'light' | 'dark',
+      view: row.view as ReturnType<typeof usePlannerStore.getState>['view'],
+      activeHashtag: row.active_hashtag,
+      sidebarCollapsed: row.sidebar_collapsed,
+      labelColors: row.label_colors,
+      lastRitualDate: row.last_ritual_date,
+    });
+  }
+}
+
+let prefsTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function pushPreferences(): void {
+  if (!supabase) return;
+  if (prefsTimer) clearTimeout(prefsTimer);
+  prefsTimer = setTimeout(flushPreferences, 1000);
+}
+
+async function flushPreferences(): Promise<void> {
+  if (!supabase) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  prefsTimer = null;
+  const s = usePlannerStore.getState();
+  const row: PrefsRow = {
+    user_id: user.id,
+    theme: s.theme,
+    view: s.view,
+    active_hashtag: s.activeHashtag,
+    sidebar_collapsed: s.sidebarCollapsed,
+    label_colors: s.labelColors,
+    last_ritual_date: s.lastRitualDate,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from('user_preferences')
+    .upsert(row, { onConflict: 'user_id' });
+  if (error) console.error('pushPreferences error:', error);
+}

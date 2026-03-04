@@ -520,6 +520,39 @@ export const usePlannerStore = create<PlannerState>()(
   )
 );
 
+// --- Sync subscriber: detect item changes/deletes and preference changes ---
+import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
+
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate'] as const;
+
+usePlannerStore.subscribe((state, prevState) => {
+  // Detect changed items
+  const changedIds: string[] = [];
+  for (const id of Object.keys(state.items)) {
+    if (state.items[id] !== prevState.items[id]) {
+      changedIds.push(id);
+    }
+  }
+  if (changedIds.length > 0) markChanged(changedIds);
+
+  // Detect deleted items
+  const deletedIds: string[] = [];
+  for (const id of Object.keys(prevState.items)) {
+    if (!(id in state.items)) {
+      deletedIds.push(id);
+    }
+  }
+  if (deletedIds.length > 0) markDeleted(deletedIds);
+
+  // Detect preference changes
+  for (const key of PREF_KEYS) {
+    if (state[key] !== prevState[key]) {
+      pushPreferences();
+      break;
+    }
+  }
+});
+
 // Selectors
 export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: string) {
   return Object.values(items)
