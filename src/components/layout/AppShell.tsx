@@ -42,8 +42,9 @@ export function AppShell() {
   const [showFullConfetti, setShowFullConfetti] = useState(false);
   const dismissConfetti = useCallback(() => setShowFullConfetti(false), []);
 
-  // Track today's completion — fire full-screen confetti when all of today's tasks are done
+  // Track today's completion — fire full-screen confetti only when user checks off the last task
   const todayCompletedRef = useRef(false);
+  const initialLoadRef = useRef(true);
   const items = usePlannerStore((s) => s.items);
   useEffect(() => {
     const todayKey = toDayKey(new Date());
@@ -58,11 +59,15 @@ export function AppShell() {
     if (total > 0 && done === total) {
       if (!todayCompletedRef.current) {
         todayCompletedRef.current = true;
-        setShowFullConfetti(true);
+        // Only fire confetti if this isn't the initial page load
+        if (!initialLoadRef.current) {
+          setShowFullConfetti(true);
+        }
       }
     } else {
       todayCompletedRef.current = false;
     }
+    initialLoadRef.current = false;
   }, [items]);
 
   // Global keyboard shortcuts: "gi" → Inbox, "gl" → Later, "gt" → scroll to today in Timeline, "t" → toggle Today/Timeline

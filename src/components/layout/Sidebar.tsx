@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
-import { usePlannerStore, selectInboxItems, selectLaterItems, selectItemsForDay } from '../../store/usePlannerStore';
+import { usePlannerStore } from '../../store/usePlannerStore';
 import { ProfileMenu } from '../ui/ProfileMenu';
-import { toDayKey } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 
 export function Sidebar() {
@@ -14,10 +13,6 @@ export function Sidebar() {
   const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
   const items = usePlannerStore((s) => s.items);
   const activeHashtag = usePlannerStore((s) => s.activeHashtag);
-
-  const inboxCount = selectInboxItems(items).length;
-  const laterCount = selectLaterItems(items).length;
-  const todayCount = selectItemsForDay(items, toDayKey(new Date())).length;
 
   const allHashtags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -34,7 +29,7 @@ export function Sidebar() {
     {
       id: 'inbox' as const,
       label: 'Inbox',
-      count: inboxCount,
+      shortcut: 'GI',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
@@ -44,7 +39,7 @@ export function Sidebar() {
     {
       id: 'today' as const,
       label: 'Today',
-      count: todayCount,
+      shortcut: 'T',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -54,7 +49,7 @@ export function Sidebar() {
     {
       id: 'later' as const,
       label: 'Later',
-      count: laterCount,
+      shortcut: 'GL',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
@@ -118,11 +113,9 @@ export function Sidebar() {
             >
               {nav.icon}
               <span className="font-medium">{nav.label}</span>
-              {nav.count > 0 && (
-                <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] text-[var(--color-text-muted)]">
-                  {nav.count}
-                </span>
-              )}
+              <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">
+                {nav.shortcut}
+              </kbd>
             </button>
           );
         })}
