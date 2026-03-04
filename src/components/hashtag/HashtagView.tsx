@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { usePlannerStore, selectItemsForHashtag } from '../../store/usePlannerStore';
+import { usePlannerStore, selectItemsForHashtag, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { cn } from '../../lib/utils';
@@ -14,6 +14,7 @@ export function HashtagView() {
   const setLabelColor = usePlannerStore((s) => s.setLabelColor);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
@@ -24,11 +25,13 @@ export function HashtagView() {
   const taggedItems = selectItemsForHashtag(items, activeHashtag);
   const labelColor = getLabelColor(activeHashtag);
 
-  // Close menu on outside click
-  const handleBackdropClick = () => setMenuOpen(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setColorPickerOpen(false);
+  };
 
   const startEdit = () => {
-    setMenuOpen(false);
+    closeMenu();
     setEditing(true);
     setEditValue(activeHashtag.slice(1)); // remove '#'
     setTimeout(() => editRef.current?.focus(), 0);
@@ -58,7 +61,7 @@ export function HashtagView() {
   };
 
   const deleteLabel = () => {
-    setMenuOpen(false);
+    closeMenu();
     // Remove the hashtag from all items
     Object.values(items).forEach((item) => {
       if (item.text.toLowerCase().includes(activeHashtag.toLowerCase())) {
@@ -98,7 +101,7 @@ export function HashtagView() {
           {/* 3-dot menu */}
           <div className="relative mt-1" ref={menuRef}>
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={() => { setMenuOpen(!menuOpen); setColorPickerOpen(false); }}
               className="p-1 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -110,7 +113,7 @@ export function HashtagView() {
 
             {menuOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={handleBackdropClick} />
+                <div className="fixed inset-0 z-40" onClick={closeMenu} />
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-lg py-1 min-w-[140px]">
                   <button
                     onClick={startEdit}
@@ -124,6 +127,39 @@ export function HashtagView() {
                     </svg>
                     Edit label
                   </button>
+                  <button
+                    onClick={() => setColorPickerOpen(!colorPickerOpen)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left',
+                      'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors',
+                    )}
+                  >
+                    <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: labelColor }} />
+                    Change color
+                  </button>
+
+                  {/* Color picker grid */}
+                  {colorPickerOpen && (
+                    <div className="px-2 py-2 border-t border-[var(--color-border)] mt-1">
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {LABEL_PALETTE.map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => {
+                              setLabelColor(activeHashtag, color);
+                              closeMenu();
+                            }}
+                            className={cn(
+                              'w-6 h-6 rounded-full transition-transform hover:scale-110',
+                              color === labelColor && 'ring-2 ring-offset-1 ring-[var(--color-text-primary)]',
+                            )}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     onClick={deleteLabel}
                     className={cn(

@@ -6,6 +6,14 @@ import type { PlannerItem, ItemType, Recurrence } from '../types';
 import { computeNextOccurrence } from '../lib/recurrence';
 import { toDayKey } from '../lib/dates';
 
+export const LABEL_PALETTE = [
+  '#D20000', '#F65353', '#EA7D70', '#FD5E00', '#F58553',
+  '#F59A23', '#FCB55C', '#CE8540', '#EEB649', '#F7CE15',
+  '#BCC07B', '#91CA57', '#669E63', '#007355', '#007D75',
+  '#75B39C', '#7CCED2', '#1EB0E6', '#03468F', '#7D8BE0',
+  '#9A81B0', '#7851A5', '#B19F9A', '#8E715B', '#4F3F3E',
+];
+
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
@@ -74,13 +82,6 @@ export const usePlannerStore = create<PlannerState>()(
       labelColors: {},
 
       getLabelColor: (tag: string) => {
-        const LABEL_PALETTE = [
-          '#D20000', '#F65353', '#EA7D70', '#FD5E00', '#F58553',
-          '#F59A23', '#FCB55C', '#CE8540', '#EEB649', '#F7CE15',
-          '#BCC07B', '#91CA57', '#669E63', '#007355', '#007D75',
-          '#75B39C', '#7CCED2', '#1EB0E6', '#03468F', '#7D8BE0',
-          '#9A81B0', '#7851A5', '#B19F9A', '#8E715B', '#4F3F3E',
-        ];
         const key = tag.toLowerCase();
         const existing = get().labelColors[key];
         if (existing) return existing;
