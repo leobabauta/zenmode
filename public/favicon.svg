@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <filter id="shadow" x="-8%" y="-6%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#3a3a6a" flood-opacity="0.12"/>
+    </filter>
+
+    <linearGradient id="circleGrad" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#4A90C4"/>
+      <stop offset="45%" stop-color="#6A5AAC"/>
+      <stop offset="100%" stop-color="#7B3FA0"/>
+    </linearGradient>
+
+    <radialGradient id="glowGrad" cx="0.5" cy="0.48" r="0.35">
+      <stop offset="0%" stop-color="#6A5AAC" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#6A5AAC" stop-opacity="0"/>
+    </radialGradient>
+
+    <clipPath id="squircle">
+      <path d="
+        M 256 16
+        C 384 16, 496 16, 496 144
+        L 496 368
+        C 496 496, 384 496, 256 496
+        L 256 496
+        C 128 496, 16 496, 16 368
+        L 16 144
+        C 16 16, 128 16, 256 16
+        Z
+      "/>
+    </clipPath>
+
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F4F0FA"/>
+      <stop offset="100%" stop-color="#EBE4F5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Shadow -->
+  <path d="
+    M 256 16 C 384 16, 496 16, 496 144 L 496 368
+    C 496 496, 384 496, 256 496 L 256 496
+    C 128 496, 16 496, 16 368 L 16 144
+    C 16 16, 128 16, 256 16 Z
+  " fill="#e0daf0" filter="url(#shadow)"/>
+
+  <g clip-path="url(#squircle)">
+    <rect x="0" y="0" width="512" height="512" fill="url(#bgGrad)"/>
+    <circle cx="256" cy="256" r="200" fill="url(#glowGrad)"/>
+
+    <!-- Bold circle ring -->
+    <circle cx="256" cy="260" r="130" fill="none" stroke="url(#circleGrad)" stroke-width="56"/>
+  </g>
+</svg>

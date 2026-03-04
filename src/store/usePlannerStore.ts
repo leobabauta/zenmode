@@ -40,6 +40,8 @@ interface PlannerState {
   setShowMoveModal: (show: boolean) => void;
   setShowCommandPalette: (show: boolean) => void;
   setShowSettings: (show: boolean) => void;
+  scrollToTodayRequested: number;
+  requestScrollToToday: () => void;
   setLaterExpanded: (expanded: boolean) => void;
   startSelection: (id: string | null) => void;
   moveFocus: (id: string | null) => void;
@@ -54,6 +56,7 @@ export const usePlannerStore = create<PlannerState>()(
       view: 'timeline' as const,
       activeHashtag: null,
       sidebarCollapsed: false,
+      scrollToTodayRequested: 0,
       selectionAnchorId: null,
       selectionFocusId: null,
       expandedTaskId: null,
@@ -414,6 +417,10 @@ export const usePlannerStore = create<PlannerState>()(
 
       toggleSidebar: () => {
         set((state) => { state.sidebarCollapsed = !state.sidebarCollapsed; });
+      },
+
+      requestScrollToToday: () => {
+        set((state) => { state.scrollToTodayRequested = state.scrollToTodayRequested + 1; });
       },
 
       setShowMoveModal: (show) => {

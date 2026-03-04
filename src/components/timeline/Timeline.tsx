@@ -75,6 +75,8 @@ export function Timeline() {
     };
   }, [daySlots]);
 
+  const scrollToTodayRequested = usePlannerStore((s) => s.scrollToTodayRequested);
+
   // Scroll to today on mount
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -82,6 +84,13 @@ export function Timeline() {
     }, 50);
     return () => clearTimeout(timeout);
   }, [scrollToToday]);
+
+  // Scroll to today when requested via "gt" shortcut
+  useEffect(() => {
+    if (scrollToTodayRequested > 0) {
+      todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [scrollToTodayRequested]);
 
   // Auto-select first item of today (or nearest day) on mount for manipulating mode
   useEffect(() => {

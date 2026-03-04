@@ -64,7 +64,7 @@ export function AppShell() {
     }
   }, [items]);
 
-  // Global "gi" → go to Inbox, "gl" → go to Later, "gt" → go to Today
+  // Global "gi" → go to Inbox, "gl" → go to Later, "gt" → scroll to today in Timeline
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -92,7 +92,8 @@ export function AppShell() {
         if (e.key === 't') {
           e.preventDefault();
           lastKeyRef.current = { key: '', time: 0 };
-          usePlannerStore.getState().setView('today');
+          usePlannerStore.getState().setView('timeline');
+          usePlannerStore.getState().requestScrollToToday();
           return;
         }
       }
@@ -103,7 +104,7 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Global "t" key → toggle between Today and Timeline (unless editing or part of "gt" chord)
+  // Global "t" key → go to Today view (unless editing or part of "gt" chord)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -112,12 +113,12 @@ export function AppShell() {
       if (lastKeyRef.current.key === 'g' && Date.now() - lastKeyRef.current.time < 500) return;
       if (e.key === 't' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        setView(view === 'timeline' ? 'today' : 'timeline');
+        setView('today');
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [setView, view]);
+  }, [setView]);
 
   // Global "f" key → toggle sidebar (focus mode) when in timeline view
   useEffect(() => {
