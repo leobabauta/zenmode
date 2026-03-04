@@ -216,13 +216,16 @@ export function TaskItem({
                 const cursorPos = inputRef.current?.selectionStart ?? editText.length;
                 const before = editText.slice(0, cursorPos);
                 const after = editText.slice(cursorPos);
-                // Save the text before cursor as the current item
-                const trimmedBefore = before.trim();
-                if (trimmedBefore && trimmedBefore !== item.text) updateItem(item.id, { text: trimmedBefore });
-                else if (!trimmedBefore) { /* keep original text if before is empty */ }
-                setEditText(trimmedBefore || item.text);
+                if (!before.trim()) {
+                  // Cursor at beginning: clear current item, move text to new line
+                  updateItem(item.id, { text: '' });
+                  setEditText('');
+                } else {
+                  const trimmedBefore = before.trim();
+                  if (trimmedBefore !== item.text) updateItem(item.id, { text: trimmedBefore });
+                  setEditText(trimmedBefore);
+                }
                 setIsEditing(false);
-                // Insert new task after this one with the text after cursor
                 onInsertAfter?.(after);
                 return;
               }
