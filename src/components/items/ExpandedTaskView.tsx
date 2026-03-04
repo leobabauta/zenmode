@@ -4,6 +4,7 @@ import { usePlannerStore, selectChildItems } from '../../store/usePlannerStore';
 import { Checkbox } from '../ui/Checkbox';
 import { IconButton } from '../ui/IconButton';
 import { HashtagText } from '../ui/HashtagText';
+import { FocusTimer } from '../ui/FocusTimer';
 import { cn } from '../../lib/utils';
 import type { PlannerItem } from '../../types';
 
@@ -134,6 +135,7 @@ export function ExpandedTaskView() {
 
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
   // editRequest: { index, tick } — index is the child to edit (-1 = new last child), tick always increments
   const [editRequest, setEditRequest] = useState<{ index: number; tick: number } | null>(null);
   const tickRef = useRef(0);
@@ -229,6 +231,15 @@ export function ExpandedTaskView() {
           </div>
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             <IconButton
+              label="Focus timer"
+              onClick={() => setShowTimer(!showTimer)}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="10" />
+                <path strokeLinecap="round" d="M12 6v6l4 2" />
+              </svg>
+            </IconButton>
+            <IconButton
               label={expandedTaskFullScreen ? 'Exit full screen' : 'Full screen'}
               onClick={() => setExpandedTaskFullScreen(!expandedTaskFullScreen)}
             >
@@ -258,6 +269,16 @@ export function ExpandedTaskView() {
           'border-b border-[var(--color-border)]',
           expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'mx-5'
         )} />
+
+        {/* Focus Timer */}
+        {showTimer && (
+          <div className={cn(
+            'flex justify-center',
+            expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'px-5'
+          )}>
+            <FocusTimer />
+          </div>
+        )}
 
         {/* Notes / sub-tasks area + textarea input */}
         <div className={cn(
