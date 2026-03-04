@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens (light) ─────────────────────────────── */
+:root {
+  --color-bg:            #F7F5F3;
+  --color-surface:       #EEECEA;
+  --color-border:        #E0DDD9;
+  --color-text-primary:  #1A1917;
+  --color-text-secondary:#6B6661;
+  --color-text-muted:    #A09C97;
+  --color-accent:        #5B5BD6;
+  --color-accent-tint:   #EEF0FF;
+  --color-note-accent:   #D97706;
+  --color-today:         #EEF0FF;
+}
+
+/* ── Design tokens (dark) ───────────────────────────────── */
+.dark {
+  --color-bg:            #141414;
+  --color-surface:       #1E1E1E;
+  --color-border:        #2A2A2A;
+  --color-text-primary:  #F0EFEE;
+  --color-text-secondary:#9B9794;
+  --color-text-muted:    #5C5956;
+  --color-accent:        #7C7CE8;
+  --color-accent-tint:   #1E1E35;
+  --color-note-accent:   #F59E0B;
+  --color-today:         #1A1A2E;
+}
+
+/* ── Base resets ────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Confetti animations ───────────────────────────────── */
+@keyframes confetti-pop {
+  0% { transform: translate(-50%, -50%) translate(0, 0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--confetti-x), var(--confetti-y)); opacity: 0; }
+}
+
+@keyframes confetti-burst {
+  0% { transform: translate(-50%, -50%) translate(0, 0); opacity: 1; }
+  35% { transform: translate(-50%, -50%) translate(var(--burst-x), var(--burst-y)); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(var(--burst-x), var(--fall-y)); opacity: 0; }
+}
+
+@keyframes confetti-rain {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(100vh) translateX(var(--confetti-drift)) rotate(var(--confetti-rot)); opacity: 0; }
+}
+
+/* ── Scrollbar styling ──────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
