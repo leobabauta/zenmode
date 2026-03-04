@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Sidebar } from './Sidebar';
+import { ZenmodeLogo } from './ZenmodeLogo';
 import { MainContent } from './MainContent';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { ProfileMenu } from '../ui/ProfileMenu';
@@ -181,13 +182,7 @@ export function AppShell() {
         {/* Top bar */}
         <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setView('timeline')}
-              className="flex items-center gap-2 text-2xl font-semibold tracking-[0.2em] text-blue-700 dark:text-blue-400 hover:opacity-80 transition-opacity"
-            >
-              <img src={import.meta.env.BASE_URL + 'zenmode-logo.svg'} alt="" className="w-7 h-7" />
-              zenmode
-            </button>
+            <ZenmodeLogo onClick={() => setView('timeline')} />
           </div>
           <div className="flex items-center gap-1">
             {view === 'timeline' ? (
