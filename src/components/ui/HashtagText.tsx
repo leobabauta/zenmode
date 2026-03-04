@@ -1,3 +1,5 @@
+import { usePlannerStore } from '../../store/usePlannerStore';
+
 interface HashtagTextProps {
   text: string;
   onHashtagClick: (tag: string) => void;
@@ -8,6 +10,23 @@ const URL_RE = /https?:\/\/[^\s)>\]]+/;
 const HASHTAG_RE = /#[\w-]+/;
 const SPLIT_RE = new RegExp(`(${URL_RE.source}|${HASHTAG_RE.source})`, 'g');
 
+function ColoredHashtag({ tag, onClick }: { tag: string; onClick: () => void }) {
+  const color = usePlannerStore((s) => s.getLabelColor)(tag.toLowerCase());
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="hover:underline cursor-pointer"
+      style={{ color }}
+    >
+      {tag}
+    </button>
+  );
+}
+
 export function HashtagText({ text, onHashtagClick, className }: HashtagTextProps) {
   const parts = text.split(SPLIT_RE);
 
@@ -15,17 +34,7 @@ export function HashtagText({ text, onHashtagClick, className }: HashtagTextProp
     <span className={className}>
       {parts.map((part, i) =>
         /^#[\w-]+$/.test(part) ? (
-          <button
-            key={i}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onHashtagClick(part);
-            }}
-            className="text-blue-400 hover:text-blue-500 hover:underline cursor-pointer"
-          >
-            {part}
-          </button>
+          <ColoredHashtag key={i} tag={part} onClick={() => onHashtagClick(part)} />
         ) : URL_RE.test(part) ? (
           <a
             key={i}

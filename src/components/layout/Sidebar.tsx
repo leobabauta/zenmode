@@ -143,8 +143,8 @@ export function Sidebar() {
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
                   )}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <span style={isActive ? { color } : undefined}>{tag.slice(1)}</span>
+                  <span style={{ color }}>#</span>
+                  <span style={{ color }}>{tag.slice(1)}</span>
                 </button>
               );
             })}
