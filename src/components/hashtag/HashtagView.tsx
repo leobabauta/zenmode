@@ -96,9 +96,9 @@ export function HashtagView() {
               className="p-1 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="5" r="1.5" />
+                <circle cx="5" cy="12" r="1.5" />
                 <circle cx="12" cy="12" r="1.5" />
-                <circle cx="12" cy="19" r="1.5" />
+                <circle cx="19" cy="12" r="1.5" />
               </svg>
             </button>
 

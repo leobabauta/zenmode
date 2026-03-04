@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { usePlannerStore } from '../../store/usePlannerStore';
 
 const WORD = 'zenmode';
 const DELAY_MS = 10000;
@@ -57,11 +58,13 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
   }, [startHideAnimation]);
 
   const handleClick = () => {
+    const currentView = usePlannerStore.getState().view;
+    if (currentView === 'timeline') {
+      // Already in timeline — re-reveal the name
+      setRemovedCount(0);
+      startHideAnimation();
+    }
     onClick();
-    // Show the name again
-    setRemovedCount(0);
-    // Schedule hide after 10s
-    startHideAnimation();
   };
 
   return (
