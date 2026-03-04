@@ -18,6 +18,7 @@ interface PlannerState {
   expandedTaskFullScreen: boolean;
   showMoveModal: boolean;
   showCommandPalette: boolean;
+  commandPaletteAddTask: boolean;
   showSettings: boolean;
   laterExpanded: boolean;
 
@@ -39,6 +40,7 @@ interface PlannerState {
   toggleSidebar: () => void;
   setShowMoveModal: (show: boolean) => void;
   setShowCommandPalette: (show: boolean) => void;
+  setCommandPaletteAddTask: (v: boolean) => void;
   setShowSettings: (show: boolean) => void;
   scrollToTodayRequested: number;
   requestScrollToToday: () => void;
@@ -63,6 +65,7 @@ export const usePlannerStore = create<PlannerState>()(
       expandedTaskFullScreen: false,
       showMoveModal: false,
       showCommandPalette: false,
+      commandPaletteAddTask: false,
       showSettings: false,
       laterExpanded: true,
 
@@ -428,6 +431,9 @@ export const usePlannerStore = create<PlannerState>()(
       },
       setShowCommandPalette: (show) => {
         set((state) => { state.showCommandPalette = show; });
+      },
+      setCommandPaletteAddTask: (v) => {
+        set((state) => { state.commandPaletteAddTask = v; });
       },
       setShowSettings: (show) => {
         set((state) => { state.showSettings = show; });

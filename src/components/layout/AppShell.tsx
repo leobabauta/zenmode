@@ -36,9 +36,10 @@ export function AppShell() {
   const showSettings = usePlannerStore((s) => s.showSettings);
   const clearSelection = usePlannerStore((s) => s.clearSelection);
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
+  const commandPaletteAddTask = usePlannerStore((s) => s.commandPaletteAddTask);
+  const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   const [showFullConfetti, setShowFullConfetti] = useState(false);
-  const [commandPaletteAddTask, setCommandPaletteAddTask] = useState(false);
   const dismissConfetti = useCallback(() => setShowFullConfetti(false), []);
 
   // Track today's completion — fire full-screen confetti when all of today's tasks are done

@@ -11,6 +11,7 @@ export function Sidebar() {
   const setView = usePlannerStore((s) => s.setView);
   const setHashtagView = usePlannerStore((s) => s.setHashtagView);
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
+  const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
   const items = usePlannerStore((s) => s.items);
   const activeHashtag = usePlannerStore((s) => s.activeHashtag);
 
@@ -84,7 +85,7 @@ export function Sidebar() {
 
       {/* Add task row */}
       <button
-        onClick={() => setShowCommandPalette(true)}
+        onClick={() => { setCommandPaletteAddTask(true); setShowCommandPalette(true); }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 mx-2 mt-2 rounded-md',
           'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
