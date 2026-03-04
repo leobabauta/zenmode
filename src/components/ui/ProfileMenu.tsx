@@ -35,7 +35,7 @@ export function ProfileMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-44 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute left-0 top-full mt-1 z-50 w-44 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg shadow-lg overflow-hidden">
           <button
             disabled
             className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-muted)] cursor-not-allowed"
