@@ -10,6 +10,8 @@ export function HashtagView() {
   const updateItem = usePlannerStore((s) => s.updateItem);
   const setView = usePlannerStore((s) => s.setView);
   const setHashtagView = usePlannerStore((s) => s.setHashtagView);
+  const getLabelColor = usePlannerStore((s) => s.getLabelColor);
+  const setLabelColor = usePlannerStore((s) => s.setLabelColor);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -20,6 +22,7 @@ export function HashtagView() {
   if (!activeHashtag) return null;
 
   const taggedItems = selectItemsForHashtag(items, activeHashtag);
+  const labelColor = getLabelColor(activeHashtag);
 
   // Close menu on outside click
   const handleBackdropClick = () => setMenuOpen(false);
@@ -40,6 +43,8 @@ export function HashtagView() {
     const oldTag = activeHashtag;
     const newHashtag = `#${newTag}`;
     if (newHashtag.toLowerCase() !== oldTag.toLowerCase()) {
+      // Carry the color over to the new tag name
+      setLabelColor(newHashtag, labelColor);
       // Rename in all items
       Object.values(items).forEach((item) => {
         if (item.text.toLowerCase().includes(oldTag.toLowerCase())) {
@@ -70,7 +75,7 @@ export function HashtagView() {
         <div className="flex flex-col items-center mb-4">
           {editing ? (
             <div className="flex items-center gap-1">
-              <span className="text-lg font-bold text-blue-400">#</span>
+              <span className="text-lg font-bold" style={{ color: labelColor }}>#</span>
               <input
                 ref={editRef}
                 value={editValue}
@@ -80,11 +85,12 @@ export function HashtagView() {
                   if (e.key === 'Escape') setEditing(false);
                 }}
                 onBlur={submitEdit}
-                className="text-lg font-bold text-blue-400 bg-transparent outline-none border-b border-blue-400/40 px-1"
+                className="text-lg font-bold bg-transparent outline-none px-1"
+                style={{ color: labelColor, borderBottom: `1px solid ${labelColor}40` }}
               />
             </div>
           ) : (
-            <span className="text-lg font-bold text-blue-400">
+            <span className="text-lg font-bold" style={{ color: labelColor }}>
               {activeHashtag}
             </span>
           )}

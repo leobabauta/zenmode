@@ -21,7 +21,10 @@ interface PlannerState {
   commandPaletteAddTask: boolean;
   showSettings: boolean;
   laterExpanded: boolean;
+  labelColors: Record<string, string>;
 
+  getLabelColor: (tag: string) => string;
+  setLabelColor: (tag: string, color: string) => void;
   addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string }) => void;
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
@@ -68,6 +71,24 @@ export const usePlannerStore = create<PlannerState>()(
       commandPaletteAddTask: false,
       showSettings: false,
       laterExpanded: true,
+      labelColors: {},
+
+      getLabelColor: (tag: string) => {
+        const LABEL_PALETTE = [
+          '#8fbcbb', '#88c0d0', '#81a1c1', '#5e81ac',
+          '#bf616a', '#d08770', '#ebcb8b', '#a3be8c', '#b48ead',
+        ];
+        const key = tag.toLowerCase();
+        const existing = get().labelColors[key];
+        if (existing) return existing;
+        const color = LABEL_PALETTE[Math.floor(Math.random() * LABEL_PALETTE.length)];
+        set((state) => { state.labelColors[key] = color; });
+        return color;
+      },
+
+      setLabelColor: (tag, color) => {
+        set((state) => { state.labelColors[tag.toLowerCase()] = color; });
+      },
 
       addItem: ({ type, text, dayKey, isLater = false, parentId }) => {
         set((state) => {
@@ -453,7 +474,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors }),
     }
   )
 );

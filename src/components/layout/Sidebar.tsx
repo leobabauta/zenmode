@@ -13,6 +13,7 @@ export function Sidebar() {
   const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
   const items = usePlannerStore((s) => s.items);
   const activeHashtag = usePlannerStore((s) => s.activeHashtag);
+  const getLabelColor = usePlannerStore((s) => s.getLabelColor);
 
   const allHashtags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -130,6 +131,7 @@ export function Sidebar() {
           <div className="mt-1.5 space-y-0.5">
             {allHashtags.map((tag) => {
               const isActive = view === 'hashtag' && activeHashtag === tag;
+              const color = getLabelColor(tag);
               return (
                 <button
                   key={tag}
@@ -137,12 +139,12 @@ export function Sidebar() {
                   className={cn(
                     'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
                     isActive
-                      ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                      ? 'bg-[var(--color-accent-tint)]'
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
                   )}
                 >
-                  <span className="text-xs">#</span>
-                  <span>{tag.slice(1)}</span>
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                  <span style={isActive ? { color } : undefined}>{tag.slice(1)}</span>
                 </button>
               );
             })}
