@@ -70,7 +70,7 @@ export function AppShell() {
     initialLoadRef.current = false;
   }, [items]);
 
-  // Global keyboard shortcuts: "gi" → Inbox, "gl" → Later, "gt" → scroll to today in Timeline, "t" → toggle Today/Timeline
+  // Global keyboard shortcuts: "i" → Inbox, "l" → Later, "gt" → scroll to today in Timeline, "t" → toggle Today/Timeline
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -87,16 +87,6 @@ export function AppShell() {
 
       if (isChord) {
         lastKeyRef.current = { key: '', time: 0 };
-        if (e.key === 'i') {
-          e.preventDefault();
-          usePlannerStore.getState().setView('inbox');
-          return;
-        }
-        if (e.key === 'l') {
-          e.preventDefault();
-          usePlannerStore.getState().setView('later');
-          return;
-        }
         if (e.key === 't') {
           e.preventDefault();
           usePlannerStore.getState().setView('timeline');
@@ -107,7 +97,17 @@ export function AppShell() {
 
       lastKeyRef.current = { key: '', time: 0 };
 
-      // Standalone "t" → toggle between Today and Timeline
+      // Standalone shortcuts
+      if (e.key === 'i') {
+        e.preventDefault();
+        usePlannerStore.getState().setView('inbox');
+        return;
+      }
+      if (e.key === 'l') {
+        e.preventDefault();
+        usePlannerStore.getState().setView('later');
+        return;
+      }
       if (e.key === 't') {
         e.preventDefault();
         const currentView = usePlannerStore.getState().view;

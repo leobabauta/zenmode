@@ -11,24 +11,16 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
   const widths = useRef<number[]>([]);
   const startedRef = useRef(false);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     widths.current = letterRefs.current.map(el => el?.offsetWidth ?? 0);
   }, []);
 
   const startHideAnimation = useCallback(() => {
-    // Clear any existing hide animation
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    if (hideIntervalRef.current) clearInterval(hideIntervalRef.current);
 
     hideTimeoutRef.current = setTimeout(() => {
-      let removed = 0;
-      hideIntervalRef.current = setInterval(() => {
-        removed++;
-        setRemovedCount(removed);
-        if (removed >= WORD.length && hideIntervalRef.current) clearInterval(hideIntervalRef.current);
-      }, LETTER_DURATION_MS);
+      setRemovedCount(WORD.length);
     }, DELAY_MS);
   }, []);
 
@@ -53,7 +45,6 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
     return () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-      if (hideIntervalRef.current) clearInterval(hideIntervalRef.current);
     };
   }, [startHideAnimation]);
 
