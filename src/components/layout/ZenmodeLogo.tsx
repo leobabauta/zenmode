@@ -1,29 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
 
 const WORD = 'zenmode';
-const DELAY_MS = 30000;
+const DELAY_MS = 10000;
 const LETTER_DURATION_MS = 330;
 
 export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
   const [removedCount, setRemovedCount] = useState(0);
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const widths = useRef<number[]>([]);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     widths.current = letterRefs.current.map(el => el?.offsetWidth ?? 0);
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      let removed = 0;
-      const interval = setInterval(() => {
-        removed++;
-        setRemovedCount(removed);
-        if (removed >= WORD.length) clearInterval(interval);
-      }, LETTER_DURATION_MS);
-      return () => clearInterval(interval);
-    }, DELAY_MS);
-    return () => clearTimeout(timeout);
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    function startAnimation() {
+      if (startedRef.current) return;
+      startedRef.current = true;
+      timeout = setTimeout(() => {
+        let removed = 0;
+        interval = setInterval(() => {
+          removed++;
+          setRemovedCount(removed);
+          if (removed >= WORD.length && interval) clearInterval(interval);
+        }, LETTER_DURATION_MS);
+      }, DELAY_MS);
+    }
+
+    // Start immediately if document is already visible
+    if (document.visibilityState === 'visible') {
+      startAnimation();
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        startAnimation();
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (timeout) clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   return (
