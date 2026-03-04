@@ -15,6 +15,7 @@ import { ExpandedTaskView } from '../items/ExpandedTaskView';
 import { MoveModal } from '../ui/MoveModal';
 import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
+import { QuickCaptureBar } from '../forms/QuickCaptureBar';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -217,6 +218,9 @@ export function AppShell() {
           )}
         </div>
       </div>
+
+      {/* Quick capture bar — visible in all views */}
+      <QuickCaptureBar />
 
       {/* Expanded task modal */}
       {expandedTaskId && <ExpandedTaskView />}
