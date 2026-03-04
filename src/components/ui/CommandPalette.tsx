@@ -151,8 +151,8 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
       store.addItem({ type: 'task', text, dayKey: null });
     }
     setQuery('');
-    // Keep palette open for adding more tasks
-  }, [query]);
+    onClose();
+  }, [query, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {

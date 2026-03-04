@@ -65,34 +65,35 @@ export function AppShell() {
     }
   }, [items]);
 
-  // Global "gi" → go to Inbox, "gl" → go to Later, "gt" → scroll to today in Timeline
+  // Global keyboard shortcuts: "gi" → Inbox, "gl" → Later, "gt" → scroll to today in Timeline, "t" → toggle Today/Timeline
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.shiftKey || e.metaKey || e.ctrlKey) return;
 
-      if (e.key === 'g' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      if (e.key === 'g') {
         lastKeyRef.current = { key: 'g', time: Date.now() };
         return;
       }
 
       const now = Date.now();
-      if (lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500) {
+      const isChord = lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500;
+
+      if (isChord) {
+        lastKeyRef.current = { key: '', time: 0 };
         if (e.key === 'i') {
           e.preventDefault();
-          lastKeyRef.current = { key: '', time: 0 };
           usePlannerStore.getState().setView('inbox');
           return;
         }
         if (e.key === 'l') {
           e.preventDefault();
-          lastKeyRef.current = { key: '', time: 0 };
           usePlannerStore.getState().setView('later');
           return;
         }
         if (e.key === 't') {
           e.preventDefault();
-          lastKeyRef.current = { key: '', time: 0 };
           usePlannerStore.getState().setView('timeline');
           usePlannerStore.getState().requestScrollToToday();
           return;
@@ -100,26 +101,21 @@ export function AppShell() {
       }
 
       lastKeyRef.current = { key: '', time: 0 };
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
 
-  // Global "t" key → go to Today view (unless editing or part of "gt" chord)
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      // Skip if this "t" was part of a "gt" chord (handled above)
-      if (lastKeyRef.current.key === 'g' && Date.now() - lastKeyRef.current.time < 500) return;
-      if (e.key === 't' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      // Standalone "t" → toggle between Today and Timeline
+      if (e.key === 't') {
         e.preventDefault();
-        setView('today');
+        const currentView = usePlannerStore.getState().view;
+        if (currentView === 'today') {
+          usePlannerStore.getState().setView('timeline');
+        } else {
+          usePlannerStore.getState().setView('today');
+        }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [setView]);
+  }, []);
 
   // Global "f" key → toggle sidebar (focus mode) when in timeline view
   useEffect(() => {
