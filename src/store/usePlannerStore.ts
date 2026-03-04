@@ -138,7 +138,7 @@ export const usePlannerStore = create<PlannerState>()(
           const now = new Date().toISOString();
           state.items[newId] = {
             id: newId,
-            type: 'task',
+            type: after.type,
             text,
             completed: false,
             dayKey: after.dayKey,
