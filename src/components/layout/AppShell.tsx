@@ -38,7 +38,6 @@ export function AppShell() {
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
   const commandPaletteAddTask = usePlannerStore((s) => s.commandPaletteAddTask);
   const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
-  const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   const [showFullConfetti, setShowFullConfetti] = useState(false);
   const dismissConfetti = useCallback(() => setShowFullConfetti(false), []);
 
@@ -70,34 +69,13 @@ export function AppShell() {
     initialLoadRef.current = false;
   }, [items]);
 
-  // Global keyboard shortcuts: "i" → Inbox, "l" → Later, "gt" → scroll to today in Timeline, "t" → toggle Today/Timeline
+  // Global keyboard shortcuts: "i" → Inbox, "l" → Later, "t" → Today, "h" → Timeline (Home)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.shiftKey || e.metaKey || e.ctrlKey) return;
 
-      if (e.key === 'g') {
-        lastKeyRef.current = { key: 'g', time: Date.now() };
-        return;
-      }
-
-      const now = Date.now();
-      const isChord = lastKeyRef.current.key === 'g' && now - lastKeyRef.current.time < 500;
-
-      if (isChord) {
-        lastKeyRef.current = { key: '', time: 0 };
-        if (e.key === 't') {
-          e.preventDefault();
-          usePlannerStore.getState().setView('timeline');
-          usePlannerStore.getState().requestScrollToToday();
-          return;
-        }
-      }
-
-      lastKeyRef.current = { key: '', time: 0 };
-
-      // Standalone shortcuts
       if (e.key === 'i') {
         e.preventDefault();
         usePlannerStore.getState().setView('inbox');
@@ -110,12 +88,13 @@ export function AppShell() {
       }
       if (e.key === 't') {
         e.preventDefault();
-        const currentView = usePlannerStore.getState().view;
-        if (currentView === 'today') {
-          usePlannerStore.getState().setView('timeline');
-        } else {
-          usePlannerStore.getState().setView('today');
-        }
+        usePlannerStore.getState().setView('today');
+        return;
+      }
+      if (e.key === 'h') {
+        e.preventDefault();
+        usePlannerStore.getState().setView('timeline');
+        return;
       }
     };
     window.addEventListener('keydown', handler);
@@ -209,11 +188,11 @@ export function AppShell() {
             ) : (
               <button
                 onClick={() => setView('timeline')}
-                title="Shortcut: T"
+                title="Shortcut: H"
                 className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
               >
                 Timeline
-                <kbd className="text-[10px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">T</kbd>
+                <kbd className="text-[10px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">H</kbd>
               </button>
             )}
             <ThemeToggle />
