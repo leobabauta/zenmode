@@ -75,8 +75,11 @@ export const usePlannerStore = create<PlannerState>()(
 
       getLabelColor: (tag: string) => {
         const LABEL_PALETTE = [
-          '#8fbcbb', '#88c0d0', '#81a1c1', '#5e81ac',
-          '#bf616a', '#d08770', '#ebcb8b', '#a3be8c', '#b48ead',
+          '#D20000', '#F65353', '#EA7D70', '#FD5E00', '#F58553',
+          '#F59A23', '#FCB55C', '#CE8540', '#EEB649', '#F7CE15',
+          '#BCC07B', '#91CA57', '#669E63', '#007355', '#007D75',
+          '#75B39C', '#7CCED2', '#1EB0E6', '#03468F', '#7D8BE0',
+          '#9A81B0', '#7851A5', '#B19F9A', '#8E715B', '#4F3F3E',
         ];
         const key = tag.toLowerCase();
         const existing = get().labelColors[key];
