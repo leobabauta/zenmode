@@ -183,8 +183,9 @@ export function AppShell() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setView('timeline')}
-              className="text-2xl font-semibold tracking-[0.2em] text-blue-700 dark:text-blue-400 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 text-2xl font-semibold tracking-[0.2em] text-blue-700 dark:text-blue-400 hover:opacity-80 transition-opacity"
             >
+              <img src={import.meta.env.BASE_URL + 'zenmode-logo.svg'} alt="" className="w-7 h-7" />
               zenmode
             </button>
           </div>
