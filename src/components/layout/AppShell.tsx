@@ -16,6 +16,8 @@ import { MoveModal } from '../ui/MoveModal';
 import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { QuickCaptureBar } from '../forms/QuickCaptureBar';
+import { RitualPrompt } from '../ritual/RitualPrompt';
+import { DailyRitualView } from '../ritual/DailyRitualView';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -35,6 +37,7 @@ export function AppShell() {
   const showMoveModal = usePlannerStore((s) => s.showMoveModal);
   const showCommandPalette = usePlannerStore((s) => s.showCommandPalette);
   const showSettings = usePlannerStore((s) => s.showSettings);
+  const showRitualPrompt = usePlannerStore((s) => s.showRitualPrompt);
   const clearSelection = usePlannerStore((s) => s.clearSelection);
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
   const commandPaletteAddTask = usePlannerStore((s) => s.commandPaletteAddTask);
@@ -202,7 +205,9 @@ export function AppShell() {
 
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
-          {view === 'today' ? (
+          {view === 'ritual' ? (
+            <DailyRitualView />
+          ) : view === 'today' ? (
             <TodayView />
           ) : view === 'inbox' ? (
             <InboxView />
@@ -218,6 +223,9 @@ export function AppShell() {
           )}
         </div>
       </div>
+
+      {/* Ritual prompt overlay */}
+      {showRitualPrompt && <RitualPrompt />}
 
       {/* Quick capture bar — visible in all views */}
       <QuickCaptureBar />

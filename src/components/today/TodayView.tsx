@@ -12,6 +12,10 @@ export function TodayView() {
   const label = formatDayLabel(today);
   const [dayPart, datePart] = label.split(', ');
 
+  const priorityItems = todayItems.filter((i) => i.isPriority);
+  const practiceItems = todayItems.filter((i) => i.isPractice);
+  const regularItems = todayItems.filter((i) => !i.isPriority && !i.isPractice);
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">
@@ -24,9 +28,29 @@ export function TodayView() {
           </span>
         </div>
 
+        {/* Priorities section */}
+        {priorityItems.length > 0 && (
+          <div className="mb-4 rounded-xl border border-blue-500/30 bg-blue-500/5 p-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 block">
+              Priorities
+            </span>
+            <ItemList items={priorityItems} />
+          </div>
+        )}
+
+        {/* Practice section */}
+        {practiceItems.length > 0 && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 block">
+              Practice
+            </span>
+            <ItemList items={practiceItems} />
+          </div>
+        )}
+
         <div className="rounded-xl p-3 min-h-[80px]">
           <div className="min-h-[8px]">
-            <ItemList items={todayItems} />
+            <ItemList items={regularItems} />
           </div>
           <AddItemForm dayKey={dayKey} className="mt-1" />
         </div>

@@ -23,6 +23,8 @@ export interface PlannerItem {
   recurrence?: Recurrence;
   parentId?: string;
   consecutiveMoves?: number;
+  isPriority?: boolean;
+  isPractice?: boolean;
 }
 
 export interface DaySlot {

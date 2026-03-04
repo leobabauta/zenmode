@@ -17,8 +17,11 @@ export const LABEL_PALETTE = [
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
-  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later';
+  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual';
   activeHashtag: string | null;
+  lastRitualDate: string | null;
+  showRitualPrompt: boolean;
+  showRitual: boolean;
   sidebarCollapsed: boolean;
   selectionAnchorId: string | null;
   selectionFocusId: string | null;
@@ -33,7 +36,7 @@ interface PlannerState {
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string }) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isPractice?: boolean }) => void;
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
   setExpandedTaskFullScreen: (full: boolean) => void;
@@ -46,7 +49,10 @@ interface PlannerState {
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
-  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later') => void;
+  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual') => void;
+  setShowRitualPrompt: (show: boolean) => void;
+  setShowRitual: (show: boolean) => void;
+  completeRitual: () => void;
   setHashtagView: (tag: string) => void;
   toggleSidebar: () => void;
   setShowMoveModal: (show: boolean) => void;
@@ -68,6 +74,9 @@ export const usePlannerStore = create<PlannerState>()(
       theme: 'light',
       view: 'timeline' as const,
       activeHashtag: null,
+      lastRitualDate: null,
+      showRitualPrompt: false,
+      showRitual: false,
       sidebarCollapsed: false,
       scrollToTodayRequested: 0,
       selectionAnchorId: null,
@@ -94,7 +103,7 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.labelColors[tag.toLowerCase()] = color; });
       },
 
-      addItem: ({ type, text, dayKey, isLater = false, parentId }) => {
+      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isPractice }) => {
         set((state) => {
           let existingItems: PlannerItem[];
           if (parentId) {
@@ -122,6 +131,8 @@ export const usePlannerStore = create<PlannerState>()(
             createdAt: now,
             updatedAt: now,
             parentId,
+            isPriority,
+            isPractice,
           };
         });
       },
@@ -354,6 +365,15 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => {
           const todayKey = toDayKey(new Date());
           const now = new Date().toISOString();
+
+          // Clear stale priority/practice flags from past days
+          Object.values(state.items).forEach((item) => {
+            if (item.dayKey && item.dayKey !== todayKey && (item.isPriority || item.isPractice)) {
+              delete item.isPriority;
+              delete item.isPractice;
+            }
+          });
+
           const pastIncomplete = Object.values(state.items).filter(
             (i) =>
               i.dayKey !== null &&
@@ -439,6 +459,23 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.view = view; state.activeHashtag = null; });
       },
 
+      setShowRitualPrompt: (show) => {
+        set((state) => { state.showRitualPrompt = show; });
+      },
+
+      setShowRitual: (show) => {
+        set((state) => { state.showRitual = show; });
+      },
+
+      completeRitual: () => {
+        set((state) => {
+          state.lastRitualDate = toDayKey(new Date());
+          state.showRitual = false;
+          state.showRitualPrompt = false;
+          state.view = 'today';
+        });
+      },
+
       setHashtagView: (tag) => {
         set((state) => { state.view = 'hashtag'; state.activeHashtag = tag; state.expandedTaskId = null; });
       },
@@ -478,7 +515,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate }),
     }
   )
 );
