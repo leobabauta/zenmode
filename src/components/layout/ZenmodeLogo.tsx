@@ -5,22 +5,21 @@ const DELAY_MS = 30000;
 const LETTER_DURATION_MS = 330;
 
 export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
-  const [visibleCount, setVisibleCount] = useState(WORD.length);
+  const [removedCount, setRemovedCount] = useState(0);
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const widths = useRef<number[]>([]);
 
   useEffect(() => {
-    // Measure natural widths on mount
     widths.current = letterRefs.current.map(el => el?.offsetWidth ?? 0);
   }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      let count = WORD.length;
+      let removed = 0;
       const interval = setInterval(() => {
-        count--;
-        setVisibleCount(count);
-        if (count <= 0) clearInterval(interval);
+        removed++;
+        setRemovedCount(removed);
+        if (removed >= WORD.length) clearInterval(interval);
       }, LETTER_DURATION_MS);
       return () => clearInterval(interval);
     }, DELAY_MS);
@@ -35,7 +34,7 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
       <img
         src={import.meta.env.BASE_URL + 'zenmode-logo.svg'}
         alt=""
-        className="w-14 h-14"
+        className="w-10 h-10"
       />
       <span className="flex">
         {WORD.split('').map((letter, i) => (
@@ -44,8 +43,8 @@ export function ZenmodeLogo({ onClick }: { onClick: () => void }) {
             ref={el => { letterRefs.current[i] = el; }}
             className="inline-block overflow-hidden"
             style={{
-              width: i < visibleCount ? widths.current[i] || undefined : 0,
-              opacity: i < visibleCount ? 1 : 0,
+              width: i < removedCount ? 0 : widths.current[i] || undefined,
+              opacity: i < removedCount ? 0 : 1,
               transition: `width ${LETTER_DURATION_MS}ms ease-in-out, opacity ${LETTER_DURATION_MS}ms ease-in-out`,
             }}
           >
