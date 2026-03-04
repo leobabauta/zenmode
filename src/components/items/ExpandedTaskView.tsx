@@ -199,18 +199,20 @@ export function ExpandedTaskView() {
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40"
-        onClick={closeAndSave}
-      />
+      {/* Backdrop (non-fullscreen only) */}
+      {!expandedTaskFullScreen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={closeAndSave}
+        />
+      )}
 
-      {/* Modal */}
+      {/* Modal / Full-screen view */}
       <div className={cn(
-        'z-50 bg-[var(--color-bg)] shadow-2xl flex flex-col overflow-hidden',
+        'bg-[var(--color-bg)] flex flex-col overflow-hidden',
         expandedTaskFullScreen
-          ? 'fixed inset-x-0 bottom-0 top-[41px] w-full h-auto'
-          : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] rounded-xl border border-[var(--color-border)]'
+          ? 'fixed inset-x-0 bottom-0 top-[41px] w-full h-auto z-30'
+          : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] rounded-xl border border-[var(--color-border)] shadow-2xl z-50'
       )}>
         {/* Header */}
         <div className={cn(
