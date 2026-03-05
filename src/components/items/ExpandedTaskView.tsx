@@ -124,7 +124,7 @@ function ChildItem({ item, editTrigger, onFocusPrev, onFocusNext }: ChildItemPro
 }
 
 export function ExpandedTaskView() {
-  const { expandedTaskId, items, setExpandedTask, addItem, deleteItem, expandedTaskFullScreen, setExpandedTaskFullScreen } = usePlannerStore(useShallow((s) => ({
+  const { expandedTaskId, items, setExpandedTask, addItem, deleteItem, expandedTaskFullScreen, setExpandedTaskFullScreen, addTimerSession } = usePlannerStore(useShallow((s) => ({
     expandedTaskId: s.expandedTaskId,
     items: s.items,
     setExpandedTask: s.setExpandedTask,
@@ -132,11 +132,13 @@ export function ExpandedTaskView() {
     deleteItem: s.deleteItem,
     expandedTaskFullScreen: s.expandedTaskFullScreen,
     setExpandedTaskFullScreen: s.setExpandedTaskFullScreen,
+    addTimerSession: s.addTimerSession,
   })));
 
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
+  const timerStartRef = useRef<string>(new Date().toISOString());
   // editRequest: { index, tick } — index is the child to edit (-1 = new last child), tick always increments
   const [editRequest, setEditRequest] = useState<{ index: number; tick: number } | null>(null);
   const tickRef = useRef(0);
@@ -277,7 +279,12 @@ export function ExpandedTaskView() {
             'flex justify-center',
             expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'px-5'
           )}>
-            <FocusTimer />
+            <FocusTimer onSessionComplete={(duration) => {
+              if (expandedTaskId) {
+                addTimerSession(expandedTaskId, { startedAt: timerStartRef.current, duration });
+              }
+              timerStartRef.current = new Date().toISOString();
+            }} />
           </div>
         )}
 

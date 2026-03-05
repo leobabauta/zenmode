@@ -27,7 +27,11 @@ function playBeep() {
   }, 300);
 }
 
-export function FocusTimer() {
+interface FocusTimerProps {
+  onSessionComplete?: (duration: number) => void;
+}
+
+export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
   const [totalSeconds, setTotalSeconds] = useState(1500);
   const [remainingSeconds, setRemainingSeconds] = useState(1500);
   const [status, setStatus] = useState<TimerStatus>('idle');
@@ -44,13 +48,14 @@ export function FocusTimer() {
           clearInterval(id);
           setStatus('done');
           playBeep();
+          onSessionComplete?.(totalSeconds);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [status]);
+  }, [status, totalSeconds, onSessionComplete]);
 
   // Focus edit input
   useEffect(() => {

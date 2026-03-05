@@ -21,6 +21,9 @@ interface ItemRow {
   is_priority: boolean;
   is_medium_priority: boolean;
   is_practice: boolean;
+  list_id: string | null;
+  completed_at: string | null;
+  timer_sessions: unknown;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -41,6 +44,9 @@ export function itemToRow(item: PlannerItem, userId: string): ItemRow {
     is_priority: item.isPriority ?? false,
     is_medium_priority: item.isMediumPriority ?? false,
     is_practice: item.isPractice ?? false,
+    list_id: item.listId ?? null,
+    completed_at: item.completedAt ?? null,
+    timer_sessions: item.timerSessions ?? null,
   };
 }
 
@@ -61,6 +67,9 @@ export function rowToItem(row: ItemRow): PlannerItem {
     isPriority: row.is_priority || undefined,
     isMediumPriority: row.is_medium_priority || undefined,
     isPractice: row.is_practice || undefined,
+    listId: row.list_id ?? undefined,
+    completedAt: row.completed_at ?? undefined,
+    timerSessions: (row.timer_sessions as PlannerItem['timerSessions']) ?? undefined,
   };
 }
 
@@ -194,6 +203,8 @@ interface PrefsRow {
   review_ritual_enabled: boolean;
   review_ritual_hour: number;
   last_review_ritual_date: string | null;
+  custom_lists: unknown[];
+  active_list_id: string | null;
   updated_at: string;
 }
 
@@ -234,6 +245,8 @@ export async function pullPreferences(): Promise<void> {
       reviewRitualEnabled: row.review_ritual_enabled ?? true,
       reviewRitualHour: row.review_ritual_hour ?? 17,
       lastReviewRitualDate: bestReviewDate,
+      customLists: (row.custom_lists as ReturnType<typeof usePlannerStore.getState>['customLists']) ?? [],
+      activeListId: row.active_list_id ?? null,
     });
   }
 }
@@ -266,6 +279,8 @@ async function flushPreferences(): Promise<void> {
     review_ritual_enabled: s.reviewRitualEnabled,
     review_ritual_hour: s.reviewRitualHour,
     last_review_ritual_date: s.lastReviewRitualDate,
+    custom_lists: s.customLists,
+    active_list_id: s.activeListId,
     updated_at: new Date().toISOString(),
   };
 

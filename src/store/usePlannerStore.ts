@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { nanoid } from 'nanoid';
-import type { PlannerItem, ItemType, Recurrence } from '../types';
+import type { PlannerItem, ItemType, Recurrence, CustomList } from '../types';
 import { computeNextOccurrence } from '../lib/recurrence';
 import { toDayKey } from '../lib/dates';
 
@@ -17,8 +17,10 @@ export const LABEL_PALETTE = [
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
-  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review';
+  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats';
   activeHashtag: string | null;
+  customLists: CustomList[];
+  activeListId: string | null;
   lastRitualDate: string | null;
   planningRitualEnabled: boolean;
   planningRitualHour: number;
@@ -45,11 +47,12 @@ interface PlannerState {
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; isPractice?: boolean }) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; isPractice?: boolean; listId?: string }) => void;
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
   setExpandedTaskFullScreen: (full: boolean) => void;
   updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice'>>) => void;
+  addTimerSession: (taskId: string, session: { startedAt: string; duration: number }) => void;
   deleteItem: (id: string) => void;
   promptDeleteItem: (id: string) => void;
   confirmDeleteSingle: (id: string) => void;
@@ -62,7 +65,7 @@ interface PlannerState {
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
-  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review') => void;
+  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats') => void;
   setShowRitualPrompt: (show: boolean) => void;
   setShowRitual: (show: boolean) => void;
   completeRitual: () => void;
@@ -75,6 +78,11 @@ interface PlannerState {
   setReviewRitualEnabled: (v: boolean) => void;
   setReviewRitualHour: (h: number) => void;
   setHashtagView: (tag: string) => void;
+  addCustomList: (name: string) => void;
+  renameCustomList: (id: string, name: string) => void;
+  deleteCustomList: (id: string) => void;
+  setActiveListId: (id: string | null) => void;
+  sendToList: (itemId: string, listId: string) => void;
   toggleSidebar: () => void;
   setShowMoveModal: (show: boolean) => void;
   setShowCommandPalette: (show: boolean) => void;
@@ -95,6 +103,8 @@ export const usePlannerStore = create<PlannerState>()(
       theme: 'light',
       view: 'timeline' as const,
       activeHashtag: null,
+      customLists: [],
+      activeListId: null,
       lastRitualDate: null,
       planningRitualEnabled: true,
       planningRitualHour: 6,
@@ -133,7 +143,7 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.labelColors[tag.toLowerCase()] = color; });
       },
 
-      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, isPractice }) => {
+      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, isPractice, listId }) => {
         set((state) => {
           let existingItems: PlannerItem[];
           if (parentId) {
@@ -164,6 +174,7 @@ export const usePlannerStore = create<PlannerState>()(
             isPriority,
             isMediumPriority,
             isPractice,
+            listId,
           };
         });
       },
@@ -212,6 +223,13 @@ export const usePlannerStore = create<PlannerState>()(
           if (!item) return;
           Object.assign(item, patch, { updatedAt: new Date().toISOString() });
 
+          // Track completion timestamp
+          if (patch.completed === true && !item.completedAt) {
+            item.completedAt = new Date().toISOString();
+          } else if (patch.completed === false) {
+            delete item.completedAt;
+          }
+
           // Auto-create next occurrence when completing a recurring item
           if (patch.completed === true && item.recurrence && item.dayKey) {
             const nextDayKey = computeNextOccurrence(item.dayKey, item.recurrence);
@@ -235,6 +253,16 @@ export const usePlannerStore = create<PlannerState>()(
               recurrence: item.recurrence,
             };
           }
+        });
+      },
+
+      addTimerSession: (taskId, session) => {
+        set((state) => {
+          const item = state.items[taskId];
+          if (!item) return;
+          if (!item.timerSessions) item.timerSessions = [];
+          item.timerSessions.push(session);
+          item.updatedAt = new Date().toISOString();
         });
       },
 
@@ -455,9 +483,9 @@ export const usePlannerStore = create<PlannerState>()(
           const todayKey = toDayKey(new Date());
           const now = new Date().toISOString();
 
-          // Clear stale priority/practice flags from past days
+          // Clear stale priority/practice flags from past days (keep on completed items for stats)
           Object.values(state.items).forEach((item) => {
-            if (item.dayKey && item.dayKey !== todayKey && (item.isPriority || item.isMediumPriority || item.isPractice)) {
+            if (item.dayKey && item.dayKey !== todayKey && !item.completed && (item.isPriority || item.isMediumPriority || item.isPractice)) {
               delete item.isPriority;
               delete item.isMediumPriority;
               delete item.isPractice;
@@ -612,6 +640,52 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.view = 'hashtag'; state.activeHashtag = tag; state.expandedTaskId = null; });
       },
 
+      addCustomList: (name) => {
+        set((state) => {
+          const id = nanoid();
+          const maxOrder = state.customLists.length > 0
+            ? Math.max(...state.customLists.map((l) => l.order))
+            : -1;
+          state.customLists.push({ id, name, order: maxOrder + 1 });
+        });
+      },
+
+      renameCustomList: (id, name) => {
+        set((state) => {
+          const list = state.customLists.find((l) => l.id === id);
+          if (list) list.name = name;
+        });
+      },
+
+      deleteCustomList: (id) => {
+        set((state) => {
+          state.customLists = state.customLists.filter((l) => l.id !== id);
+          // Clear listId from items that were in this list
+          Object.values(state.items).forEach((item) => {
+            if (item.listId === id) delete item.listId;
+          });
+          if (state.activeListId === id) {
+            state.activeListId = null;
+            state.view = 'timeline';
+          }
+        });
+      },
+
+      setActiveListId: (id) => {
+        set((state) => { state.activeListId = id; });
+      },
+
+      sendToList: (itemId, listId) => {
+        set((state) => {
+          const item = state.items[itemId];
+          if (!item) return;
+          item.listId = listId;
+          item.dayKey = null;
+          item.isLater = false;
+          item.updatedAt = new Date().toISOString();
+        });
+      },
+
       toggleSidebar: () => {
         set((state) => { state.sidebarCollapsed = !state.sidebarCollapsed; });
       },
@@ -647,7 +721,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId }),
     }
   )
 );
@@ -655,7 +729,7 @@ export const usePlannerStore = create<PlannerState>()(
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate'] as const;
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate', 'customLists', 'activeListId'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items
@@ -707,6 +781,12 @@ export function selectLaterItems(items: Record<string, PlannerItem>) {
 export function selectChildItems(items: Record<string, PlannerItem>, parentId: string) {
   return Object.values(items)
     .filter((i) => i.parentId === parentId)
+    .sort((a, b) => a.order - b.order);
+}
+
+export function selectCustomListItems(items: Record<string, PlannerItem>, listId: string) {
+  return Object.values(items)
+    .filter((i) => i.listId === listId && !i.parentId)
     .sort((a, b) => a.order - b.order);
 }
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Sidebar } from './Sidebar';
-import { ZenmodeLogo } from './ZenmodeLogo';
 import { MainContent } from './MainContent';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { SettingsView } from '../settings/SettingsView';
@@ -9,6 +8,8 @@ import { TodayView } from '../today/TodayView';
 import { InboxView } from '../inbox/InboxView';
 import { LaterView } from '../later/LaterView';
 import { HashtagView } from '../hashtag/HashtagView';
+import { CustomListView } from '../lists/CustomListView';
+import { StatsView } from '../stats/StatsView';
 import { TaskItem } from '../items/TaskItem';
 import { NoteItem } from '../items/NoteItem';
 import { ExpandedTaskView } from '../items/ExpandedTaskView';
@@ -104,13 +105,18 @@ export function AppShell() {
         usePlannerStore.getState().setView('timeline');
         return;
       }
+      if (e.key === 's') {
+        e.preventDefault();
+        usePlannerStore.getState().setView('stats');
+        return;
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
   // Views that show the sidebar
-  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag'];
+  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag', 'list', 'stats'];
 
   // Global "f" key → toggle sidebar (focus mode) in views that have sidebar
   useEffect(() => {
@@ -174,51 +180,45 @@ export function AppShell() {
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
-        className="flex flex-col h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]"
+        className="flex h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]"
         onMouseDown={(e) => {
           const target = e.target as HTMLElement;
           if (target.closest('button, input, textarea, [tabindex], [role="button"], .group')) return;
           clearSelection();
         }}
       >
-        {/* Top bar */}
-        <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-          <div className="flex items-center gap-3">
-            <ZenmodeLogo onClick={() => setView('timeline')} />
-          </div>
-          <div className="flex items-center gap-1">
-            {view === 'timeline' ? (
-              <button
-                onClick={() => setView('today')}
-                title="Shortcut: T"
-                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Today
-                <kbd className="text-[10px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">T</kbd>
-              </button>
-            ) : (
-              <button
-                onClick={() => setView('timeline')}
-                title="Shortcut: H"
-                className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Timeline
-                <kbd className="text-[10px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">H</kbd>
-              </button>
-            )}
-            <ThemeToggle />
-          </div>
-        </header>
+        {view === 'ritual' ? (
+          <DailyRitualView />
+        ) : view === 'review' ? (
+          <DailyReviewView />
+        ) : (
+          <>
+            <Sidebar />
+            <div className="flex-1 flex flex-col overflow-hidden relative">
+              {/* Floating top-right controls */}
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+                {view === 'timeline' ? (
+                  <button
+                    onClick={() => setView('today')}
+                    title="Shortcut: T"
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    Today
+                    <kbd className="text-[10px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">T</kbd>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setView('timeline')}
+                    title="Shortcut: H"
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    Timeline
+                    <kbd className="text-[10px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">H</kbd>
+                  </button>
+                )}
+                <ThemeToggle />
+              </div>
 
-        {/* Body */}
-        <div className="flex flex-1 overflow-hidden">
-          {view === 'ritual' ? (
-            <DailyRitualView />
-          ) : view === 'review' ? (
-            <DailyReviewView />
-          ) : (
-            <>
-              <Sidebar />
               {view === 'today' ? (
                 <TodayView />
               ) : view === 'inbox' ? (
@@ -227,12 +227,16 @@ export function AppShell() {
                 <LaterView />
               ) : view === 'hashtag' ? (
                 <HashtagView />
+              ) : view === 'list' ? (
+                <CustomListView />
+              ) : view === 'stats' ? (
+                <StatsView />
               ) : (
                 <MainContent />
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Ritual prompt overlays */}

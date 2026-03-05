@@ -26,6 +26,15 @@ export interface PlannerItem {
   isPriority?: boolean;
   isMediumPriority?: boolean;
   isPractice?: boolean;
+  listId?: string;
+  completedAt?: string;
+  timerSessions?: Array<{ startedAt: string; duration: number }>;
+}
+
+export interface CustomList {
+  id: string;
+  name: string;
+  order: number;
 }
 
 export interface DaySlot {
