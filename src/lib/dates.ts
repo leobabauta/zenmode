@@ -5,6 +5,7 @@ import {
   isToday,
   isPast,
   startOfDay,
+  startOfWeek,
 } from 'date-fns';
 
 export function toDayKey(date: Date): string {
@@ -40,4 +41,10 @@ export function isDayToday(date: Date): boolean {
 
 export function isDayPast(date: Date): boolean {
   return isPast(startOfDay(date)) && !isToday(date);
+}
+
+/** Returns the "YYYY-MM-DD" key for the Monday of the week containing `date`. */
+export function getWeekKey(date: Date = new Date()): string {
+  const monday = startOfWeek(date, { weekStartsOn: 1 }); // 1 = Monday
+  return format(monday, 'yyyy-MM-dd');
 }

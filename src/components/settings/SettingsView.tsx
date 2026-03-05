@@ -10,6 +10,10 @@ export function SettingsView() {
     reviewRitualEnabled, reviewRitualHour,
     setPlanningRitualEnabled, setPlanningRitualHour,
     setReviewRitualEnabled, setReviewRitualHour,
+    weeklyPlanningEnabled, weeklyPlanningDay, weeklyPlanningHour,
+    weeklyReviewEnabled, weeklyReviewDay, weeklyReviewHour, weeklyReviewMinute,
+    setWeeklyPlanningEnabled, setWeeklyPlanningDay, setWeeklyPlanningHour,
+    setWeeklyReviewEnabled, setWeeklyReviewDay, setWeeklyReviewHour, setWeeklyReviewMinute,
   } = usePlannerStore(useShallow((s) => ({
     items: s.items,
     setShowSettings: s.setShowSettings,
@@ -22,7 +26,23 @@ export function SettingsView() {
     setPlanningRitualHour: s.setPlanningRitualHour,
     setReviewRitualEnabled: s.setReviewRitualEnabled,
     setReviewRitualHour: s.setReviewRitualHour,
+    weeklyPlanningEnabled: s.weeklyPlanningEnabled,
+    weeklyPlanningDay: s.weeklyPlanningDay,
+    weeklyPlanningHour: s.weeklyPlanningHour,
+    weeklyReviewEnabled: s.weeklyReviewEnabled,
+    weeklyReviewDay: s.weeklyReviewDay,
+    weeklyReviewHour: s.weeklyReviewHour,
+    weeklyReviewMinute: s.weeklyReviewMinute,
+    setWeeklyPlanningEnabled: s.setWeeklyPlanningEnabled,
+    setWeeklyPlanningDay: s.setWeeklyPlanningDay,
+    setWeeklyPlanningHour: s.setWeeklyPlanningHour,
+    setWeeklyReviewEnabled: s.setWeeklyReviewEnabled,
+    setWeeklyReviewDay: s.setWeeklyReviewDay,
+    setWeeklyReviewHour: s.setWeeklyReviewHour,
+    setWeeklyReviewMinute: s.setWeeklyReviewMinute,
   })));
+
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   const [importPreview, setImportPreview] = useState<{ dayKey: string | null; isLater: boolean; type: 'task' | 'note'; text: string; completed: boolean }[] | null>(null);
   const [importDone, setImportDone] = useState(false);
@@ -196,7 +216,7 @@ export function SettingsView() {
             </div>
 
             {/* Review ritual */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex-1">
                 <p className="text-sm text-[var(--color-text-primary)]">Daily Review Ritual</p>
                 <p className="text-xs text-[var(--color-text-muted)]">Evening reflection prompt</p>
@@ -217,6 +237,86 @@ export function SettingsView() {
                   className={`relative w-9 h-5 rounded-full transition-colors ${reviewRitualEnabled ? 'bg-blue-500' : 'bg-[var(--color-border)]'}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${reviewRitualEnabled ? 'translate-x-4' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Weekly Planning ritual */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <p className="text-sm text-[var(--color-text-primary)]">Weekly Planning Ritual</p>
+                <p className="text-xs text-[var(--color-text-muted)]">Weekly planning prompt</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={weeklyPlanningDay}
+                  onChange={(e) => setWeeklyPlanningDay(Number(e.target.value))}
+                  disabled={!weeklyPlanningEnabled}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {DAY_NAMES.map((name, i) => (
+                    <option key={i} value={i}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  value={weeklyPlanningHour}
+                  onChange={(e) => setWeeklyPlanningHour(Number(e.target.value))}
+                  disabled={!weeklyPlanningEnabled}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {Array.from({ length: 8 }, (_, i) => i + 5).map((h) => (
+                    <option key={h} value={h}>{h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setWeeklyPlanningEnabled(!weeklyPlanningEnabled)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${weeklyPlanningEnabled ? 'bg-blue-500' : 'bg-[var(--color-border)]'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${weeklyPlanningEnabled ? 'translate-x-4' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Weekly Review ritual */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm text-[var(--color-text-primary)]">Weekly Review Ritual</p>
+                <p className="text-xs text-[var(--color-text-muted)]">End of week reflection</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={weeklyReviewDay}
+                  onChange={(e) => setWeeklyReviewDay(Number(e.target.value))}
+                  disabled={!weeklyReviewEnabled}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {DAY_NAMES.map((name, i) => (
+                    <option key={i} value={i}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  value={`${weeklyReviewHour}:${weeklyReviewMinute}`}
+                  onChange={(e) => {
+                    const [h, m] = e.target.value.split(':').map(Number);
+                    setWeeklyReviewHour(h);
+                    setWeeklyReviewMinute(m);
+                  }}
+                  disabled={!weeklyReviewEnabled}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const h = Math.floor(i / 2) + 12;
+                    const m = (i % 2) * 30;
+                    if (h > 23) return null;
+                    const label = `${h === 12 ? 12 : h > 12 ? h - 12 : h}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+                    return <option key={`${h}:${m}`} value={`${h}:${m}`}>{label}</option>;
+                  })}
+                </select>
+                <button
+                  onClick={() => setWeeklyReviewEnabled(!weeklyReviewEnabled)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${weeklyReviewEnabled ? 'bg-blue-500' : 'bg-[var(--color-border)]'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${weeklyReviewEnabled ? 'translate-x-4' : ''}`} />
                 </button>
               </div>
             </div>

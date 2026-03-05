@@ -107,6 +107,26 @@ export function Sidebar() {
         </svg>
       ),
     },
+    {
+      id: 'weekPlan' as const,
+      label: "Week's Plan",
+      shortcut: undefined as string | undefined,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+      ),
+    },
+    {
+      id: 'weekReviewPage' as const,
+      label: 'Week Review',
+      shortcut: undefined as string | undefined,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+    },
   ];
 
   const handleCreateList = () => {
@@ -186,9 +206,11 @@ export function Sidebar() {
             >
               {nav.icon}
               <span className="font-medium">{nav.label}</span>
-              <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">
-                {nav.shortcut}
-              </kbd>
+              {nav.shortcut && (
+                <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">
+                  {nav.shortcut}
+                </kbd>
+              )}
             </button>
           );
         })}

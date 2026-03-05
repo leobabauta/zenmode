@@ -37,6 +37,21 @@ export interface CustomList {
   order: number;
 }
 
+export interface WeeklyPlan {
+  weekKey: string;        // "YYYY-MM-DD" of Monday
+  priorities: Array<{ id: string; text: string; dayKey?: string }>;
+  intentions: string;
+  completedAt: string;
+}
+
+export interface WeeklyReview {
+  weekKey: string;
+  priorityReflections: string;
+  wins: string;
+  learned: string;
+  completedAt: string;
+}
+
 export interface DaySlot {
   key: string;      // "YYYY-MM-DD"
   date: Date;

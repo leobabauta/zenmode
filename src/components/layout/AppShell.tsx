@@ -22,6 +22,12 @@ import { RitualPrompt } from '../ritual/RitualPrompt';
 import { DailyRitualView } from '../ritual/DailyRitualView';
 import { ReviewRitualPrompt } from '../ritual/ReviewRitualPrompt';
 import { DailyReviewView } from '../ritual/DailyReviewView';
+import { WeeklyPlanningPrompt } from '../ritual/WeeklyPlanningPrompt';
+import { WeeklyReviewPrompt } from '../ritual/WeeklyReviewPrompt';
+import { WeeklyPlanningView } from '../ritual/WeeklyPlanningView';
+import { WeeklyReviewView } from '../ritual/WeeklyReviewView';
+import { WeekPlanPage } from '../ritual/WeekPlanPage';
+import { WeekReviewPage } from '../ritual/WeekReviewPage';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -43,6 +49,8 @@ export function AppShell() {
   const showSettings = usePlannerStore((s) => s.showSettings);
   const showRitualPrompt = usePlannerStore((s) => s.showRitualPrompt);
   const showReviewRitualPrompt = usePlannerStore((s) => s.showReviewRitualPrompt);
+  const showWeeklyPlanningPrompt = usePlannerStore((s) => s.showWeeklyPlanningPrompt);
+  const showWeeklyReviewPrompt = usePlannerStore((s) => s.showWeeklyReviewPrompt);
   const clearSelection = usePlannerStore((s) => s.clearSelection);
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
   const commandPaletteAddTask = usePlannerStore((s) => s.commandPaletteAddTask);
@@ -116,7 +124,7 @@ export function AppShell() {
   }, []);
 
   // Views that show the sidebar
-  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag', 'list', 'stats'];
+  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag', 'list', 'stats', 'weekPlan', 'weekReviewPage'];
 
   // Global "f" key → toggle sidebar (focus mode) in views that have sidebar
   useEffect(() => {
@@ -191,6 +199,10 @@ export function AppShell() {
           <DailyRitualView />
         ) : view === 'review' ? (
           <DailyReviewView />
+        ) : view === 'weeklyPlanning' ? (
+          <WeeklyPlanningView />
+        ) : view === 'weeklyReview' ? (
+          <WeeklyReviewView />
         ) : (
           <>
             <Sidebar />
@@ -231,6 +243,10 @@ export function AppShell() {
                 <CustomListView />
               ) : view === 'stats' ? (
                 <StatsView />
+              ) : view === 'weekPlan' ? (
+                <WeekPlanPage />
+              ) : view === 'weekReviewPage' ? (
+                <WeekReviewPage />
               ) : (
                 <MainContent />
               )}
@@ -242,6 +258,8 @@ export function AppShell() {
       {/* Ritual prompt overlays */}
       {showRitualPrompt && <RitualPrompt />}
       {showReviewRitualPrompt && <ReviewRitualPrompt />}
+      {showWeeklyPlanningPrompt && <WeeklyPlanningPrompt />}
+      {showWeeklyReviewPrompt && <WeeklyReviewPrompt />}
 
       {/* Quick capture bar — visible in all views */}
       <QuickCaptureBar />

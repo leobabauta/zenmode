@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { nanoid } from 'nanoid';
-import type { PlannerItem, ItemType, Recurrence, CustomList } from '../types';
+import type { PlannerItem, ItemType, Recurrence, CustomList, WeeklyPlan, WeeklyReview } from '../types';
 import { computeNextOccurrence } from '../lib/recurrence';
-import { toDayKey } from '../lib/dates';
+import { toDayKey, getWeekKey } from '../lib/dates';
 
 export const LABEL_PALETTE = [
   '#D20000', '#F65353', '#EA7D70', '#FD5E00', '#F58553',
@@ -17,7 +17,7 @@ export const LABEL_PALETTE = [
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
-  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats';
+  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats' | 'weeklyPlanning' | 'weeklyReview' | 'weekPlan' | 'weekReviewPage';
   activeHashtag: string | null;
   customLists: CustomList[];
   activeListId: string | null;
@@ -32,6 +32,22 @@ interface PlannerState {
   showReviewRitualPrompt: boolean;
   planningRitualSnoozedUntil: number | null;
   reviewRitualSnoozedUntil: number | null;
+  // Weekly rituals
+  weeklyPlans: Record<string, WeeklyPlan>;
+  weeklyReviews: Record<string, WeeklyReview>;
+  weeklyPlanningEnabled: boolean;
+  weeklyPlanningDay: number;       // 0=Sun..6=Sat, default 1=Mon
+  weeklyPlanningHour: number;
+  weeklyReviewEnabled: boolean;
+  weeklyReviewDay: number;         // 0=Sun..6=Sat, default 5=Fri
+  weeklyReviewHour: number;
+  weeklyReviewMinute: number;      // 0 or 30, for half-hour support
+  lastWeeklyPlanningDate: string | null;  // weekKey of last completed planning
+  lastWeeklyReviewDate: string | null;    // weekKey of last completed review
+  showWeeklyPlanningPrompt: boolean;
+  showWeeklyReviewPrompt: boolean;
+  weeklyPlanningSnoozedUntil: number | null;
+  weeklyReviewSnoozedUntil: number | null;
   sidebarCollapsed: boolean;
   selectionAnchorId: string | null;
   selectionFocusId: string | null;
@@ -65,7 +81,7 @@ interface PlannerState {
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
-  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats') => void;
+  setView: (view: PlannerState['view']) => void;
   setShowRitualPrompt: (show: boolean) => void;
   setShowRitual: (show: boolean) => void;
   completeRitual: () => void;
@@ -77,6 +93,22 @@ interface PlannerState {
   setPlanningRitualHour: (h: number) => void;
   setReviewRitualEnabled: (v: boolean) => void;
   setReviewRitualHour: (h: number) => void;
+  // Weekly ritual actions
+  setShowWeeklyPlanningPrompt: (show: boolean) => void;
+  setShowWeeklyReviewPrompt: (show: boolean) => void;
+  snoozeWeeklyPlanning: () => void;
+  snoozeWeeklyReview: () => void;
+  saveWeeklyPlan: (plan: WeeklyPlan) => void;
+  completeWeeklyPlanning: () => void;
+  saveWeeklyReview: (review: WeeklyReview) => void;
+  completeWeeklyReview: () => void;
+  setWeeklyPlanningEnabled: (v: boolean) => void;
+  setWeeklyPlanningDay: (d: number) => void;
+  setWeeklyPlanningHour: (h: number) => void;
+  setWeeklyReviewEnabled: (v: boolean) => void;
+  setWeeklyReviewDay: (d: number) => void;
+  setWeeklyReviewHour: (h: number) => void;
+  setWeeklyReviewMinute: (m: number) => void;
   setHashtagView: (tag: string) => void;
   addCustomList: (name: string) => void;
   renameCustomList: (id: string, name: string) => void;
@@ -116,6 +148,22 @@ export const usePlannerStore = create<PlannerState>()(
       showReviewRitualPrompt: false,
       planningRitualSnoozedUntil: null,
       reviewRitualSnoozedUntil: null,
+      // Weekly rituals
+      weeklyPlans: {},
+      weeklyReviews: {},
+      weeklyPlanningEnabled: false,
+      weeklyPlanningDay: 1,       // Monday
+      weeklyPlanningHour: 8,
+      weeklyReviewEnabled: false,
+      weeklyReviewDay: 5,         // Friday
+      weeklyReviewHour: 17,
+      weeklyReviewMinute: 30,
+      lastWeeklyPlanningDate: null,
+      lastWeeklyReviewDate: null,
+      showWeeklyPlanningPrompt: false,
+      showWeeklyReviewPrompt: false,
+      weeklyPlanningSnoozedUntil: null,
+      weeklyReviewSnoozedUntil: null,
       sidebarCollapsed: false,
       scrollToTodayRequested: 0,
       selectionAnchorId: null,
@@ -636,6 +684,73 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.reviewRitualHour = h; });
       },
 
+      // Weekly ritual actions
+      setShowWeeklyPlanningPrompt: (show) => {
+        set((state) => { state.showWeeklyPlanningPrompt = show; });
+      },
+      setShowWeeklyReviewPrompt: (show) => {
+        set((state) => { state.showWeeklyReviewPrompt = show; });
+      },
+      snoozeWeeklyPlanning: () => {
+        set((state) => {
+          state.showWeeklyPlanningPrompt = false;
+          state.weeklyPlanningSnoozedUntil = Date.now() + 60 * 60 * 1000;
+        });
+      },
+      snoozeWeeklyReview: () => {
+        set((state) => {
+          state.showWeeklyReviewPrompt = false;
+          state.weeklyReviewSnoozedUntil = Date.now() + 60 * 60 * 1000;
+        });
+      },
+      saveWeeklyPlan: (plan) => {
+        set((state) => {
+          state.weeklyPlans[plan.weekKey] = plan;
+        });
+      },
+      completeWeeklyPlanning: () => {
+        set((state) => {
+          state.lastWeeklyPlanningDate = getWeekKey(new Date());
+          state.showWeeklyPlanningPrompt = false;
+          state.weeklyPlanningSnoozedUntil = null;
+          state.view = 'weekPlan';
+        });
+      },
+      saveWeeklyReview: (review) => {
+        set((state) => {
+          state.weeklyReviews[review.weekKey] = review;
+        });
+      },
+      completeWeeklyReview: () => {
+        set((state) => {
+          state.lastWeeklyReviewDate = getWeekKey(new Date());
+          state.showWeeklyReviewPrompt = false;
+          state.weeklyReviewSnoozedUntil = null;
+          state.view = 'weekReviewPage';
+        });
+      },
+      setWeeklyPlanningEnabled: (v) => {
+        set((state) => { state.weeklyPlanningEnabled = v; });
+      },
+      setWeeklyPlanningDay: (d) => {
+        set((state) => { state.weeklyPlanningDay = d; });
+      },
+      setWeeklyPlanningHour: (h) => {
+        set((state) => { state.weeklyPlanningHour = h; });
+      },
+      setWeeklyReviewEnabled: (v) => {
+        set((state) => { state.weeklyReviewEnabled = v; });
+      },
+      setWeeklyReviewDay: (d) => {
+        set((state) => { state.weeklyReviewDay = d; });
+      },
+      setWeeklyReviewHour: (h) => {
+        set((state) => { state.weeklyReviewHour = h; });
+      },
+      setWeeklyReviewMinute: (m) => {
+        set((state) => { state.weeklyReviewMinute = m; });
+      },
+
       setHashtagView: (tag) => {
         set((state) => { state.view = 'hashtag'; state.activeHashtag = tag; state.expandedTaskId = null; });
       },
@@ -721,7 +836,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate }),
     }
   )
 );
@@ -729,7 +844,7 @@ export const usePlannerStore = create<PlannerState>()(
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate', 'customLists', 'activeListId'] as const;
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items
