@@ -3,7 +3,7 @@ import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { cn } from '../../lib/utils';
 import type { DaySlot } from '../../types';
-import { forwardRef } from 'react';
+import { forwardRef, useMemo } from 'react';
 
 interface DayColumnProps {
   day: DaySlot;
@@ -20,6 +20,8 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
 
     const dayNum = day.date.getDate();
     const weekday = WEEKDAYS[day.date.getDay()];
+    const practiceItems = useMemo(() => day.items.filter((i) => i.isPractice), [day.items]);
+    const nonPracticeItems = useMemo(() => day.items.filter((i) => !i.isPractice), [day.items]);
 
     return (
       <div
@@ -66,8 +68,18 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
 
           {/* Right column: tasks + add form */}
           <div className="flex-1 min-w-0">
+            {practiceItems.length > 0 && (
+              <div className="mb-1 flex items-center gap-2 px-3 py-1 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
+                  Practice
+                </span>
+                <span className="text-xs text-[var(--color-text-primary)]">
+                  {practiceItems.map((i) => i.text).join(', ')}
+                </span>
+              </div>
+            )}
             <div ref={setNodeRef} className="min-h-[8px]">
-              <ItemList items={day.items} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />
+              <ItemList items={nonPracticeItems} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />
             </div>
             <AddItemForm dayKey={day.key} className="mt-1" />
           </div>

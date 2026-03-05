@@ -44,7 +44,7 @@ export function NoteItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(item.text);
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cursorPosRef = useRef(0);
   const pendingXRef = useRef<number | null>(null);
@@ -191,9 +191,10 @@ export function NoteItem({
 
       <div className="flex-1 min-w-0 cursor-text" onClick={handleContentClick}>
         {isEditing ? (
-          <input
+          <textarea
             ref={inputRef}
             value={editText}
+            rows={Math.min(Math.max(editText.split('\n').length, 1), 10)}
             onChange={(e) => {
               const val = e.target.value;
               // "[] " at start converts note to task
@@ -235,21 +236,31 @@ export function NoteItem({
               }
               if (e.key === 'Escape') { setEditText(item.text); setIsEditing(false); return; }
               if (e.key === 'ArrowUp' && !e.shiftKey) {
-                e.preventDefault();
-                const x = getInputCursorX(inputRef.current!);
-                commitEdit();
-                onSelectPrev?.(x);
+                const el = inputRef.current!;
+                const pos = el.selectionStart ?? 0;
+                const textBefore = editText.slice(0, pos);
+                if (!textBefore.includes('\n')) {
+                  e.preventDefault();
+                  const x = getInputCursorX(el);
+                  commitEdit();
+                  onSelectPrev?.(x);
+                }
                 return;
               }
               if (e.key === 'ArrowDown' && !e.shiftKey) {
-                e.preventDefault();
-                const x = getInputCursorX(inputRef.current!);
-                commitEdit();
-                onSelectNext?.(x);
+                const el = inputRef.current!;
+                const pos = el.selectionStart ?? 0;
+                const textAfter = editText.slice(pos);
+                if (!textAfter.includes('\n')) {
+                  e.preventDefault();
+                  const x = getInputCursorX(el);
+                  commitEdit();
+                  onSelectNext?.(x);
+                }
                 return;
               }
             }}
-            className="w-full bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none"
+            className="w-full bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none resize-none"
           />
         ) : isEmpty ? (
           <span className="text-sm">&nbsp;</span>

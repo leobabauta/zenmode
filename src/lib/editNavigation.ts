@@ -11,8 +11,8 @@ export function consumePendingEditX(): number | null {
   return x;
 }
 
-/** Screen x-coordinate of the cursor inside an <input>. */
-export function getInputCursorX(input: HTMLInputElement): number {
+/** Screen x-coordinate of the cursor inside an <input> or <textarea>. */
+export function getInputCursorX(input: HTMLInputElement | HTMLTextAreaElement): number {
   const style = window.getComputedStyle(input);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -24,8 +24,8 @@ export function getInputCursorX(input: HTMLInputElement): number {
   return rect.left + paddingLeft + ctx.measureText(text).width - (input.scrollLeft || 0);
 }
 
-/** Character offset in an <input> whose position is closest to targetX. */
-export function getOffsetFromX(input: HTMLInputElement, targetX: number): number {
+/** Character offset in an <input> or <textarea> whose position is closest to targetX. */
+export function getOffsetFromX(input: HTMLInputElement | HTMLTextAreaElement, targetX: number): number {
   const style = window.getComputedStyle(input);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');

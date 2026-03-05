@@ -56,13 +56,11 @@ export function TodayView() {
 
         {/* Practice section */}
         {practiceItems.length > 0 && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 block">
               Practice
             </span>
-            <span className="text-sm text-[var(--color-text-primary)]">
-              {practiceItems.map((i) => i.text).join(', ')}
-            </span>
+            <ItemList items={practiceItems} />
           </div>
         )}
 
