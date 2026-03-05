@@ -1,9 +1,12 @@
 import { usePlannerStore, selectLaterItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
+import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 
 export function LaterView() {
   const items = usePlannerStore((s) => s.items);
+  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
+  const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const laterItems = selectLaterItems(items);
 
   return (
@@ -23,6 +26,11 @@ export function LaterView() {
             <ItemList items={laterItems} />
           </div>
           <AddItemForm dayKey={null} isLater className="mt-1" />
+          <SortArchiveButtons
+            items={laterItems}
+            onSort={() => sortCompletedToTop({ isLater: true })}
+            onArchive={() => archiveCompleted({ isLater: true })}
+          />
         </div>
       </div>
     </div>

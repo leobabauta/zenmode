@@ -1,9 +1,12 @@
 import { usePlannerStore, selectInboxItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
+import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 
 export function InboxView() {
   const items = usePlannerStore((s) => s.items);
+  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
+  const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const inboxItems = selectInboxItems(items);
 
   return (
@@ -23,6 +26,11 @@ export function InboxView() {
             <ItemList items={inboxItems} />
           </div>
           <AddItemForm dayKey={null} className="mt-1" />
+          <SortArchiveButtons
+            items={inboxItems}
+            onSort={() => sortCompletedToTop({})}
+            onArchive={() => archiveCompleted({})}
+          />
         </div>
       </div>
     </div>

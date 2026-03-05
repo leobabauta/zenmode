@@ -29,6 +29,7 @@ export interface PlannerItem {
   listId?: string;
   completedAt?: string;
   timerSessions?: Array<{ startedAt: string; duration: number }>;
+  isArchived?: boolean;
 }
 
 export interface CustomList {

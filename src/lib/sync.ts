@@ -24,6 +24,7 @@ interface ItemRow {
   list_id: string | null;
   completed_at: string | null;
   timer_sessions: unknown;
+  is_archived: boolean;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -47,6 +48,7 @@ export function itemToRow(item: PlannerItem, userId: string): ItemRow {
     list_id: item.listId ?? null,
     completed_at: item.completedAt ?? null,
     timer_sessions: item.timerSessions ?? null,
+    is_archived: item.isArchived ?? false,
   };
 }
 
@@ -70,6 +72,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     listId: row.list_id ?? undefined,
     completedAt: row.completed_at ?? undefined,
     timerSessions: (row.timer_sessions as PlannerItem['timerSessions']) ?? undefined,
+    isArchived: row.is_archived || undefined,
   };
 }
 

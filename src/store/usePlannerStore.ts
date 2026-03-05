@@ -17,7 +17,7 @@ export const LABEL_PALETTE = [
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
-  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats' | 'weeklyPlanning' | 'weeklyReview' | 'weekPlan' | 'weekReviewPage';
+  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats' | 'weeklyPlanning' | 'weeklyReview' | 'weekPlan' | 'weekReviewPage' | 'archive';
   activeHashtag: string | null;
   customLists: CustomList[];
   activeListId: string | null;
@@ -123,6 +123,9 @@ interface PlannerState {
   scrollToTodayRequested: number;
   requestScrollToToday: () => void;
   setLaterExpanded: (expanded: boolean) => void;
+  sortCompletedToTop: (context: { dayKey?: string; isLater?: boolean; listId?: string; hashtag?: string }) => void;
+  archiveCompleted: (context: { isLater?: boolean; listId?: string; hashtag?: string }) => void;
+  unarchiveItem: (id: string) => void;
   startSelection: (id: string | null) => void;
   moveFocus: (id: string | null) => void;
   clearSelection: () => void;
@@ -824,6 +827,77 @@ export const usePlannerStore = create<PlannerState>()(
       setLaterExpanded: (expanded) => {
         set((state) => { state.laterExpanded = expanded; });
       },
+      sortCompletedToTop: (context) => {
+        const state = get();
+        let itemList: PlannerItem[];
+        if (context.hashtag) {
+          itemList = selectItemsForHashtag(state.items, context.hashtag);
+        } else if (context.listId) {
+          itemList = selectCustomListItems(state.items, context.listId);
+        } else if (context.isLater) {
+          itemList = selectLaterItems(state.items);
+        } else if (context.dayKey) {
+          itemList = selectItemsForDay(state.items, context.dayKey);
+        } else {
+          itemList = selectInboxItems(state.items);
+        }
+        const completed = itemList.filter((i) => i.completed);
+        const incomplete = itemList.filter((i) => !i.completed);
+        const orderedIds = [...completed, ...incomplete].map((i) => i.id);
+        state.reorderItems(null, orderedIds);
+      },
+
+      archiveCompleted: (context) => {
+        set((state) => {
+          let itemList: PlannerItem[];
+          if (context.hashtag) {
+            const lower = context.hashtag.toLowerCase();
+            itemList = Object.values(state.items).filter(
+              (i) => !i.parentId && !i.isArchived && i.text.toLowerCase().includes(lower)
+            );
+          } else if (context.listId) {
+            itemList = Object.values(state.items).filter(
+              (i) => i.listId === context.listId && !i.parentId && !i.isArchived
+            );
+          } else if (context.isLater) {
+            itemList = Object.values(state.items).filter(
+              (i) => i.dayKey === null && i.isLater === true && !i.parentId && !i.isArchived
+            );
+          } else {
+            itemList = Object.values(state.items).filter(
+              (i) => i.dayKey === null && !i.isLater && !i.parentId && !i.isArchived
+            );
+          }
+          const now = new Date().toISOString();
+          for (const item of itemList) {
+            if (item.completed) {
+              state.items[item.id].isArchived = true;
+              state.items[item.id].dayKey = null;
+              state.items[item.id].updatedAt = now;
+            }
+          }
+        });
+      },
+
+      unarchiveItem: (id) => {
+        set((state) => {
+          const item = state.items[id];
+          if (!item) return;
+          const inboxItems = Object.values(state.items).filter(
+            (i) => i.dayKey === null && !i.isLater && !i.isArchived && !i.parentId
+          );
+          const maxOrder = inboxItems.length > 0
+            ? Math.max(...inboxItems.map((i) => i.order))
+            : -1;
+          item.isArchived = false;
+          item.dayKey = null;
+          item.isLater = false;
+          item.listId = undefined;
+          item.order = maxOrder + 1;
+          item.updatedAt = new Date().toISOString();
+        });
+      },
+
       startSelection: (id) => {
         set((state) => { state.selectionAnchorId = id; state.selectionFocusId = id; });
       },
@@ -877,19 +951,19 @@ usePlannerStore.subscribe((state, prevState) => {
 // Selectors
 export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: string) {
   return Object.values(items)
-    .filter((i) => i.dayKey === dayKey && !i.parentId)
+    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived)
     .sort((a, b) => a.order - b.order);
 }
 
 export function selectInboxItems(items: Record<string, PlannerItem>) {
   return Object.values(items)
-    .filter((i) => i.dayKey === null && !i.isLater && !i.parentId)
+    .filter((i) => i.dayKey === null && !i.isLater && !i.parentId && !i.isArchived)
     .sort((a, b) => a.order - b.order);
 }
 
 export function selectLaterItems(items: Record<string, PlannerItem>) {
   return Object.values(items)
-    .filter((i) => i.dayKey === null && i.isLater === true && !i.parentId)
+    .filter((i) => i.dayKey === null && i.isLater === true && !i.parentId && !i.isArchived)
     .sort((a, b) => a.order - b.order);
 }
 
@@ -901,13 +975,19 @@ export function selectChildItems(items: Record<string, PlannerItem>, parentId: s
 
 export function selectCustomListItems(items: Record<string, PlannerItem>, listId: string) {
   return Object.values(items)
-    .filter((i) => i.listId === listId && !i.parentId)
+    .filter((i) => i.listId === listId && !i.parentId && !i.isArchived)
     .sort((a, b) => a.order - b.order);
 }
 
 export function selectItemsForHashtag(items: Record<string, PlannerItem>, hashtag: string) {
   const lower = hashtag.toLowerCase();
   return Object.values(items)
-    .filter((i) => !i.parentId && i.text.toLowerCase().includes(lower))
+    .filter((i) => !i.parentId && !i.isArchived && i.text.toLowerCase().includes(lower))
     .sort((a, b) => (b.dayKey ?? '').localeCompare(a.dayKey ?? ''));
+}
+
+export function selectArchivedItems(items: Record<string, PlannerItem>) {
+  return Object.values(items)
+    .filter((i) => i.isArchived && !i.parentId)
+    .sort((a, b) => a.order - b.order);
 }

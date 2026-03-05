@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { usePlannerStore, selectItemsForHashtag, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
+import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 import { cn } from '../../lib/utils';
 
 export function HashtagView() {
@@ -12,6 +13,8 @@ export function HashtagView() {
   const setHashtagView = usePlannerStore((s) => s.setHashtagView);
   const getLabelColor = usePlannerStore((s) => s.getLabelColor);
   const setLabelColor = usePlannerStore((s) => s.setLabelColor);
+  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
+  const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -183,6 +186,11 @@ export function HashtagView() {
             <ItemList items={taggedItems} />
           </div>
           <AddItemForm dayKey={null} className="mt-1" />
+          <SortArchiveButtons
+            items={taggedItems}
+            onSort={() => sortCompletedToTop({ hashtag: activeHashtag })}
+            onArchive={() => archiveCompleted({ hashtag: activeHashtag })}
+          />
         </div>
       </div>
     </div>

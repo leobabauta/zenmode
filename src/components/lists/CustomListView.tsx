@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { usePlannerStore, selectCustomListItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
+import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 
 export function CustomListView() {
   const items = usePlannerStore((s) => s.items);
@@ -9,6 +10,8 @@ export function CustomListView() {
   const customLists = usePlannerStore((s) => s.customLists);
   const renameCustomList = usePlannerStore((s) => s.renameCustomList);
   const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
+  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
+  const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
 
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
@@ -116,6 +119,11 @@ export function CustomListView() {
             <ItemList items={listItems} />
           </div>
           <AddItemForm dayKey={null} className="mt-1" listId={activeListId} />
+          <SortArchiveButtons
+            items={listItems}
+            onSort={() => sortCompletedToTop({ listId: activeListId })}
+            onArchive={() => archiveCompleted({ listId: activeListId })}
+          />
         </div>
       </div>
     </div>

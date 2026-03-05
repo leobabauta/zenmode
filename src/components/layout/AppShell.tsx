@@ -9,6 +9,7 @@ import { InboxView } from '../inbox/InboxView';
 import { LaterView } from '../later/LaterView';
 import { HashtagView } from '../hashtag/HashtagView';
 import { CustomListView } from '../lists/CustomListView';
+import { ArchiveView } from '../archive/ArchiveView';
 import { StatsView } from '../stats/StatsView';
 import { TaskItem } from '../items/TaskItem';
 import { NoteItem } from '../items/NoteItem';
@@ -118,13 +119,30 @@ export function AppShell() {
         usePlannerStore.getState().setView('stats');
         return;
       }
+      if (e.key === 'g') {
+        e.preventDefault();
+        const state = usePlannerStore.getState();
+        const v = state.view;
+        if (v === 'today') {
+          state.sortCompletedToTop({ dayKey: toDayKey(new Date()) });
+        } else if (v === 'inbox') {
+          state.sortCompletedToTop({});
+        } else if (v === 'later') {
+          state.sortCompletedToTop({ isLater: true });
+        } else if (v === 'hashtag' && state.activeHashtag) {
+          state.sortCompletedToTop({ hashtag: state.activeHashtag });
+        } else if (v === 'list' && state.activeListId) {
+          state.sortCompletedToTop({ listId: state.activeListId });
+        }
+        return;
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
   // Views that show the sidebar
-  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag', 'list', 'stats', 'weekPlan', 'weekReviewPage'];
+  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag', 'list', 'stats', 'weekPlan', 'weekReviewPage', 'archive'];
 
   // Global "f" key → toggle sidebar (focus mode) in views that have sidebar
   useEffect(() => {
@@ -241,6 +259,8 @@ export function AppShell() {
                 <HashtagView />
               ) : view === 'list' ? (
                 <CustomListView />
+              ) : view === 'archive' ? (
+                <ArchiveView />
               ) : view === 'stats' ? (
                 <StatsView />
               ) : view === 'weekPlan' ? (

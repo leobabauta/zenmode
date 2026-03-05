@@ -4,12 +4,14 @@ import { toDayKey, formatDayLabel } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { PracticeBox } from '../ui/PracticeBox';
+import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 import { CalendarImportModal } from './CalendarImportModal';
 
 const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
+  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
   const [showCalendarImport, setShowCalendarImport] = useState(false);
 
   const today = new Date();
@@ -41,6 +43,10 @@ export function TodayView() {
             <ItemList items={nonPracticeItems} />
           </div>
           <AddItemForm dayKey={dayKey} className="mt-1" />
+          <SortArchiveButtons
+            items={todayItems}
+            onSort={() => sortCompletedToTop({ dayKey })}
+          />
           {hasGoogleClientId && (
             <button
               onClick={() => setShowCalendarImport(true)}
