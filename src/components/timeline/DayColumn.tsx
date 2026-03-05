@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
+import { PracticeBox } from '../ui/PracticeBox';
 import { cn } from '../../lib/utils';
 import type { DaySlot } from '../../types';
 import { forwardRef, useMemo } from 'react';
@@ -69,14 +70,7 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
           {/* Right column: tasks + add form */}
           <div className="flex-1 min-w-0">
             {practiceItems.length > 0 && (
-              <div className="mb-2 ml-[24px] mr-[34px] rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
-                  Practice
-                </span>
-                <span className="text-sm text-[var(--color-text-primary)]">
-                  {practiceItems.map((i) => i.text).join(', ')}
-                </span>
-              </div>
+              <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
             )}
             <div ref={setNodeRef} className="min-h-[8px]">
               <ItemList items={nonPracticeItems} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />

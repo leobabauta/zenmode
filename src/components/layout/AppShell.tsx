@@ -109,10 +109,13 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Global "f" key → toggle sidebar (focus mode) when in timeline view
+  // Views that show the sidebar
+  const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag'];
+
+  // Global "f" key → toggle sidebar (focus mode) in views that have sidebar
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (view !== 'timeline') return;
+      if (!sidebarViews.includes(view)) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'f' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
@@ -213,18 +216,20 @@ export function AppShell() {
             <DailyRitualView />
           ) : view === 'review' ? (
             <DailyReviewView />
-          ) : view === 'today' ? (
-            <TodayView />
-          ) : view === 'inbox' ? (
-            <InboxView />
-          ) : view === 'later' ? (
-            <LaterView />
-          ) : view === 'hashtag' ? (
-            <HashtagView />
           ) : (
             <>
               <Sidebar />
-              <MainContent />
+              {view === 'today' ? (
+                <TodayView />
+              ) : view === 'inbox' ? (
+                <InboxView />
+              ) : view === 'later' ? (
+                <LaterView />
+              ) : view === 'hashtag' ? (
+                <HashtagView />
+              ) : (
+                <MainContent />
+              )}
             </>
           )}
         </div>

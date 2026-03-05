@@ -24,7 +24,22 @@ export function Sidebar() {
     return Array.from(tagSet).sort();
   }, [items]);
 
-  if (collapsed) return null;
+  if (collapsed) {
+    return (
+      <div className="flex-shrink-0 flex flex-col items-center pt-2 px-1">
+        <button
+          onClick={toggleSidebar}
+          title="Show sidebar (F)"
+          className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 3v18" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
 
   const navItems = [
     {

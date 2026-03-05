@@ -3,7 +3,7 @@ import { useTimeline } from '../../hooks/useTimeline';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { setPendingEditX } from '../../lib/editNavigation';
 import { DayColumn } from './DayColumn';
-import { cn } from '../../lib/utils';
+
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -16,8 +16,6 @@ export function Timeline() {
   const todayColumnRef = useRef<HTMLDivElement>(null);
   const startSelection = usePlannerStore((s) => s.startSelection);
   const selectionAnchorId = usePlannerStore((s) => s.selectionAnchorId);
-  const sidebarCollapsed = usePlannerStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = usePlannerStore((s) => s.toggleSidebar);
 
   const [visibleMonth, setVisibleMonth] = useState<string>(() => {
     const now = new Date();
@@ -126,21 +124,6 @@ export function Timeline() {
           {visibleMonth}
         </div>
 
-        {sidebarCollapsed && (
-          <button
-            onClick={toggleSidebar}
-            title="Show inbox (F)"
-            className={cn(
-              'pointer-events-auto absolute left-0 top-0',
-              'p-2 rounded-lg text-[var(--color-text-primary)] hover:text-[var(--color-text-primary)]',
-              'hover:bg-[var(--color-surface)] transition-colors',
-            )}
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-            </svg>
-          </button>
-        )}
       </div>
 
       <div className="max-w-2xl mx-auto space-y-2">
