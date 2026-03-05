@@ -108,12 +108,13 @@ export function DailyRitualView() {
     updateItem(item.id, { isMediumPriority: item.isMediumPriority ? undefined : true });
   };
 
-  const handleFinish = () => {
+  const handleSavePractice = () => {
     const trimmedPractice = practice.trim();
     if (trimmedPractice) {
       addItem({ type: 'task', text: trimmedPractice, dayKey, isPractice: true });
+      setPractice('');
     }
-    completeRitual();
+    setStep(5);
   };
 
   return (
@@ -121,7 +122,7 @@ export function DailyRitualView() {
       <div className="max-w-lg mx-auto">
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
               className={`w-2.5 h-2.5 rounded-full transition-colors ${
@@ -278,14 +279,103 @@ export function DailyRitualView() {
                 Back
               </button>
               <button
-                onClick={handleFinish}
+                onClick={handleSavePractice}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
-                Finish
+                Next
               </button>
             </div>
           </div>
         )}
+
+        {step === 5 && (() => {
+          const practiceItems = allTodayItems.filter((i) => i.isPractice);
+          const priorityItems = todayItems.filter((i) => i.isPriority);
+          const mediumPriorityItems = todayItems.filter((i) => i.isMediumPriority && !i.isPriority);
+          const otherItems = todayItems.filter((i) => !i.isPriority && !i.isMediumPriority && !i.isPractice);
+          return (
+            <div>
+              <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
+                You're all set!
+              </h2>
+              <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
+                Here's your plan for today.
+              </p>
+
+              {/* Practice */}
+              {practiceItems.length > 0 && (
+                <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
+                    Practice
+                  </span>
+                  <span className="text-sm text-[var(--color-text-primary)]">
+                    {practiceItems.map((i) => i.text).join(', ')}
+                  </span>
+                </div>
+              )}
+
+              {/* Priorities */}
+              {priorityItems.length > 0 && (
+                <div className="mb-3 rounded-xl border border-blue-500/30 bg-blue-500/5 p-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 block">
+                    Priorities
+                  </span>
+                  {priorityItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <Checkbox checked={item.completed} onChange={(checked) => updateItem(item.id, { completed: checked })} />
+                      <span className={cn('text-sm', item.completed && 'line-through text-[var(--color-text-muted)]')}>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Medium priorities */}
+              {mediumPriorityItems.length > 0 && (
+                <div className="mb-3 rounded-xl border border-slate-400/30 bg-slate-400/5 p-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 block">
+                    Medium Priorities
+                  </span>
+                  {mediumPriorityItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <Checkbox checked={item.completed} onChange={(checked) => updateItem(item.id, { completed: checked })} />
+                      <span className={cn('text-sm', item.completed && 'line-through text-[var(--color-text-muted)]')}>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Other tasks */}
+              {otherItems.length > 0 && (
+                <div className="mb-3 rounded-xl border border-[var(--color-border)] p-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 block">
+                    Other Tasks
+                  </span>
+                  {otherItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <Checkbox checked={item.completed} onChange={(checked) => updateItem(item.id, { completed: checked })} />
+                      <span className={cn('text-sm', item.completed && 'line-through text-[var(--color-text-muted)]')}>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-between mt-6">
+                <button
+                  onClick={() => setStep(4)}
+                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={completeRitual}
+                  className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+                >
+                  Let's go!
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
