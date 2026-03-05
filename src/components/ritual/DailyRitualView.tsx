@@ -138,7 +138,7 @@ export function DailyRitualView() {
         {step === 1 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Mark your top 3 priorities
+              Mark up to 3 top priorities
             </h2>
             <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
               Star the tasks that matter most today.
@@ -167,8 +167,7 @@ export function DailyRitualView() {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setStep(2)}
-                disabled={priorityCount < 1}
-                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
               </button>
@@ -179,7 +178,7 @@ export function DailyRitualView() {
         {step === 2 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Mark 3 medium priorities
+              Mark up to 3 medium priorities
             </h2>
             <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
               Optional — star tasks that are important but not critical.
