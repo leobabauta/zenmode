@@ -262,6 +262,14 @@ export function pushPreferences(): void {
   prefsTimer = setTimeout(flushPreferences, 1000);
 }
 
+export function flushPreferencesNow(): void {
+  if (prefsTimer) {
+    clearTimeout(prefsTimer);
+    prefsTimer = null;
+  }
+  flushPreferences();
+}
+
 async function flushPreferences(): Promise<void> {
   if (!supabase) return;
   const { data: { user } } = await supabase.auth.getUser();

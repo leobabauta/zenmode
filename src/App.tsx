@@ -4,7 +4,7 @@ import { usePlannerStore } from './store/usePlannerStore';
 import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
-import { pullFromSupabase, pullPreferences } from './lib/sync';
+import { pullFromSupabase, pullPreferences, flushPreferencesNow } from './lib/sync';
 import { LoginPage } from './components/auth/LoginPage';
 
 export default function App() {
@@ -142,6 +142,13 @@ export default function App() {
       .then(() => pullPreferences())
       .then(() => runStartupTasks());
   }, [user]);
+
+  // Flush pending preferences on page close so pullPreferences restores the correct view
+  useEffect(() => {
+    const handler = () => flushPreferencesNow();
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   // 60-second interval to check if review ritual should trigger mid-session
   useEffect(() => {
