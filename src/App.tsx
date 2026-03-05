@@ -90,31 +90,58 @@ export default function App() {
     state.setShowWeeklyReviewPrompt(true);
   };
 
-  // Auto-move incomplete past tasks and check ritual after store hydration
+  const runStartupTasks = () => {
+    const state = usePlannerStore.getState();
+    state.autoMoveIncompleteItems();
+
+    // Check if rituals should be prompted
+    checkPlanningRitual();
+    checkReviewRitual();
+    checkWeeklyPlanningRitual();
+    checkWeeklyReviewRitual();
+  };
+
+  // After store hydration: pull from Supabase first (if available), THEN auto-move + ritual checks.
+  // This ensures remote items are merged before autoMoveIncompleteItems runs.
   useEffect(() => {
     if (hasAutoMoved.current) return;
     hasAutoMoved.current = true;
 
-    const runStartupTasks = () => {
-      const state = usePlannerStore.getState();
-      state.autoMoveIncompleteItems();
-
-      // Check if rituals should be prompted
-      checkPlanningRitual();
-      checkReviewRitual();
-      checkWeeklyPlanningRitual();
-      checkWeeklyReviewRitual();
+    const onHydrated = () => {
+      if (supabase && user) {
+        // Supabase available: pull remote data first, then run startup tasks
+        if (!hasSynced.current) {
+          hasSynced.current = true;
+          pullFromSupabase()
+            .then(() => pullPreferences())
+            .then(() => runStartupTasks());
+        }
+      } else if (!supabase) {
+        // No Supabase: run startup tasks immediately on local data
+        runStartupTasks();
+      }
+      // If supabase exists but no user yet, the user-dependent effect below handles it
     };
 
     const unsub = usePlannerStore.persist.onFinishHydration(() => {
-      runStartupTasks();
+      onHydrated();
     });
-    // If already hydrated, run immediately
     if (usePlannerStore.persist.hasHydrated()) {
-      runStartupTasks();
+      onHydrated();
     }
     return unsub;
-  }, []);
+  }, [user]);
+
+  // Handle case where user logs in after hydration already happened
+  useEffect(() => {
+    if (!supabase || !user || hasSynced.current) return;
+    if (!usePlannerStore.persist.hasHydrated()) return;
+
+    hasSynced.current = true;
+    pullFromSupabase()
+      .then(() => pullPreferences())
+      .then(() => runStartupTasks());
+  }, [user]);
 
   // 60-second interval to check if review ritual should trigger mid-session
   useEffect(() => {
@@ -125,15 +152,6 @@ export default function App() {
     }, 60_000);
     return () => clearInterval(interval);
   }, []);
-
-  // Pull from Supabase after auth + hydration
-  useEffect(() => {
-    if (!supabase || !user || hasSynced.current) return;
-    if (!usePlannerStore.persist.hasHydrated()) return;
-
-    hasSynced.current = true;
-    pullFromSupabase().then(() => pullPreferences());
-  }, [user]);
 
   // Sync theme class on <html>
   useEffect(() => {
