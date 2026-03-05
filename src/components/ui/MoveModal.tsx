@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { addDays, nextSaturday, nextMonday, format, startOfDay, parse, isValid } from 'date-fns';
+import { addDays, subDays, nextSaturday, nextMonday, format, startOfDay, parse, isValid } from 'date-fns';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { cn } from '../../lib/utils';
@@ -35,7 +35,35 @@ function parseNaturalDate(input: string): Date | null {
   const today = startOfDay(new Date());
 
   if ('tomorrow'.startsWith(text) && text.length >= 2) return addDays(today, 1);
-  if ('today'.startsWith(text)) return today;
+  if ('yesterday'.startsWith(text) && text.length >= 1) return subDays(today, 1);
+  if ('today'.startsWith(text) && text.length >= 2) return today;
+
+  // Relative past: "N days ago", "2 days ago"
+  const daysAgoMatch = text.match(/^(\d+)\s*days?\s*ago$/);
+  if (daysAgoMatch) return subDays(today, parseInt(daysAgoMatch[1], 10));
+
+  // "last <day>" → most recent past occurrence (e.g. "last wed", "last tuesday")
+  const lastDayMatch = text.match(/^last\s+(.+)$/);
+  if (lastDayMatch) {
+    const dayText = lastDayMatch[1].trim();
+    const dayIdx = DAY_NAMES.findIndex((name) => name.startsWith(dayText));
+    if (dayIdx >= 0) {
+      const currentDay = today.getDay();
+      const daysBack = (currentDay - dayIdx + 7) % 7 || 7;
+      return subDays(today, daysBack);
+    }
+    // "last week <day>" e.g. "last week tues"
+    const lastWeekMatch = dayText.match(/^week\s+(.+)$/);
+    if (lastWeekMatch) {
+      const weekDayText = lastWeekMatch[1].trim();
+      const weekDayIdx = DAY_NAMES.findIndex((name) => name.startsWith(weekDayText));
+      if (weekDayIdx >= 0) {
+        const currentDay = today.getDay();
+        const daysBack = (currentDay - weekDayIdx + 7) % 7 + 7;
+        return subDays(today, daysBack);
+      }
+    }
+  }
 
   // Day names → next occurrence (prefix match: "w" → wednesday, "th" → thursday)
   const dayMatch = DAY_NAMES.findIndex((name) => name.startsWith(text));
@@ -45,7 +73,13 @@ function parseNaturalDate(input: string): Date | null {
     return addDays(today, daysAhead);
   }
 
-  // Try "month day" format (e.g. "march 15", "mar 15")
+  // Try formats with explicit year first (e.g. "3/15/2025", "march 15 2025")
+  for (const fmt of ['M/d/yyyy', 'M-d-yyyy', 'MMMM d yyyy', 'MMM d yyyy', 'MMMM d, yyyy', 'MMM d, yyyy']) {
+    const withYear = parse(text, fmt, new Date());
+    if (isValid(withYear)) return startOfDay(withYear);
+  }
+
+  // Try "month day" format (e.g. "march 15", "mar 15") — defaults to nearest future
   const monthDay = parse(text, 'MMMM d', new Date());
   if (isValid(monthDay)) {
     const result = startOfDay(monthDay);
@@ -59,7 +93,7 @@ function parseNaturalDate(input: string): Date | null {
     return result;
   }
 
-  // Try "M/d" format (e.g. "3/15")
+  // Try "M/d" format (e.g. "3/15") — defaults to nearest future
   const slashDate = parse(text, 'M/d', new Date());
   if (isValid(slashDate)) {
     const result = startOfDay(slashDate);
@@ -67,7 +101,7 @@ function parseNaturalDate(input: string): Date | null {
     return result;
   }
 
-  // Try "M-d" format
+  // Try "M-d" format — defaults to nearest future
   const dashDate = parse(text, 'M-d', new Date());
   if (isValid(dashDate)) {
     const result = startOfDay(dashDate);
@@ -207,7 +241,7 @@ export function MoveModal() {
               if (e.key === 'Enter') { e.preventDefault(); handleSubmit(); }
               if (e.key === 'Escape') { e.preventDefault(); close(); }
             }}
-            placeholder="Type a date (e.g. monday, march 15, 3/15)"
+            placeholder="e.g. monday, yesterday, 3/15, last wed, 2 days ago"
             className="w-full px-3 py-2 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30"
           />
           {inputValue.trim() && (() => {
