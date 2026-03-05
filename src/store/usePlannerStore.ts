@@ -17,11 +17,18 @@ export const LABEL_PALETTE = [
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
-  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual';
+  view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review';
   activeHashtag: string | null;
   lastRitualDate: string | null;
+  planningRitualEnabled: boolean;
+  planningRitualHour: number;
+  reviewRitualEnabled: boolean;
+  reviewRitualHour: number;
+  lastReviewRitualDate: string | null;
   showRitualPrompt: boolean;
   showRitual: boolean;
+  showReviewRitualPrompt: boolean;
+  reviewRitualSnoozedUntil: number | null;
   sidebarCollapsed: boolean;
   selectionAnchorId: string | null;
   selectionFocusId: string | null;
@@ -49,10 +56,17 @@ interface PlannerState {
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
-  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual') => void;
+  setView: (view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review') => void;
   setShowRitualPrompt: (show: boolean) => void;
   setShowRitual: (show: boolean) => void;
   completeRitual: () => void;
+  setShowReviewRitualPrompt: (show: boolean) => void;
+  completeReviewRitual: () => void;
+  snoozeReviewRitual: () => void;
+  setPlanningRitualEnabled: (v: boolean) => void;
+  setPlanningRitualHour: (h: number) => void;
+  setReviewRitualEnabled: (v: boolean) => void;
+  setReviewRitualHour: (h: number) => void;
   setHashtagView: (tag: string) => void;
   toggleSidebar: () => void;
   setShowMoveModal: (show: boolean) => void;
@@ -75,8 +89,15 @@ export const usePlannerStore = create<PlannerState>()(
       view: 'timeline' as const,
       activeHashtag: null,
       lastRitualDate: null,
+      planningRitualEnabled: true,
+      planningRitualHour: 6,
+      reviewRitualEnabled: true,
+      reviewRitualHour: 17,
+      lastReviewRitualDate: null,
       showRitualPrompt: false,
       showRitual: false,
+      showReviewRitualPrompt: false,
+      reviewRitualSnoozedUntil: null,
       sidebarCollapsed: false,
       scrollToTodayRequested: 0,
       selectionAnchorId: null,
@@ -478,6 +499,39 @@ export const usePlannerStore = create<PlannerState>()(
         });
       },
 
+      setShowReviewRitualPrompt: (show) => {
+        set((state) => { state.showReviewRitualPrompt = show; });
+      },
+
+      completeReviewRitual: () => {
+        set((state) => {
+          state.lastReviewRitualDate = toDayKey(new Date());
+          state.showReviewRitualPrompt = false;
+          state.reviewRitualSnoozedUntil = null;
+          state.view = 'today';
+        });
+      },
+
+      snoozeReviewRitual: () => {
+        set((state) => {
+          state.showReviewRitualPrompt = false;
+          state.reviewRitualSnoozedUntil = Date.now() + 60 * 60 * 1000;
+        });
+      },
+
+      setPlanningRitualEnabled: (v) => {
+        set((state) => { state.planningRitualEnabled = v; });
+      },
+      setPlanningRitualHour: (h) => {
+        set((state) => { state.planningRitualHour = h; });
+      },
+      setReviewRitualEnabled: (v) => {
+        set((state) => { state.reviewRitualEnabled = v; });
+      },
+      setReviewRitualHour: (h) => {
+        set((state) => { state.reviewRitualHour = h; });
+      },
+
       setHashtagView: (tag) => {
         set((state) => { state.view = 'hashtag'; state.activeHashtag = tag; state.expandedTaskId = null; });
       },
@@ -517,7 +571,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate }),
     }
   )
 );
@@ -525,7 +579,7 @@ export const usePlannerStore = create<PlannerState>()(
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate'] as const;
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items

@@ -189,6 +189,11 @@ interface PrefsRow {
   sidebar_collapsed: boolean;
   label_colors: Record<string, string>;
   last_ritual_date: string | null;
+  planning_ritual_enabled: boolean;
+  planning_ritual_hour: number;
+  review_ritual_enabled: boolean;
+  review_ritual_hour: number;
+  last_review_ritual_date: string | null;
   updated_at: string;
 }
 
@@ -217,6 +222,11 @@ export async function pullPreferences(): Promise<void> {
       sidebarCollapsed: row.sidebar_collapsed,
       labelColors: row.label_colors,
       lastRitualDate: row.last_ritual_date,
+      planningRitualEnabled: row.planning_ritual_enabled ?? true,
+      planningRitualHour: row.planning_ritual_hour ?? 6,
+      reviewRitualEnabled: row.review_ritual_enabled ?? true,
+      reviewRitualHour: row.review_ritual_hour ?? 17,
+      lastReviewRitualDate: row.last_review_ritual_date ?? null,
     });
   }
 }
@@ -244,6 +254,11 @@ async function flushPreferences(): Promise<void> {
     sidebar_collapsed: s.sidebarCollapsed,
     label_colors: s.labelColors,
     last_ritual_date: s.lastRitualDate,
+    planning_ritual_enabled: s.planningRitualEnabled,
+    planning_ritual_hour: s.planningRitualHour,
+    review_ritual_enabled: s.reviewRitualEnabled,
+    review_ritual_hour: s.reviewRitualHour,
+    last_review_ritual_date: s.lastReviewRitualDate,
     updated_at: new Date().toISOString(),
   };
 

@@ -4,10 +4,24 @@ import { usePlannerStore, selectItemsForDay, selectInboxItems, selectLaterItems,
 import type { PlannerItem } from '../../types';
 
 export function SettingsView() {
-  const { items, setShowSettings, addItem } = usePlannerStore(useShallow((s) => ({
+  const {
+    items, setShowSettings, addItem,
+    planningRitualEnabled, planningRitualHour,
+    reviewRitualEnabled, reviewRitualHour,
+    setPlanningRitualEnabled, setPlanningRitualHour,
+    setReviewRitualEnabled, setReviewRitualHour,
+  } = usePlannerStore(useShallow((s) => ({
     items: s.items,
     setShowSettings: s.setShowSettings,
     addItem: s.addItem,
+    planningRitualEnabled: s.planningRitualEnabled,
+    planningRitualHour: s.planningRitualHour,
+    reviewRitualEnabled: s.reviewRitualEnabled,
+    reviewRitualHour: s.reviewRitualHour,
+    setPlanningRitualEnabled: s.setPlanningRitualEnabled,
+    setPlanningRitualHour: s.setPlanningRitualHour,
+    setReviewRitualEnabled: s.setReviewRitualEnabled,
+    setReviewRitualHour: s.setReviewRitualHour,
   })));
 
   const [importPreview, setImportPreview] = useState<{ dayKey: string | null; isLater: boolean; type: 'task' | 'note'; text: string; completed: boolean }[] | null>(null);
@@ -151,6 +165,63 @@ export function SettingsView() {
         </div>
 
         <div className="overflow-y-auto px-5 pb-5 space-y-6">
+          {/* Rituals section */}
+          <div>
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">Rituals</h3>
+
+            {/* Planning ritual */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <p className="text-sm text-[var(--color-text-primary)]">Daily Planning Ritual</p>
+                <p className="text-xs text-[var(--color-text-muted)]">Morning planning prompt</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={planningRitualHour}
+                  onChange={(e) => setPlanningRitualHour(Number(e.target.value))}
+                  disabled={!planningRitualEnabled}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {Array.from({ length: 8 }, (_, i) => i + 5).map((h) => (
+                    <option key={h} value={h}>{h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setPlanningRitualEnabled(!planningRitualEnabled)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${planningRitualEnabled ? 'bg-blue-500' : 'bg-[var(--color-border)]'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${planningRitualEnabled ? 'translate-x-4' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Review ritual */}
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm text-[var(--color-text-primary)]">Daily Review Ritual</p>
+                <p className="text-xs text-[var(--color-text-muted)]">Evening reflection prompt</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={reviewRitualHour}
+                  onChange={(e) => setReviewRitualHour(Number(e.target.value))}
+                  disabled={!reviewRitualEnabled}
+                  className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 12).map((h) => (
+                    <option key={h} value={h}>{h === 12 ? '12 PM' : `${h - 12} PM`}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setReviewRitualEnabled(!reviewRitualEnabled)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${reviewRitualEnabled ? 'bg-blue-500' : 'bg-[var(--color-border)]'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${reviewRitualEnabled ? 'translate-x-4' : ''}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Export section */}
           <div>
             <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-2">Export</h3>

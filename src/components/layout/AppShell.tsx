@@ -18,6 +18,8 @@ import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { QuickCaptureBar } from '../forms/QuickCaptureBar';
 import { RitualPrompt } from '../ritual/RitualPrompt';
 import { DailyRitualView } from '../ritual/DailyRitualView';
+import { ReviewRitualPrompt } from '../ritual/ReviewRitualPrompt';
+import { DailyReviewView } from '../ritual/DailyReviewView';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -38,6 +40,7 @@ export function AppShell() {
   const showCommandPalette = usePlannerStore((s) => s.showCommandPalette);
   const showSettings = usePlannerStore((s) => s.showSettings);
   const showRitualPrompt = usePlannerStore((s) => s.showRitualPrompt);
+  const showReviewRitualPrompt = usePlannerStore((s) => s.showReviewRitualPrompt);
   const clearSelection = usePlannerStore((s) => s.clearSelection);
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
   const commandPaletteAddTask = usePlannerStore((s) => s.commandPaletteAddTask);
@@ -207,6 +210,8 @@ export function AppShell() {
         <div className="flex flex-1 overflow-hidden">
           {view === 'ritual' ? (
             <DailyRitualView />
+          ) : view === 'review' ? (
+            <DailyReviewView />
           ) : view === 'today' ? (
             <TodayView />
           ) : view === 'inbox' ? (
@@ -224,8 +229,9 @@ export function AppShell() {
         </div>
       </div>
 
-      {/* Ritual prompt overlay */}
+      {/* Ritual prompt overlays */}
       {showRitualPrompt && <RitualPrompt />}
+      {showReviewRitualPrompt && <ReviewRitualPrompt />}
 
       {/* Quick capture bar — visible in all views */}
       <QuickCaptureBar />

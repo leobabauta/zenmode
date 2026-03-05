@@ -34,6 +34,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkReviewRitual = () => {
+    const state = usePlannerStore.getState();
+    if (!state.reviewRitualEnabled) return;
+    const todayKey = toDayKey(new Date());
+    const hour = new Date().getHours();
+    if (state.lastReviewRitualDate === todayKey) return;
+    if (hour < state.reviewRitualHour) return;
+    if (state.reviewRitualSnoozedUntil && Date.now() < state.reviewRitualSnoozedUntil) return;
+    if (state.showReviewRitualPrompt) return;
+    if (state.view === 'review') return;
+    state.setShowReviewRitualPrompt(true);
+  };
+
   // Auto-move incomplete past tasks and check ritual after store hydration
   useEffect(() => {
     if (hasAutoMoved.current) return;
@@ -43,12 +56,16 @@ export default function App() {
       const state = usePlannerStore.getState();
       state.autoMoveIncompleteItems();
 
-      // Check if daily ritual should be prompted
       const todayKey = toDayKey(new Date());
       const hour = new Date().getHours();
-      if (state.lastRitualDate !== todayKey && hour >= 6) {
+
+      // Check if daily planning ritual should be prompted
+      if (state.planningRitualEnabled && state.lastRitualDate !== todayKey && hour >= state.planningRitualHour) {
         state.setShowRitualPrompt(true);
       }
+
+      // Check if daily review ritual should be prompted
+      checkReviewRitual();
     };
 
     const unsub = usePlannerStore.persist.onFinishHydration(() => {
@@ -59,6 +76,12 @@ export default function App() {
       runStartupTasks();
     }
     return unsub;
+  }, []);
+
+  // 60-second interval to check if review ritual should trigger mid-session
+  useEffect(() => {
+    const interval = setInterval(checkReviewRitual, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Pull from Supabase after auth + hydration
