@@ -27,6 +27,34 @@ function playBeep() {
   }, 300);
 }
 
+// Inline confetti colors
+const confettiColors = [
+  '#FF6B6B', '#FFE66D', '#4ECDC4', '#45B7D1', '#96CEB4',
+  '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE',
+];
+
+interface ConfettiParticle {
+  id: number;
+  x: number;
+  color: string;
+  size: number;
+  delay: number;
+  duration: number;
+  shape: 'square' | 'circle';
+}
+
+function generateConfetti(count: number): ConfettiParticle[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+    size: 4 + Math.random() * 6,
+    delay: Math.random() * 1.5,
+    duration: 2 + Math.random() * 2,
+    shape: Math.random() > 0.5 ? 'square' : 'circle',
+  }));
+}
+
 interface FocusTimerProps {
   onSessionComplete?: (duration: number) => void;
 }
@@ -37,7 +65,22 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [editingTime, setEditingTime] = useState(false);
   const [editValue, setEditValue] = useState('25');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [confettiParticles] = useState(() => generateConfetti(40));
   const editInputRef = useRef<HTMLInputElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const draggingRef = useRef(false);
+
+  const triggerCelebration = useCallback((elapsed: number) => {
+    playBeep();
+    onSessionComplete?.(elapsed);
+    setShowCelebration(true);
+    setTimeout(() => {
+      setShowCelebration(false);
+      setRemainingSeconds(totalSeconds);
+      setStatus('idle');
+    }, 4000);
+  }, [onSessionComplete, totalSeconds]);
 
   // Timer interval
   useEffect(() => {
@@ -47,15 +90,20 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
         if (prev <= 1) {
           clearInterval(id);
           setStatus('done');
-          playBeep();
-          onSessionComplete?.(totalSeconds);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [status, totalSeconds, onSessionComplete]);
+  }, [status]);
+
+  // When timer naturally reaches 0
+  useEffect(() => {
+    if (status === 'done' && !showCelebration) {
+      triggerCelebration(totalSeconds);
+    }
+  }, [status, showCelebration, triggerCelebration, totalSeconds]);
 
   // Focus edit input
   useEffect(() => {
@@ -93,10 +141,50 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
     }
   };
 
+  const handleComplete = () => {
+    const elapsed = totalSeconds - remainingSeconds;
+    setStatus('done');
+    triggerCelebration(elapsed);
+  };
+
   const handleReset = () => {
     setRemainingSeconds(totalSeconds);
     setStatus('idle');
   };
+
+  // Draggable clock hand logic
+  const angleToMinutes = (angle: number): number => {
+    // angle is in degrees where 0 = right, -90 = top (12 o'clock)
+    // Convert so that 12 o'clock = 0 minutes, clockwise
+    let degrees = angle + 90;
+    if (degrees < 0) degrees += 360;
+    const mins = Math.round(degrees / 6);
+    return Math.max(1, Math.min(60, mins === 0 ? 60 : mins));
+  };
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (status !== 'idle') return;
+    draggingRef.current = true;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+  }, [status]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (!draggingRef.current || status !== 'idle' || !svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    const mins = angleToMinutes(angle);
+    const newTotal = mins * 60;
+    setTotalSeconds(newTotal);
+    setRemainingSeconds(newTotal);
+  }, [status]);
+
+  const handlePointerUp = useCallback(() => {
+    draggingRef.current = false;
+  }, []);
 
   const buttonLabel = status === 'running' ? 'Pause' : status === 'paused' ? 'Resume' : status === 'done' ? 'Restart' : 'Start Session';
 
@@ -136,7 +224,6 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
   }
 
   // Hand angle: remaining minutes mapped on 60-min dial, counterclockwise from start
-  // remainingSeconds/60 gives minutes remaining, each minute = 6 degrees clockwise from 12
   const remainingMinutes = remainingSeconds / 60;
   const handAngleDeg = -90 + remainingMinutes * 6;
   const handRad = (handAngleDeg * Math.PI) / 180;
@@ -154,10 +241,59 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
   // Dark red: from 12 o'clock to where the hand currently is (remaining portion)
   const darkPiePath = pieWedge(handAngleDeg, innerRadius);
 
+  const svgCursor = status === 'idle' ? (draggingRef.current ? 'grabbing' : 'grab') : 'default';
+
+  if (showCelebration) {
+    return (
+      <div className="flex flex-col items-center py-4 gap-4">
+        <div
+          className="relative overflow-hidden"
+          style={{ width: size, height: size }}
+        >
+          <style>{`
+            @keyframes confetti-fall {
+              0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+              100% { transform: translateY(${size + 20}px) rotate(720deg); opacity: 0; }
+            }
+          `}</style>
+          {confettiParticles.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                position: 'absolute',
+                left: `${p.x}%`,
+                top: 0,
+                width: p.size,
+                height: p.size,
+                backgroundColor: p.color,
+                borderRadius: p.shape === 'circle' ? '50%' : '2px',
+                animation: `confetti-fall ${p.duration}s ease-in ${p.delay}s forwards`,
+              }}
+            />
+          ))}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xl font-semibold text-[var(--color-text-primary)]">
+              Congratulations!
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center py-4 gap-4">
       {/* SVG Dial */}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <svg
+        ref={svgRef}
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        style={{ cursor: svgCursor, touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
         {/* Light red: entire inner circle */}
         <circle cx={cx} cy={cy} r={innerRadius} fill={accentLight} opacity={0.4} />
 
@@ -229,6 +365,14 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
         >
           {buttonLabel}
         </button>
+        {(status === 'running' || status === 'paused') && (
+          <button
+            onClick={handleComplete}
+            className="px-5 py-2.5 rounded-full text-sm font-semibold uppercase tracking-wider text-white transition-colors bg-emerald-600 hover:bg-emerald-700"
+          >
+            Complete
+          </button>
+        )}
         {(status === 'paused' || status === 'done') && (
           <button
             onClick={handleReset}

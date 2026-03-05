@@ -233,15 +233,12 @@ export function ExpandedTaskView() {
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-            <IconButton
-              label="Focus timer"
+            <button
               onClick={() => setShowTimer(!showTimer)}
+              className="text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="10" />
-                <path strokeLinecap="round" d="M12 6v6l4 2" />
-              </svg>
-            </IconButton>
+              Focus Timer
+            </button>
             <IconButton
               label={expandedTaskFullScreen ? 'Exit full screen' : 'Full screen'}
               onClick={() => setExpandedTaskFullScreen(!expandedTaskFullScreen)}
