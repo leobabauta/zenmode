@@ -143,7 +143,7 @@ function getSelectedItemIds(
 }
 
 export function MoveModal() {
-  const { items, showMoveModal, setShowMoveModal, moveItem, sendToInbox, sendToLater, selectionAnchorId, selectionFocusId, clearSelection } =
+  const { items, showMoveModal, setShowMoveModal, moveItem, sendToInbox, sendToLater, sendToList, selectionAnchorId, selectionFocusId, clearSelection, customLists } =
     usePlannerStore(useShallow((s) => ({
       items: s.items,
       showMoveModal: s.showMoveModal,
@@ -151,9 +151,11 @@ export function MoveModal() {
       moveItem: s.moveItem,
       sendToInbox: s.sendToInbox,
       sendToLater: s.sendToLater,
+      sendToList: s.sendToList,
       selectionAnchorId: s.selectionAnchorId,
       selectionFocusId: s.selectionFocusId,
       clearSelection: s.clearSelection,
+      customLists: s.customLists,
     })));
 
   const [inputValue, setInputValue] = useState('');
@@ -198,6 +200,13 @@ export function MoveModal() {
   const handleMoveToArchive = () => {
     const selectedIds = getSelectedItemIds(items, selectionAnchorId, selectionFocusId);
     for (const id of selectedIds) sendToLater(id);
+    clearSelection();
+    setShowMoveModal(false);
+  };
+
+  const handleMoveToList = (listId: string) => {
+    const selectedIds = getSelectedItemIds(items, selectionAnchorId, selectionFocusId);
+    for (const id of selectedIds) sendToList(id, listId);
     clearSelection();
     setShowMoveModal(false);
   };
@@ -315,6 +324,26 @@ export function MoveModal() {
             )}>Archive (Later)</span>
           </button>
         </div>
+
+        {/* Custom Lists */}
+        {customLists.length > 0 && (
+          <div className="border-t border-[var(--color-border)]">
+            {[...customLists].sort((a, b) => a.order - b.order).map((list) => (
+              <button
+                key={list.id}
+                onClick={() => handleMoveToList(list.id)}
+                className={cn(
+                  'w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors',
+                  'hover:bg-[var(--color-surface)]',
+                )}
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {list.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

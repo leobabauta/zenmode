@@ -6,11 +6,12 @@ interface AddItemFormProps {
   dayKey: string | null;
   isLater?: boolean;
   className?: string;
+  listId?: string;
 }
 
 type EditMode = 'idle' | 'task' | 'note';
 
-export function AddItemForm({ dayKey, isLater = false, className }: AddItemFormProps) {
+export function AddItemForm({ dayKey, isLater = false, className, listId }: AddItemFormProps) {
   const addItem = usePlannerStore((s) => s.addItem);
   const [mode, setMode] = useState<EditMode>('idle');
   const [text, setText] = useState('');
@@ -36,9 +37,9 @@ export function AddItemForm({ dayKey, isLater = false, className }: AddItemFormP
     const trimmed = line.trim();
     if (!trimmed) return;
     if (mode === 'note') {
-      addItem({ type: 'note', text: trimmed, dayKey, isLater });
+      addItem({ type: 'note', text: trimmed, dayKey, isLater, listId });
     } else {
-      addItem({ type: 'task', text: trimmed, dayKey, isLater });
+      addItem({ type: 'task', text: trimmed, dayKey, isLater, listId });
     }
   };
 
