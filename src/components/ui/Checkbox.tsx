@@ -71,7 +71,7 @@ export function Checkbox({ checked, onChange, className }: CheckboxProps) {
         <svg viewBox="0 0 16 16" className="w-full h-full" fill="none">
           {checked ? (
             <>
-              <circle cx="8" cy="8" r="8" fill="#22c55e" />
+              <rect x="0" y="0" width="16" height="16" rx="3" fill="#22c55e" />
               <path
                 d="M4.5 8.5L6.5 10.5L11.5 5.5"
                 stroke="white"
@@ -81,12 +81,11 @@ export function Checkbox({ checked, onChange, className }: CheckboxProps) {
               />
             </>
           ) : (
-            <circle
-              cx="8" cy="8" r="6.5"
+            <rect
+              x="1" y="1" width="14" height="14" rx="3"
               stroke="currentColor"
               strokeWidth="1.5"
-              strokeDasharray="2.5 2"
-              strokeLinecap="round"
+              fill="none"
             />
           )}
         </svg>

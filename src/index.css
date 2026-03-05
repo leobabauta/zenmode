@@ -4,30 +4,30 @@
 
 /* ── Design tokens (light) ─────────────────────────────── */
 :root {
-  --color-bg:            #F7F5F3;
-  --color-surface:       #EEECEA;
-  --color-border:        #E0DDD9;
-  --color-text-primary:  #1A1917;
-  --color-text-secondary:#6B6661;
-  --color-text-muted:    #A09C97;
+  --color-bg:            #FFFFFF;
+  --color-surface:       #F8F8F8;
+  --color-border:        #EBEBEB;
+  --color-text-primary:  #1A1A1A;
+  --color-text-secondary:#6B7280;
+  --color-text-muted:    #B0B0B0;
   --color-accent:        #5B5BD6;
-  --color-accent-tint:   #EEF0FF;
+  --color-accent-tint:   #F0F0FF;
   --color-note-accent:   #D97706;
-  --color-today:         #EEF0FF;
+  --color-today:         #F5F5FF;
 }
 
 /* ── Design tokens (dark) ───────────────────────────────── */
 .dark {
-  --color-bg:            #141414;
-  --color-surface:       #1E1E1E;
-  --color-border:        #2A2A2A;
+  --color-bg:            #111111;
+  --color-surface:       #1A1A1A;
+  --color-border:        #262626;
   --color-text-primary:  #F0EFEE;
-  --color-text-secondary:#9B9794;
-  --color-text-muted:    #5C5956;
+  --color-text-secondary:#9CA3AF;
+  --color-text-muted:    #525252;
   --color-accent:        #7C7CE8;
-  --color-accent-tint:   #1E1E35;
+  --color-accent-tint:   #1A1A30;
   --color-note-accent:   #F59E0B;
-  --color-today:         #1A1A2E;
+  --color-today:         #161625;
 }
 
 /* ── Base resets ────────────────────────────────────────── */

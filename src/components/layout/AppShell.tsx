@@ -175,7 +175,7 @@ export function AppShell() {
         }}
       >
         {/* Top bar */}
-        <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)]">
+        <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
           <div className="flex items-center gap-3">
             <ZenmodeLogo onClick={() => setView('timeline')} />
           </div>

@@ -60,7 +60,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="flex-shrink-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] h-full overflow-hidden w-56">
+    <aside className="flex-shrink-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] h-full overflow-hidden w-56">
       {/* Top row: ProfileMenu + collapse button */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-border)] flex-shrink-0">
         <ProfileMenu />
