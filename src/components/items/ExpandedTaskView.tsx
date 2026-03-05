@@ -16,9 +16,10 @@ interface ChildItemProps {
 }
 
 function ChildItem({ item, editTrigger, onFocusPrev, onFocusNext }: ChildItemProps) {
-  const { updateItem, deleteItem, setHashtagView } = usePlannerStore(useShallow((s) => ({
+  const { updateItem, deleteItem, promptDeleteItem, setHashtagView } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
     deleteItem: s.deleteItem,
+    promptDeleteItem: s.promptDeleteItem,
     setHashtagView: s.setHashtagView,
   })));
   const [isEditing, setIsEditing] = useState(false);
@@ -111,7 +112,7 @@ function ChildItem({ item, editTrigger, onFocusPrev, onFocusNext }: ChildItemPro
       </div>
       <IconButton
         label="Delete"
-        onClick={() => deleteItem(item.id)}
+        onClick={() => promptDeleteItem(item.id)}
         className="opacity-0 group-hover:opacity-100 flex-shrink-0"
       >
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

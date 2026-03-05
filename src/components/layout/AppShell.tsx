@@ -15,6 +15,7 @@ import { ExpandedTaskView } from '../items/ExpandedTaskView';
 import { MoveModal } from '../ui/MoveModal';
 import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
+import { DeleteRecurrenceModal } from '../ui/DeleteRecurrenceModal';
 import { QuickCaptureBar } from '../forms/QuickCaptureBar';
 import { RitualPrompt } from '../ritual/RitualPrompt';
 import { DailyRitualView } from '../ritual/DailyRitualView';
@@ -252,6 +253,9 @@ export function AppShell() {
 
       {/* Settings modal */}
       {showSettings && <SettingsView />}
+
+      {/* Delete recurrence confirmation modal */}
+      <DeleteRecurrenceModal />
 
       {/* Full-screen confetti for day completion */}
       {showFullConfetti && <FullScreenConfetti onDone={dismissConfetti} />}

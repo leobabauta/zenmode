@@ -40,6 +40,7 @@ interface PlannerState {
   showSettings: boolean;
   laterExpanded: boolean;
   labelColors: Record<string, string>;
+  deleteConfirmItemId: string | null;
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
@@ -49,6 +50,10 @@ interface PlannerState {
   setExpandedTaskFullScreen: (full: boolean) => void;
   updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice'>>) => void;
   deleteItem: (id: string) => void;
+  promptDeleteItem: (id: string) => void;
+  confirmDeleteSingle: (id: string) => void;
+  confirmDeleteAllFuture: (id: string) => void;
+  cancelDelete: () => void;
   moveItem: (id: string, targetDayKey: string | null, targetOrder: number) => void;
   reorderItems: (dayKey: string | null, orderedIds: string[]) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
@@ -110,6 +115,7 @@ export const usePlannerStore = create<PlannerState>()(
       showSettings: false,
       laterExpanded: true,
       labelColors: {},
+      deleteConfirmItemId: null,
 
       getLabelColor: (tag: string) => {
         const key = tag.toLowerCase();
@@ -342,6 +348,64 @@ export const usePlannerStore = create<PlannerState>()(
           });
           delete state.items[id];
         });
+      },
+
+      promptDeleteItem: (id) => {
+        const item = get().items[id];
+        if (!item) return;
+        if (item.recurrence) {
+          set((state) => { state.deleteConfirmItemId = id; });
+        } else {
+          get().deleteItem(id);
+        }
+      },
+
+      confirmDeleteSingle: (id) => {
+        get().deleteItem(id);
+        set((state) => { state.deleteConfirmItemId = null; });
+      },
+
+      confirmDeleteAllFuture: (id) => {
+        set((state) => {
+          const item = state.items[id];
+          if (item && item.recurrence && item.dayKey) {
+            const rec = item.recurrence;
+            const recWeekdaysStr = rec.weekdays ? JSON.stringify([...rec.weekdays].sort()) : '';
+            Object.values(state.items).forEach((other) => {
+              if (
+                other.id !== id &&
+                other.text === item.text &&
+                other.dayKey &&
+                other.dayKey > item.dayKey! &&
+                !other.completed &&
+                other.recurrence &&
+                other.recurrence.type === rec.type &&
+                other.recurrence.interval === rec.interval
+              ) {
+                const otherWeekdaysStr = other.recurrence.weekdays ? JSON.stringify([...other.recurrence.weekdays].sort()) : '';
+                if (
+                  otherWeekdaysStr === recWeekdaysStr &&
+                  other.recurrence.weekday === rec.weekday &&
+                  other.recurrence.dayOfMonth === rec.dayOfMonth
+                ) {
+                  delete state.items[other.id];
+                }
+              }
+            });
+          }
+          // Delete the item itself and its children
+          if (state.items[id]) {
+            Object.values(state.items).forEach((child) => {
+              if (child.parentId === id) delete state.items[child.id];
+            });
+            delete state.items[id];
+          }
+          state.deleteConfirmItemId = null;
+        });
+      },
+
+      cancelDelete: () => {
+        set((state) => { state.deleteConfirmItemId = null; });
       },
 
       moveItem: (id, targetDayKey, targetOrder) => {

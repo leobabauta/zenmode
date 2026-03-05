@@ -32,9 +32,10 @@ export function NoteItem({
   onShiftSelectPrev, onShiftSelectNext, onMoveUp, onMoveDown,
   onInsertAfter, onDeleteAndFocusPrev, dragHandleProps,
 }: NoteItemProps) {
-  const { updateItem, deleteItem, sendToInbox, sendToLater, setShowMoveModal, setHashtagView } = usePlannerStore(useShallow((s) => ({
+  const { updateItem, deleteItem, promptDeleteItem, sendToInbox, sendToLater, setShowMoveModal, setHashtagView } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
     deleteItem: s.deleteItem,
+    promptDeleteItem: s.promptDeleteItem,
     sendToInbox: s.sendToInbox,
     sendToLater: s.sendToLater,
     setShowMoveModal: s.setShowMoveModal,
@@ -101,7 +102,7 @@ export function NoteItem({
       const now = Date.now();
       if (lastKeyRef.current.key === 'd' && now - lastKeyRef.current.time < 500) {
         e.preventDefault();
-        deleteItem(item.id);
+        promptDeleteItem(item.id);
         lastKeyRef.current = { key: '', time: 0 };
         return;
       }
@@ -128,7 +129,7 @@ export function NoteItem({
 
     switch (e.key) {
       case 'Delete':
-      case 'Backspace': e.preventDefault(); deleteItem(item.id); break;
+      case 'Backspace': e.preventDefault(); promptDeleteItem(item.id); break;
       case 'j': e.preventDefault(); onMoveDown?.(); break;
       case 'k': e.preventDefault(); onMoveUp?.(); break;
       case 'ArrowUp':
@@ -263,7 +264,7 @@ export function NoteItem({
 
       <IconButton
         label="Delete note"
-        onClick={() => deleteItem(item.id)}
+        onClick={() => promptDeleteItem(item.id)}
         className="opacity-0 group-hover:opacity-100 flex-shrink-0"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
