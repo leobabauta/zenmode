@@ -28,6 +28,7 @@ interface PlannerState {
   showRitualPrompt: boolean;
   showRitual: boolean;
   showReviewRitualPrompt: boolean;
+  planningRitualSnoozedUntil: number | null;
   reviewRitualSnoozedUntil: number | null;
   sidebarCollapsed: boolean;
   selectionAnchorId: string | null;
@@ -67,6 +68,7 @@ interface PlannerState {
   completeRitual: () => void;
   setShowReviewRitualPrompt: (show: boolean) => void;
   completeReviewRitual: () => void;
+  snoozePlanningRitual: () => void;
   snoozeReviewRitual: () => void;
   setPlanningRitualEnabled: (v: boolean) => void;
   setPlanningRitualHour: (h: number) => void;
@@ -102,6 +104,7 @@ export const usePlannerStore = create<PlannerState>()(
       showRitualPrompt: false,
       showRitual: false,
       showReviewRitualPrompt: false,
+      planningRitualSnoozedUntil: null,
       reviewRitualSnoozedUntil: null,
       sidebarCollapsed: false,
       scrollToTodayRequested: 0,
@@ -560,6 +563,7 @@ export const usePlannerStore = create<PlannerState>()(
           state.lastRitualDate = toDayKey(new Date());
           state.showRitual = false;
           state.showRitualPrompt = false;
+          state.planningRitualSnoozedUntil = null;
           state.view = 'today';
         });
       },
@@ -574,6 +578,13 @@ export const usePlannerStore = create<PlannerState>()(
           state.showReviewRitualPrompt = false;
           state.reviewRitualSnoozedUntil = null;
           state.view = 'today';
+        });
+      },
+
+      snoozePlanningRitual: () => {
+        set((state) => {
+          state.showRitualPrompt = false;
+          state.planningRitualSnoozedUntil = Date.now() + 60 * 60 * 1000;
         });
       },
 

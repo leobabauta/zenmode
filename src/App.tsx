@@ -34,6 +34,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkPlanningRitual = () => {
+    const state = usePlannerStore.getState();
+    if (!state.planningRitualEnabled) return;
+    const todayKey = toDayKey(new Date());
+    const hour = new Date().getHours();
+    if (state.lastRitualDate === todayKey) return;
+    if (hour < state.planningRitualHour) return;
+    if (state.planningRitualSnoozedUntil && Date.now() < state.planningRitualSnoozedUntil) return;
+    if (state.showRitualPrompt) return;
+    if (state.view === 'ritual') return;
+    state.setShowRitualPrompt(true);
+  };
+
   const checkReviewRitual = () => {
     const state = usePlannerStore.getState();
     if (!state.reviewRitualEnabled) return;
@@ -56,15 +69,8 @@ export default function App() {
       const state = usePlannerStore.getState();
       state.autoMoveIncompleteItems();
 
-      const todayKey = toDayKey(new Date());
-      const hour = new Date().getHours();
-
-      // Check if daily planning ritual should be prompted
-      if (state.planningRitualEnabled && state.lastRitualDate !== todayKey && hour >= state.planningRitualHour) {
-        state.setShowRitualPrompt(true);
-      }
-
-      // Check if daily review ritual should be prompted
+      // Check if rituals should be prompted
+      checkPlanningRitual();
       checkReviewRitual();
     };
 

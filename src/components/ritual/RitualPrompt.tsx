@@ -2,6 +2,7 @@ import { usePlannerStore } from '../../store/usePlannerStore';
 
 export function RitualPrompt() {
   const setShowRitualPrompt = usePlannerStore((s) => s.setShowRitualPrompt);
+  const snoozePlanningRitual = usePlannerStore((s) => s.snoozePlanningRitual);
   const setView = usePlannerStore((s) => s.setView);
 
   return (
@@ -22,6 +23,12 @@ export function RitualPrompt() {
             className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
           >
             Let's go
+          </button>
+          <button
+            onClick={snoozePlanningRitual}
+            className="px-5 py-2 rounded-lg text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+          >
+            Snooze 1hr
           </button>
           <button
             onClick={() => setShowRitualPrompt(false)}

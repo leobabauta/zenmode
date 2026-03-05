@@ -215,18 +215,25 @@ export async function pullPreferences(): Promise<void> {
 
   if (data) {
     const row = data as PrefsRow;
+    const local = usePlannerStore.getState();
+    // For ritual dates, keep whichever is more recent (local or remote) to avoid
+    // stale Supabase values re-triggering already-completed rituals on reload.
+    const bestRitualDate = [local.lastRitualDate, row.last_ritual_date]
+      .filter(Boolean).sort().pop() ?? null;
+    const bestReviewDate = [local.lastReviewRitualDate, row.last_review_ritual_date]
+      .filter(Boolean).sort().pop() ?? null;
     usePlannerStore.setState({
       theme: row.theme as 'light' | 'dark',
       view: row.view as ReturnType<typeof usePlannerStore.getState>['view'],
       activeHashtag: row.active_hashtag,
       sidebarCollapsed: row.sidebar_collapsed,
       labelColors: row.label_colors,
-      lastRitualDate: row.last_ritual_date,
+      lastRitualDate: bestRitualDate,
       planningRitualEnabled: row.planning_ritual_enabled ?? true,
       planningRitualHour: row.planning_ritual_hour ?? 6,
       reviewRitualEnabled: row.review_ritual_enabled ?? true,
       reviewRitualHour: row.review_ritual_hour ?? 17,
-      lastReviewRitualDate: row.last_review_ritual_date ?? null,
+      lastReviewRitualDate: bestReviewDate,
     });
   }
 }
