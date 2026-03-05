@@ -8,7 +8,8 @@ interface HashtagTextProps {
 
 const URL_RE = /https?:\/\/[^\s)>\]]+/;
 const HASHTAG_RE = /#[\w-]+/;
-const SPLIT_RE = new RegExp(`(${URL_RE.source}|${HASHTAG_RE.source})`, 'g');
+const BOLD_RE = /\*\*[^*]+\*\*/;
+const SPLIT_RE = new RegExp(`(${URL_RE.source}|${HASHTAG_RE.source}|${BOLD_RE.source})`, 'g');
 
 function ColoredHashtag({ tag, onClick }: { tag: string; onClick: () => void }) {
   const color = usePlannerStore((s) => s.getLabelColor)(tag.toLowerCase());
@@ -46,6 +47,8 @@ export function HashtagText({ text, onHashtagClick, className }: HashtagTextProp
           >
             {part}
           </a>
+        ) : /^\*\*[^*]+\*\*$/.test(part) ? (
+          <strong key={i}>{part.slice(2, -2)}</strong>
         ) : (
           <span key={i}>{part}</span>
         )

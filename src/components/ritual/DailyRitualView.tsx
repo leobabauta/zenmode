@@ -94,7 +94,8 @@ export function DailyRitualView() {
   const items = usePlannerStore((s) => s.items);
 
   const dayKey = toDayKey(new Date());
-  const todayItems = selectItemsForDay(items, dayKey);
+  const allTodayItems = selectItemsForDay(items, dayKey);
+  const todayItems = allTodayItems.filter((i) => i.type !== 'note');
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority).length;

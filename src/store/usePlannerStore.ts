@@ -467,7 +467,8 @@ export const usePlannerStore = create<PlannerState>()(
               i.dayKey < todayKey &&
               !i.completed &&
               !i.isLater &&
-              !i.parentId
+              !i.parentId &&
+              i.type !== 'note'
           );
 
           // Get existing today items to determine order offset
