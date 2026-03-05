@@ -32,19 +32,18 @@ export function TodayView() {
           </span>
         </div>
 
-        {/* Practice section */}
-        {practiceItems.length > 0 && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
-              Practice
-            </span>
-            <span className="text-sm text-[var(--color-text-primary)]">
-              {practiceItems.map((i) => i.text).join(', ')}
-            </span>
-          </div>
-        )}
-
         <div className="rounded-xl p-3 min-h-[80px]">
+          {/* Practice section — aligned from checkbox left to priority circle right */}
+          {practiceItems.length > 0 && (
+            <div className="mb-2 ml-[24px] mr-[34px] rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
+                Practice
+              </span>
+              <span className="text-sm text-[var(--color-text-primary)]">
+                {practiceItems.map((i) => i.text).join(', ')}
+              </span>
+            </div>
+          )}
           <div className="min-h-[8px]">
             <ItemList items={nonPracticeItems} />
           </div>
