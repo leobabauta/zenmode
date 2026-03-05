@@ -29,13 +29,14 @@ export function DailyReviewView() {
   };
 
   const handleFinish = () => {
-    // Compile review note
-    const parts: string[] = ['#dailyreview'];
-    if (reflection.trim()) parts.push(`\n**Reflection:** ${reflection.trim()}`);
-    if (celebrations.trim()) parts.push(`**Celebrations:** ${celebrations.trim()}`);
-    if (blockers.trim()) parts.push(`**Blockers:** ${blockers.trim()}`);
+    // Compile review note — each section on its own line, hashtag at end
+    const lines: string[] = [];
+    if (reflection.trim()) lines.push(`**Reflection:** ${reflection.trim()}`);
+    if (celebrations.trim()) lines.push(`**Celebrations:** ${celebrations.trim()}`);
+    if (blockers.trim()) lines.push(`**Blockers:** ${blockers.trim()}`);
+    lines.push('#dailyreview');
 
-    addItem({ type: 'note', text: parts.join('\n'), dayKey: todayKey });
+    addItem({ type: 'note', text: lines.join('\n'), dayKey: todayKey });
 
     // Push selected incomplete tasks to tomorrow
     const tomorrow = new Date();

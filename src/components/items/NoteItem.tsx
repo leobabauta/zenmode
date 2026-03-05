@@ -256,7 +256,7 @@ export function NoteItem({
           <HashtagText
             text={item.text}
             onHashtagClick={setHashtagView}
-            className="text-sm break-words text-[var(--color-text-primary)]"
+            className="text-sm break-words text-[var(--color-text-primary)] whitespace-pre-line"
           />
         )}
       </div>
