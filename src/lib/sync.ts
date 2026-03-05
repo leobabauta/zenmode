@@ -19,6 +19,7 @@ interface ItemRow {
   parent_id: string | null;
   consecutive_moves: number;
   is_priority: boolean;
+  is_medium_priority: boolean;
   is_practice: boolean;
 }
 
@@ -38,6 +39,7 @@ export function itemToRow(item: PlannerItem, userId: string): ItemRow {
     parent_id: item.parentId ?? null,
     consecutive_moves: item.consecutiveMoves ?? 0,
     is_priority: item.isPriority ?? false,
+    is_medium_priority: item.isMediumPriority ?? false,
     is_practice: item.isPractice ?? false,
   };
 }
@@ -57,6 +59,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     parentId: row.parent_id ?? undefined,
     consecutiveMoves: row.consecutive_moves || undefined,
     isPriority: row.is_priority || undefined,
+    isMediumPriority: row.is_medium_priority || undefined,
     isPractice: row.is_practice || undefined,
   };
 }

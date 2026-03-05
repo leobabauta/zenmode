@@ -36,11 +36,11 @@ interface PlannerState {
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isPractice?: boolean }) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; isPractice?: boolean }) => void;
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
   setExpandedTaskFullScreen: (full: boolean) => void;
-  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type'>>) => void;
+  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice'>>) => void;
   deleteItem: (id: string) => void;
   moveItem: (id: string, targetDayKey: string | null, targetOrder: number) => void;
   reorderItems: (dayKey: string | null, orderedIds: string[]) => void;
@@ -103,7 +103,7 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.labelColors[tag.toLowerCase()] = color; });
       },
 
-      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isPractice }) => {
+      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, isPractice }) => {
         set((state) => {
           let existingItems: PlannerItem[];
           if (parentId) {
@@ -132,6 +132,7 @@ export const usePlannerStore = create<PlannerState>()(
             updatedAt: now,
             parentId,
             isPriority,
+            isMediumPriority,
             isPractice,
           };
         });
@@ -368,8 +369,9 @@ export const usePlannerStore = create<PlannerState>()(
 
           // Clear stale priority/practice flags from past days
           Object.values(state.items).forEach((item) => {
-            if (item.dayKey && item.dayKey !== todayKey && (item.isPriority || item.isPractice)) {
+            if (item.dayKey && item.dayKey !== todayKey && (item.isPriority || item.isMediumPriority || item.isPractice)) {
               delete item.isPriority;
+              delete item.isMediumPriority;
               delete item.isPractice;
             }
           });

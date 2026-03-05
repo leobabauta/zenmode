@@ -24,6 +24,7 @@ export interface PlannerItem {
   parentId?: string;
   consecutiveMoves?: number;
   isPriority?: boolean;
+  isMediumPriority?: boolean;
   isPractice?: boolean;
 }
 
