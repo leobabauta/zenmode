@@ -202,12 +202,18 @@ export function LoginPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 dark:border-stone-800 py-6 text-center">
+      <footer className="border-t border-stone-200 dark:border-stone-800 py-6 text-center flex items-center justify-center gap-4">
         <a
           href="/privacy.html"
           className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
         >
           Privacy Policy
+        </a>
+        <a
+          href="/changelog.html"
+          className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
+        >
+          Changelog & Roadmap
         </a>
       </footer>
     </div>

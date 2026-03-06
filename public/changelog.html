@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog & Roadmap - zenmode</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 2rem 1rem; color: #1c1917; line-height: 1.6; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.2rem; margin-top: 2rem; margin-bottom: 0.5rem; }
+    h3 { font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #44403c; }
+    p { margin: 0.75rem 0; }
+    .subtitle { color: #78716c; font-size: 0.875rem; margin-bottom: 2rem; }
+    ul { padding-left: 1.25rem; margin: 0.5rem 0; }
+    li { margin: 0.35rem 0; font-size: 0.9375rem; }
+    .version { display: inline-block; background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 6px; padding: 0.125rem 0.5rem; font-size: 0.8125rem; font-weight: 600; color: #57534e; }
+    .roadmap-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; font-size: 0.9375rem; }
+    .roadmap-dot { width: 8px; height: 8px; border-radius: 50%; background: #d6d3d1; flex-shrink: 0; }
+    .divider { border: none; border-top: 1px solid #e7e5e4; margin: 2rem 0; }
+
+    /* Feedback form */
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; color: #44403c; }
+    select, input, textarea {
+      width: 100%; padding: 0.5rem 0.75rem; font-size: 0.9375rem; border: 1px solid #d6d3d1; border-radius: 8px;
+      font-family: inherit; background: #fff; color: #1c1917; box-sizing: border-box;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    select:focus, input:focus, textarea:focus { outline: none; border-color: #a8a29e; box-shadow: 0 0 0 2px rgba(168,162,158,0.2); }
+    .submit-btn {
+      display: inline-block; padding: 0.5rem 1.25rem; font-size: 0.9375rem; font-weight: 500;
+      background: #1c1917; color: #fff; border: none; border-radius: 8px; cursor: pointer;
+    }
+    .submit-btn:hover { background: #292524; }
+    .success-msg { color: #16a34a; font-size: 0.875rem; display: none; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Changelog & Roadmap</h1>
+  <p class="subtitle">What's new in zenmode and what's coming next.</p>
+
+  <!-- Changelog -->
+  <h2>Changelog</h2>
+
+  <h3><span class="version">v0.5</span> &mdash; Current Release</h3>
+  <ul>
+    <li><strong>Daily Planning Ritual</strong> &mdash; A guided 3-step morning workflow to set intentions, choose a practice, and plan your day</li>
+    <li><strong>Daily Review Ritual</strong> &mdash; Evening reflection prompt to review your day</li>
+    <li><strong>Weekly Planning & Review Rituals</strong> &mdash; Configurable weekly rituals with day and time settings</li>
+    <li><strong>Focus Timer</strong> &mdash; Built-in Pomodoro timer with draggable dial, session tracking, and task completion</li>
+    <li><strong>Timeline View</strong> &mdash; See your week at a glance with drag-and-drop between days</li>
+    <li><strong>Inbox & Later</strong> &mdash; Quick capture without breaking focus, and park tasks for the future</li>
+    <li><strong>Custom Lists</strong> &mdash; Create your own lists to organize tasks however you like</li>
+    <li><strong>Labels</strong> &mdash; Use #hashtags to categorize tasks, with custom colors</li>
+    <li><strong>Stats</strong> &mdash; Track task completion rates and focus timer sessions over time</li>
+    <li><strong>Google Calendar Integration</strong> &mdash; Optionally connect your calendar to see today's events during planning</li>
+    <li><strong>Cross-Device Sync</strong> &mdash; Sign in and your tasks sync across all your devices</li>
+    <li><strong>Dark Mode</strong> &mdash; Toggle between light and dark themes</li>
+    <li><strong>Keyboard Shortcuts</strong> &mdash; Fast navigation and task management from the keyboard</li>
+    <li><strong>Drag-and-Drop Reordering</strong> &mdash; Reorder tasks, sidebar items, and move tasks between days</li>
+    <li><strong>Recurring Tasks</strong> &mdash; Set tasks to repeat on a schedule</li>
+    <li><strong>Task Priority</strong> &mdash; Mark tasks as high or medium priority</li>
+    <li><strong>Export & Import</strong> &mdash; Export all data as Markdown, import from Markdown files</li>
+    <li><strong>PWA Support</strong> &mdash; Install zenmode as an app on Android</li>
+    <li><strong>Mobile Layout</strong> &mdash; Dedicated mobile UI with bottom navigation and quick add</li>
+    <li><strong>Account Management</strong> &mdash; Log out and delete your account and data from Settings</li>
+    <li><strong>Auto-Move Incomplete Tasks</strong> &mdash; Unfinished tasks automatically carry forward to today</li>
+    <li><strong>Archive</strong> &mdash; Archive completed tasks to keep your lists clean</li>
+  </ul>
+
+  <hr class="divider">
+
+  <!-- Roadmap -->
+  <h2>Roadmap</h2>
+  <p style="font-size: 0.875rem; color: #78716c;">Planned features &mdash; no timeline, but these are on our list.</p>
+
+  <div style="margin-top: 1rem;">
+    <div class="roadmap-item"><span class="roadmap-dot"></span> Android app</div>
+    <div class="roadmap-item"><span class="roadmap-dot"></span> iOS app</div>
+    <div class="roadmap-item"><span class="roadmap-dot"></span> Desktop app</div>
+    <div class="roadmap-item"><span class="roadmap-dot"></span> Add tasks by forwarding emails</div>
+    <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add browser extension</div>
+    <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add desktop extension</div>
+    <div class="roadmap-item"><span class="roadmap-dot"></span> Show progress towards longer-term goals</div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Feedback form -->
+  <h2>Feedback</h2>
+  <p style="font-size: 0.875rem; color: #78716c;">Found a bug, have a feature idea, or just want to share your thoughts? We'd love to hear from you.</p>
+
+  <form id="feedbackForm" style="margin-top: 1rem;">
+    <div class="form-group">
+      <label for="feedbackType">Type</label>
+      <select id="feedbackType">
+        <option value="bug">Bug report</option>
+        <option value="feature">Feature request</option>
+        <option value="feedback">General feedback</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="feedbackEmail">Email <span style="color: #a8a29e; font-weight: 400;">(optional)</span></label>
+      <input type="email" id="feedbackEmail" placeholder="you@example.com">
+    </div>
+
+    <div class="form-group">
+      <label for="feedbackMessage">Message</label>
+      <textarea id="feedbackMessage" placeholder="Describe the bug, feature idea, or feedback..." required></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn">Send feedback</button>
+    <p class="success-msg" id="successMsg">Thanks for your feedback!</p>
+  </form>
+
+  <script>
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var type = document.getElementById('feedbackType').value;
+      var email = document.getElementById('feedbackEmail').value;
+      var message = document.getElementById('feedbackMessage').value;
+      if (!message.trim()) return;
+
+      // Send via mailto as a simple solution
+      var subject = encodeURIComponent('[zenmode ' + type + '] Feedback');
+      var body = encodeURIComponent(
+        'Type: ' + type + '\n' +
+        'From: ' + (email || 'anonymous') + '\n\n' +
+        message
+      );
+      window.location.href = 'mailto:l@zenhabits.net?subject=' + subject + '&body=' + body;
+
+      document.getElementById('successMsg').style.display = 'block';
+      document.getElementById('feedbackMessage').value = '';
+    });
+  </script>
+
+  <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e7e5e4;">
+    <a href="/" style="font-size: 0.8125rem; color: #78716c; text-decoration: none;">&larr; Back to zenmode</a>
+  </div>
+</body>
+</html>
