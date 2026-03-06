@@ -3,6 +3,7 @@ import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { PracticeBox } from '../ui/PracticeBox';
 import { cn } from '../../lib/utils';
+import { GreetingBanner } from '../ui/GreetingBanner';
 import type { DaySlot } from '../../types';
 import { forwardRef, useMemo } from 'react';
 
@@ -69,6 +70,7 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
 
           {/* Right column: tasks + add form */}
           <div className="flex-1 min-w-0">
+            {day.isToday && <GreetingBanner />}
             {practiceItems.length > 0 && (
               <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
             )}
