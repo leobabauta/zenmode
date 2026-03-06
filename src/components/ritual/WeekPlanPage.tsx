@@ -110,6 +110,19 @@ export function WeekPlanPage() {
             </p>
           </>
         )}
+
+        {/* Weekly Review link */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => setView('weekReviewPage')}
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Weekly Review</span>
+          </button>
+        </div>
       </div>
     </div>
   );

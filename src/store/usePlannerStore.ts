@@ -184,7 +184,7 @@ export const usePlannerStore = create<PlannerState>()(
       laterExpanded: true,
       labelColors: {},
       deleteConfirmItemId: null,
-      navOrder: ['timeline', 'inbox', 'today', 'later', 'weekPlan', 'weekReviewPage', 'archive'],
+      navOrder: ['timeline', 'inbox', 'today', 'later', 'archive'],
       labelOrder: [],
 
       getLabelColor: (tag: string) => {

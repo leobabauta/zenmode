@@ -6,7 +6,7 @@ import { usePlannerStore, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
 
-const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'weekPlan', 'weekReviewPage', 'archive'];
+const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'archive'];
 
 const NAV_ITEM_DEFS: NavItemDef[] = [
   {
@@ -46,26 +46,6 @@ const NAV_ITEM_DEFS: NavItemDef[] = [
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
-      </svg>
-    ),
-  },
-  {
-    id: 'weekPlan',
-    label: "Week's Plan",
-    shortcut: undefined,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    ),
-  },
-  {
-    id: 'weekReviewPage',
-    label: 'Week Review',
-    shortcut: undefined,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
       </svg>
     ),
   },
