@@ -113,11 +113,11 @@ export async function pullFromSupabase(): Promise<void> {
     // If equal timestamps, keep local (already in merged)
   }
 
-  // Find items that exist locally but not remotely — push them
+  // Remove local items that don't exist remotely (deleted on another device)
   const remoteIds = new Set(remoteItems.map((r) => r.id));
   for (const id of Object.keys(localItems)) {
     if (!remoteIds.has(id)) {
-      localNewer.push(localItems[id]);
+      delete merged[id];
     }
   }
 
