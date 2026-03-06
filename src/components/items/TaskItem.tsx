@@ -291,7 +291,7 @@ export function TaskItem({
           className={cn(
             'flex-shrink-0 opacity-0 group-hover:opacity-100',
             item.recurrence
-              ? 'group-hover:text-[var(--color-accent)]'
+              ? 'group-hover:text-orange-600 dark:group-hover:text-orange-500'
               : ''
           )}
         >

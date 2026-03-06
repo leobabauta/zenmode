@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
+import { fetchTodayEvents, formatEventAsTask } from '../../lib/googleCalendar';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { Checkbox } from '../ui/Checkbox';
 import { HashtagText } from '../ui/HashtagText';
 import { cn } from '../../lib/utils';
 import type { PlannerItem } from '../../types';
+
+const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 function StarIcon({ filled, color }: { filled: boolean; color: 'yellow' | 'blue' }) {
   const colors = color === 'yellow'
@@ -85,6 +88,12 @@ function RitualTaskRow({ item, starred, locked, lockedColor, color, onToggle, di
   );
 }
 
+interface CalendarEvent {
+  id: string;
+  taskText: string;
+  selected: boolean;
+}
+
 export function DailyRitualView() {
   const [step, setStep] = useState(1);
   const [practice, setPractice] = useState('');
@@ -100,6 +109,51 @@ export function DailyRitualView() {
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority).length;
 
+  // Google Calendar import state
+  const [calEvents, setCalEvents] = useState<CalendarEvent[]>([]);
+  const [calLoading, setCalLoading] = useState(false);
+  const [calError, setCalError] = useState<string | null>(null);
+
+  const loadCalendarEvents = useCallback(async () => {
+    setCalLoading(true);
+    setCalError(null);
+    try {
+      const events = await fetchTodayEvents();
+      setCalEvents(
+        events.map((e) => ({
+          id: e.id,
+          taskText: formatEventAsTask(e),
+          selected: true,
+        }))
+      );
+    } catch (err) {
+      setCalError(err instanceof Error ? err.message : 'Failed to load events');
+    } finally {
+      setCalLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step === 3 && hasGoogleClientId && calEvents.length === 0 && !calLoading && !calError) {
+      loadCalendarEvents();
+    }
+  }, [step, calEvents.length, calLoading, calError, loadCalendarEvents]);
+
+  const toggleCalEvent = (id: string) => {
+    setCalEvents((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, selected: !e.selected } : e))
+    );
+  };
+
+  const importCalEvents = () => {
+    for (const event of calEvents) {
+      if (event.selected) {
+        addItem({ type: 'task', text: event.taskText, dayKey });
+      }
+    }
+    setStep(4);
+  };
+
   const togglePriority = (item: PlannerItem) => {
     updateItem(item.id, { isPriority: item.isPriority ? undefined : true });
   };
@@ -114,21 +168,25 @@ export function DailyRitualView() {
       addItem({ type: 'task', text: trimmedPractice, dayKey, isPractice: true });
       setPractice('');
     }
-    setStep(5);
+    setStep(6);
   };
+
+  // Map internal step to display step (skip calendar step when no client ID)
+  const displayStep = !hasGoogleClientId && step >= 3 ? step - 1 : step;
+  const displayTotal = hasGoogleClientId ? 6 : 5;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
       <div className="max-w-lg mx-auto">
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          {[1, 2, 3, 4, 5].map((s) => (
+          {Array.from({ length: displayTotal }, (_, i) => i + 1).map((s) => (
             <div
               key={s}
               className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                s === step
+                s === displayStep
                   ? 'bg-blue-500'
-                  : s < step
+                  : s < displayStep
                     ? 'bg-blue-300'
                     : 'bg-[var(--color-border)]'
               }`}
@@ -215,7 +273,7 @@ export function DailyRitualView() {
                 Back
               </button>
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep(hasGoogleClientId ? 3 : 4)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -224,7 +282,89 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 3 && (
+        {step === 3 && hasGoogleClientId && (
+          <div>
+            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
+              Import from Google Calendar?
+            </h2>
+            <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
+              Add today's calendar events as tasks.
+            </p>
+
+            {calLoading && (
+              <div className="flex items-center justify-center py-8">
+                <span className="text-sm text-[var(--color-text-muted)]">Loading events...</span>
+              </div>
+            )}
+
+            {calError && (
+              <div className="py-8">
+                <p className="text-sm text-red-500 mb-3">{calError}</p>
+                <button
+                  onClick={loadCalendarEvents}
+                  className="text-sm text-[var(--color-accent)] hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {!calLoading && !calError && calEvents.length === 0 && (
+              <div className="flex items-center justify-center py-8">
+                <span className="text-sm text-[var(--color-text-muted)]">
+                  No events on your calendar today
+                </span>
+              </div>
+            )}
+
+            {!calLoading && !calError && calEvents.length > 0 && (
+              <div className="rounded-xl border border-[var(--color-border)] p-2 max-h-[50vh] overflow-y-auto space-y-1">
+                {calEvents.map((event) => (
+                  <label
+                    key={event.id}
+                    className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[var(--color-surface)] cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={event.selected}
+                      onChange={() => toggleCalEvent(event.id)}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-[var(--color-text-primary)]">
+                      {event.taskText}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={() => setStep(2)}
+                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+              >
+                Back
+              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setStep(4)}
+                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={importCalEvents}
+                  disabled={calEvents.filter((e) => e.selected).length === 0}
+                  className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Import{calEvents.filter((e) => e.selected).length > 0 ? ` (${calEvents.filter((e) => e.selected).length})` : ''}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Organize your tasks for today
@@ -240,13 +380,13 @@ export function DailyRitualView() {
             </div>
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(2)}
+                onClick={() => setStep(hasGoogleClientId ? 3 : 2)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
               </button>
               <button
-                onClick={() => setStep(4)}
+                onClick={() => setStep(5)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -255,7 +395,7 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               What would you like to practice today?
@@ -273,7 +413,7 @@ export function DailyRitualView() {
             />
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep(4)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
@@ -288,7 +428,7 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 5 && (() => {
+        {step === 6 && (() => {
           const practiceItems = allTodayItems.filter((i) => i.isPractice);
           const priorityItems = todayItems.filter((i) => i.isPriority);
           const mediumPriorityItems = todayItems.filter((i) => i.isMediumPriority && !i.isPriority);
@@ -361,7 +501,7 @@ export function DailyRitualView() {
 
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => setStep(4)}
+                  onClick={() => setStep(5)}
                   className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
                 >
                   Back

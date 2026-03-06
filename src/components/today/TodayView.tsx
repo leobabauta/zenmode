@@ -1,18 +1,13 @@
-import { useState } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { toDayKey, formatDayLabel } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { PracticeBox } from '../ui/PracticeBox';
 import { SortArchiveButtons } from '../ui/SortArchiveButtons';
-import { CalendarImportModal } from './CalendarImportModal';
-
-const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
   const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
-  const [showCalendarImport, setShowCalendarImport] = useState(false);
 
   const today = new Date();
   const dayKey = toDayKey(today);
@@ -47,20 +42,8 @@ export function TodayView() {
             items={todayItems}
             onSort={() => sortCompletedToTop({ dayKey })}
           />
-          {hasGoogleClientId && (
-            <button
-              onClick={() => setShowCalendarImport(true)}
-              className="mt-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-            >
-              Import from Google Calendar
-            </button>
-          )}
         </div>
       </div>
-      <CalendarImportModal
-        open={showCalendarImport}
-        onClose={() => setShowCalendarImport(false)}
-      />
     </div>
   );
 }
