@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppShell } from './components/layout/AppShell';
+import { MobileApp } from './components/mobile/MobileApp';
+import { useIsMobile } from './hooks/useIsMobile';
 import { usePlannerStore } from './store/usePlannerStore';
 import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
@@ -8,6 +10,7 @@ import { pullFromSupabase, pullPreferences, flushPreferencesNow } from './lib/sy
 import { LoginPage } from './components/auth/LoginPage';
 
 export default function App() {
+  const isMobile = useIsMobile();
   const theme = usePlannerStore((s) => s.theme);
   const { user, loading: authLoading } = useAuthStore();
   const hasAutoMoved = useRef(false);
@@ -180,5 +183,5 @@ export default function App() {
     return null;
   }
 
-  return <AppShell />;
+  return isMobile ? <MobileApp /> : <AppShell />;
 }
