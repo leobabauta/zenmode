@@ -10,6 +10,7 @@ import { setupSync } from './src/lib/syncInit';
 import { getSupabase } from '../shared/lib/supabase';
 import { useAuthStore } from '../shared/store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushChangedNow, flushDeletedNow, flushPreferencesNow } from '../shared/lib/sync';
+import { requestNotificationPermissions } from './src/lib/notifications';
 
 import { LoginScreen } from './src/screens/LoginScreen';
 import { TodayScreen } from './src/screens/TodayScreen';
@@ -86,10 +87,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Pull data on login
+  // Pull data on login + request notification permissions
   useEffect(() => {
     if (!user) return;
     pullFromSupabase().then(() => pullPreferences());
+    requestNotificationPermissions();
   }, [user]);
 
   // Sync on app state changes (background/foreground)
