@@ -102,12 +102,13 @@ export async function fetchTodayEvents(): Promise<CalendarEvent[]> {
 
 export function formatEventAsTask(event: CalendarEvent): string {
   if (event.start.dateTime) {
-    const time = new Date(event.start.dateTime).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-    return `${time} - ${event.summary}`;
+    const d = new Date(event.start.dateTime);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const suffix = h >= 12 ? 'p' : 'a';
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const time = m === 0 ? `${h12}${suffix}` : `${h12}:${String(m).padStart(2, '0')}${suffix}`;
+    return `${event.summary} ${time}`;
   }
-  return `All day - ${event.summary}`;
+  return event.summary;
 }

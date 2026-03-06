@@ -4,15 +4,18 @@ export function ReviewRitualPrompt() {
   const setShowReviewRitualPrompt = usePlannerStore((s) => s.setShowReviewRitualPrompt);
   const snoozeReviewRitual = usePlannerStore((s) => s.snoozeReviewRitual);
   const setView = usePlannerStore((s) => s.setView);
+  const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
+
+  const isMorning = new Date().getHours() < reviewRitualHour;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl shadow-2xl px-8 py-10 max-w-sm w-full mx-4 text-center">
         <h2 className="text-xl font-bold mb-2 text-[var(--color-text-primary)]">
-          Good evening!
+          {isMorning ? 'Good morning!' : 'Good evening!'}
         </h2>
         <p className="text-sm text-[var(--color-text-secondary)] mb-8">
-          Ready for your Daily Review?
+          {isMorning ? "Ready for yesterday's Daily Review?" : 'Ready for your Daily Review?'}
         </p>
         <div className="flex gap-3 justify-center">
           <button

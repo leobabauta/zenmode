@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectItemsForDay, selectInboxItems, selectLaterItems, selectChildItems } from '../../store/usePlannerStore';
+import { requestCalendarAccess } from '../../lib/googleCalendar';
 import type { PlannerItem } from '../../types';
+
+const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export function SettingsView() {
   const {
@@ -14,6 +17,8 @@ export function SettingsView() {
     weeklyReviewEnabled, weeklyReviewDay, weeklyReviewHour, weeklyReviewMinute,
     setWeeklyPlanningEnabled, setWeeklyPlanningDay, setWeeklyPlanningHour,
     setWeeklyReviewEnabled, setWeeklyReviewDay, setWeeklyReviewHour, setWeeklyReviewMinute,
+    googleCalendarConnected, googleCalendarDismissed,
+    setGoogleCalendarConnected, setGoogleCalendarDismissed,
   } = usePlannerStore(useShallow((s) => ({
     items: s.items,
     setShowSettings: s.setShowSettings,
@@ -40,9 +45,34 @@ export function SettingsView() {
     setWeeklyReviewDay: s.setWeeklyReviewDay,
     setWeeklyReviewHour: s.setWeeklyReviewHour,
     setWeeklyReviewMinute: s.setWeeklyReviewMinute,
+    googleCalendarConnected: s.googleCalendarConnected,
+    googleCalendarDismissed: s.googleCalendarDismissed,
+    setGoogleCalendarConnected: s.setGoogleCalendarConnected,
+    setGoogleCalendarDismissed: s.setGoogleCalendarDismissed,
   })));
 
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  const [calConnecting, setCalConnecting] = useState(false);
+  const [calError, setCalError] = useState<string | null>(null);
+
+  const handleConnectCalendar = async () => {
+    setCalConnecting(true);
+    setCalError(null);
+    try {
+      await requestCalendarAccess();
+      setGoogleCalendarConnected(true);
+      if (googleCalendarDismissed) setGoogleCalendarDismissed(false);
+    } catch (err) {
+      setCalError(err instanceof Error ? err.message : 'Failed to connect');
+    } finally {
+      setCalConnecting(false);
+    }
+  };
+
+  const handleDisconnectCalendar = () => {
+    setGoogleCalendarConnected(false);
+  };
 
   const [importPreview, setImportPreview] = useState<{ dayKey: string | null; isLater: boolean; type: 'task' | 'note'; text: string; completed: boolean }[] | null>(null);
   const [importDone, setImportDone] = useState(false);
@@ -321,6 +351,44 @@ export function SettingsView() {
               </div>
             </div>
           </div>
+
+          {/* Google Calendar section */}
+          {hasGoogleClientId && (
+            <div>
+              <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">Google Calendar</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <p className="text-sm text-[var(--color-text-primary)]">
+                    {googleCalendarConnected ? 'Connected' : 'Not connected'}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Import calendar events during daily planning
+                  </p>
+                </div>
+                <div>
+                  {googleCalendarConnected ? (
+                    <button
+                      onClick={handleDisconnectCalendar}
+                      className="px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleConnectCalendar}
+                      disabled={calConnecting}
+                      className="px-3 py-1.5 text-sm rounded-md bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      {calConnecting ? 'Connecting...' : 'Connect'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {calError && (
+                <p className="mt-2 text-xs text-red-500">{calError}</p>
+              )}
+            </div>
+          )}
 
           {/* Export section */}
           <div>

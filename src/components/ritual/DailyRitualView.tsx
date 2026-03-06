@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
-import { fetchTodayEvents, formatEventAsTask } from '../../lib/googleCalendar';
+import { fetchTodayEvents, formatEventAsTask, requestCalendarAccess } from '../../lib/googleCalendar';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { Checkbox } from '../ui/Checkbox';
@@ -101,6 +101,11 @@ export function DailyRitualView() {
   const updateItem = usePlannerStore((s) => s.updateItem);
   const completeRitual = usePlannerStore((s) => s.completeRitual);
   const items = usePlannerStore((s) => s.items);
+  const googleCalendarConnected = usePlannerStore((s) => s.googleCalendarConnected);
+  const googleCalendarDismissed = usePlannerStore((s) => s.googleCalendarDismissed);
+  const setGoogleCalendarConnected = usePlannerStore((s) => s.setGoogleCalendarConnected);
+  const setGoogleCalendarDismissed = usePlannerStore((s) => s.setGoogleCalendarDismissed);
+  const [calConnecting, setCalConnecting] = useState(false);
 
   const dayKey = toDayKey(new Date());
   const allTodayItems = selectItemsForDay(items, dayKey);
@@ -134,10 +139,24 @@ export function DailyRitualView() {
   }, []);
 
   useEffect(() => {
-    if (step === 3 && hasGoogleClientId && calEvents.length === 0 && !calLoading && !calError) {
+    if (step === 3 && hasGoogleClientId && !googleCalendarDismissed && googleCalendarConnected && calEvents.length === 0 && !calLoading && !calError) {
       loadCalendarEvents();
     }
-  }, [step, calEvents.length, calLoading, calError, loadCalendarEvents]);
+  }, [step, calEvents.length, calLoading, calError, loadCalendarEvents, googleCalendarConnected, googleCalendarDismissed]);
+
+  const handleConnectCalendar = async () => {
+    setCalConnecting(true);
+    setCalError(null);
+    try {
+      await requestCalendarAccess();
+      setGoogleCalendarConnected(true);
+      // Events will auto-load via the useEffect
+    } catch (err) {
+      setCalError(err instanceof Error ? err.message : 'Failed to connect');
+    } finally {
+      setCalConnecting(false);
+    }
+  };
 
   const toggleCalEvent = (id: string) => {
     setCalEvents((prev) =>
@@ -171,9 +190,12 @@ export function DailyRitualView() {
     setStep(6);
   };
 
-  // Map internal step to display step (skip calendar step when no client ID)
-  const displayStep = !hasGoogleClientId && step >= 3 ? step - 1 : step;
-  const displayTotal = hasGoogleClientId ? 6 : 5;
+  // Whether the calendar step is active (has client ID and not permanently dismissed)
+  const showCalendarStep = hasGoogleClientId && !googleCalendarDismissed;
+
+  // Map internal step to display step (skip calendar step when not shown)
+  const displayStep = !showCalendarStep && step >= 3 ? step - 1 : step;
+  const displayTotal = showCalendarStep ? 6 : 5;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
@@ -273,7 +295,7 @@ export function DailyRitualView() {
                 Back
               </button>
               <button
-                onClick={() => setStep(hasGoogleClientId ? 3 : 4)}
+                onClick={() => setStep(showCalendarStep ? 3 : 4)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -282,7 +304,7 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 3 && hasGoogleClientId && (
+        {step === 3 && showCalendarStep && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Import from Google Calendar?
@@ -291,13 +313,42 @@ export function DailyRitualView() {
               Add today's calendar events as tasks.
             </p>
 
-            {calLoading && (
+            {!googleCalendarConnected && (
+              <div className="flex flex-col items-center py-8 gap-4">
+                {calError && (
+                  <p className="text-sm text-red-500">{calError}</p>
+                )}
+                <button
+                  onClick={handleConnectCalendar}
+                  disabled={calConnecting}
+                  className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-60"
+                >
+                  {calConnecting ? 'Connecting...' : 'Connect to Google Calendar'}
+                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStep(4)}
+                    className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={() => { setGoogleCalendarDismissed(true); setStep(4); }}
+                    className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+                  >
+                    Don't ask again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {googleCalendarConnected && calLoading && (
               <div className="flex items-center justify-center py-8">
                 <span className="text-sm text-[var(--color-text-muted)]">Loading events...</span>
               </div>
             )}
 
-            {calError && (
+            {googleCalendarConnected && calError && (
               <div className="py-8">
                 <p className="text-sm text-red-500 mb-3">{calError}</p>
                 <button
@@ -309,7 +360,7 @@ export function DailyRitualView() {
               </div>
             )}
 
-            {!calLoading && !calError && calEvents.length === 0 && (
+            {googleCalendarConnected && !calLoading && !calError && calEvents.length === 0 && (
               <div className="flex items-center justify-center py-8">
                 <span className="text-sm text-[var(--color-text-muted)]">
                   No events on your calendar today
@@ -317,7 +368,7 @@ export function DailyRitualView() {
               </div>
             )}
 
-            {!calLoading && !calError && calEvents.length > 0 && (
+            {googleCalendarConnected && !calLoading && !calError && calEvents.length > 0 && (
               <div className="rounded-xl border border-[var(--color-border)] p-2 max-h-[50vh] overflow-y-auto space-y-1">
                 {calEvents.map((event) => (
                   <label
@@ -345,21 +396,23 @@ export function DailyRitualView() {
               >
                 Back
               </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setStep(4)}
-                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-                >
-                  Skip
-                </button>
-                <button
-                  onClick={importCalEvents}
-                  disabled={calEvents.filter((e) => e.selected).length === 0}
-                  className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Import{calEvents.filter((e) => e.selected).length > 0 ? ` (${calEvents.filter((e) => e.selected).length})` : ''}
-                </button>
-              </div>
+              {googleCalendarConnected && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setStep(4)}
+                    className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={importCalEvents}
+                    disabled={calEvents.filter((e) => e.selected).length === 0}
+                    className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Import{calEvents.filter((e) => e.selected).length > 0 ? ` (${calEvents.filter((e) => e.selected).length})` : ''}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -380,7 +433,7 @@ export function DailyRitualView() {
             </div>
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(hasGoogleClientId ? 3 : 2)}
+                onClick={() => setStep(showCalendarStep ? 3 : 2)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back

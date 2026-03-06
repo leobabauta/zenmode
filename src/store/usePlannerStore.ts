@@ -63,6 +63,8 @@ interface PlannerState {
   deleteConfirmItemId: string | null;
   navOrder: string[];
   labelOrder: string[];
+  googleCalendarConnected: boolean;
+  googleCalendarDismissed: boolean;
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
@@ -124,6 +126,8 @@ interface PlannerState {
   setCommandPaletteAddTask: (v: boolean) => void;
   setShowSettings: (show: boolean) => void;
   setShowShortcuts: (show: boolean) => void;
+  setGoogleCalendarConnected: (v: boolean) => void;
+  setGoogleCalendarDismissed: (v: boolean) => void;
   scrollToTodayRequested: number;
   requestScrollToToday: () => void;
   setLaterExpanded: (expanded: boolean) => void;
@@ -189,6 +193,8 @@ export const usePlannerStore = create<PlannerState>()(
       deleteConfirmItemId: null,
       navOrder: ['timeline', 'inbox', 'today', 'later', 'archive'],
       labelOrder: [],
+      googleCalendarConnected: false,
+      googleCalendarDismissed: false,
 
       getLabelColor: (tag: string) => {
         const key = tag.toLowerCase();
@@ -836,6 +842,12 @@ export const usePlannerStore = create<PlannerState>()(
       setShowShortcuts: (show) => {
         set((state) => { state.showShortcuts = show; });
       },
+      setGoogleCalendarConnected: (v) => {
+        set((state) => { state.googleCalendarConnected = v; });
+      },
+      setGoogleCalendarDismissed: (v) => {
+        set((state) => { state.googleCalendarDismissed = v; });
+      },
       setLaterExpanded: (expanded) => {
         set((state) => { state.laterExpanded = expanded; });
       },
@@ -929,7 +941,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, googleCalendarConnected: state.googleCalendarConnected, googleCalendarDismissed: state.googleCalendarDismissed }),
     }
   )
 );
@@ -937,7 +949,7 @@ export const usePlannerStore = create<PlannerState>()(
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder'] as const;
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items

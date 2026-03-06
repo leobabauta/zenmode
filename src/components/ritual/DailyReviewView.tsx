@@ -12,10 +12,23 @@ export function DailyReviewView() {
   const addItem = usePlannerStore((s) => s.addItem);
   const moveItem = usePlannerStore((s) => s.moveItem);
   const completeReviewRitual = usePlannerStore((s) => s.completeReviewRitual);
+  const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
 
-  const todayKey = toDayKey(new Date());
-  const todayItems = selectItemsForDay(items, todayKey);
-  const incompleteTasks = todayItems.filter((i) => i.type === 'task' && !i.completed);
+  const now = new Date();
+  const todayKey = toDayKey(now);
+
+  // If it's morning (before the ritual trigger hour), we're reviewing yesterday
+  const isReviewingYesterday = now.getHours() < reviewRitualHour;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = toDayKey(yesterday);
+
+  const reviewDayKey = isReviewingYesterday ? yesterdayKey : todayKey;
+  const pushTargetKey = isReviewingYesterday ? todayKey : toDayKey((() => { const d = new Date(now); d.setDate(d.getDate() + 1); return d; })());
+
+  const reviewDayItems = selectItemsForDay(items, reviewDayKey);
+  const incompleteTasks = reviewDayItems.filter((i) => i.type === 'task' && !i.completed);
 
   const [pushIds, setPushIds] = useState<Set<string>>(() => new Set(incompleteTasks.map((i) => i.id)));
 
@@ -36,20 +49,21 @@ export function DailyReviewView() {
     if (blockers.trim()) lines.push(`**Blockers:** ${blockers.trim()}`);
     lines.push('#dailyreview');
 
-    addItem({ type: 'note', text: lines.join('\n'), dayKey: todayKey });
+    // Post note to the day being reviewed
+    addItem({ type: 'note', text: lines.join('\n'), dayKey: reviewDayKey });
 
-    // Push selected incomplete tasks to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowKey = toDayKey(tomorrow);
+    // Push selected incomplete tasks to the target day
     for (const id of pushIds) {
       if (items[id]) {
-        moveItem(id, tomorrowKey, 0);
+        moveItem(id, pushTargetKey, 0);
       }
     }
 
     completeReviewRitual();
   };
+
+  const dayLabel = isReviewingYesterday ? 'yesterday' : 'today';
+  const pushLabel = isReviewingYesterday ? 'today' : 'tomorrow';
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-8">
@@ -73,7 +87,7 @@ export function DailyReviewView() {
         {step === 1 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              How did today go?
+              How did {dayLabel} go?
             </h2>
             <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
               Take a moment to reflect on your day.
@@ -146,12 +160,12 @@ export function DailyReviewView() {
         {step === 3 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Push incomplete tasks to tomorrow
+              Push incomplete tasks to {pushLabel}
             </h2>
             <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
               {incompleteTasks.length === 0
-                ? 'All tasks completed today! Nothing to push.'
-                : 'Select which tasks to move to tomorrow.'}
+                ? `All tasks completed ${dayLabel}! Nothing to push.`
+                : `Select which tasks to move to ${pushLabel}.`}
             </p>
             {incompleteTasks.length > 0 && (
               <div className="rounded-xl border border-[var(--color-border)] p-2 mb-4">
