@@ -236,6 +236,16 @@ export async function pullPreferences(): Promise<void> {
       .filter(Boolean).sort().pop() ?? null;
     const bestReviewDate = [local.lastReviewRitualDate, row.last_review_ritual_date]
       .filter(Boolean).sort().pop() ?? null;
+
+    // Merge custom lists: union of local and remote by id
+    const remoteLists = (row.custom_lists as ReturnType<typeof usePlannerStore.getState>['customLists']) ?? [];
+    const localLists = local.customLists ?? [];
+    const listById = new Map(localLists.map((l) => [l.id, l]));
+    for (const rl of remoteLists) {
+      if (!listById.has(rl.id)) listById.set(rl.id, rl);
+    }
+    const mergedLists = [...listById.values()].sort((a, b) => a.order - b.order);
+
     usePlannerStore.setState({
       theme: row.theme as 'light' | 'dark',
       view: row.view as ReturnType<typeof usePlannerStore.getState>['view'],
@@ -248,7 +258,7 @@ export async function pullPreferences(): Promise<void> {
       reviewRitualEnabled: row.review_ritual_enabled ?? true,
       reviewRitualHour: row.review_ritual_hour ?? 17,
       lastReviewRitualDate: bestReviewDate,
-      customLists: (row.custom_lists as ReturnType<typeof usePlannerStore.getState>['customLists']) ?? [],
+      customLists: mergedLists,
       activeListId: row.active_list_id ?? null,
     });
   }
@@ -259,7 +269,7 @@ let prefsTimer: ReturnType<typeof setTimeout> | null = null;
 export function pushPreferences(): void {
   if (!supabase) return;
   if (prefsTimer) clearTimeout(prefsTimer);
-  prefsTimer = setTimeout(flushPreferences, 1000);
+  prefsTimer = setTimeout(flushPreferences, 300);
 }
 
 export function flushPreferencesNow(): void {
