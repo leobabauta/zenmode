@@ -57,6 +57,7 @@ interface PlannerState {
   showCommandPalette: boolean;
   commandPaletteAddTask: boolean;
   showSettings: boolean;
+  showShortcuts: boolean;
   laterExpanded: boolean;
   labelColors: Record<string, string>;
   deleteConfirmItemId: string | null;
@@ -122,6 +123,7 @@ interface PlannerState {
   setShowCommandPalette: (show: boolean) => void;
   setCommandPaletteAddTask: (v: boolean) => void;
   setShowSettings: (show: boolean) => void;
+  setShowShortcuts: (show: boolean) => void;
   scrollToTodayRequested: number;
   requestScrollToToday: () => void;
   setLaterExpanded: (expanded: boolean) => void;
@@ -181,6 +183,7 @@ export const usePlannerStore = create<PlannerState>()(
       showCommandPalette: false,
       commandPaletteAddTask: false,
       showSettings: false,
+      showShortcuts: false,
       laterExpanded: true,
       labelColors: {},
       deleteConfirmItemId: null,
@@ -829,6 +832,9 @@ export const usePlannerStore = create<PlannerState>()(
       },
       setShowSettings: (show) => {
         set((state) => { state.showSettings = show; });
+      },
+      setShowShortcuts: (show) => {
+        set((state) => { state.showShortcuts = show; });
       },
       setLaterExpanded: (expanded) => {
         set((state) => { state.laterExpanded = expanded; });

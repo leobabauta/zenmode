@@ -92,6 +92,13 @@ export function AppShell() {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      if (e.key === '?' && e.shiftKey) {
+        e.preventDefault();
+        usePlannerStore.getState().setShowShortcuts(true);
+        return;
+      }
+
       if (e.shiftKey || e.metaKey || e.ctrlKey) return;
 
       if (e.key === 'i') {
