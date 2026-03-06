@@ -184,11 +184,29 @@ async function flushChanged(): Promise<void> {
     const { error } = await supabase.from('items').upsert(rows, { onConflict: 'id' });
     if (error) {
       console.error('pushChanged error:', error);
+      // Re-queue failed IDs for retry
+      for (const id of ids) changedIds.add(id);
     } else {
       // Mark as confirmed on remote so pull won't delete them
       for (const id of ids) knownRemoteIds.add(id);
     }
   }
+}
+
+export function flushChangedNow(): void {
+  if (changeTimer) {
+    clearTimeout(changeTimer);
+    changeTimer = null;
+  }
+  flushChanged();
+}
+
+export function flushDeletedNow(): void {
+  if (deleteTimer) {
+    clearTimeout(deleteTimer);
+    deleteTimer = null;
+  }
+  flushDeleted();
 }
 
 // --- Debounced push for deleted items ---

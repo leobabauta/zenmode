@@ -6,7 +6,7 @@ import { usePlannerStore } from './store/usePlannerStore';
 import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
-import { pullFromSupabase, pullPreferences, flushPreferencesNow } from './lib/sync';
+import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow } from './lib/sync';
 import { LoginPage } from './components/auth/LoginPage';
 
 export default function App() {
@@ -146,12 +146,28 @@ export default function App() {
       .then(() => runStartupTasks());
   }, [user]);
 
-  // Flush pending preferences on page close so pullPreferences restores the correct view
+  // Flush all pending changes on page close
   useEffect(() => {
-    const handler = () => flushPreferencesNow();
+    const handler = () => {
+      flushChangedNow();
+      flushDeletedNow();
+      flushPreferencesNow();
+    };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
+
+  // Pull latest data when tab becomes visible again (e.g. switching between devices/tabs)
+  useEffect(() => {
+    if (!supabase || !user) return;
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        pullFromSupabase().then(() => pullPreferences());
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [user]);
 
   // 60-second interval to check if review ritual should trigger mid-session
   useEffect(() => {
