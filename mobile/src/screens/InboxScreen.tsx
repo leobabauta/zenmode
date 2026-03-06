@@ -1,33 +1,65 @@
-import { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { useState, useRef, useCallback } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
+  KeyboardAvoidingView, Platform,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlannerStore, selectInboxItems } from '../store/usePlannerStore';
 import type { PlannerItem } from '../../shared/types';
 
 function TaskRow({ item }: { item: PlannerItem }) {
   const updateItem = usePlannerStore((s) => s.updateItem);
+  const deleteItem = usePlannerStore((s) => s.deleteItem);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(item.text);
+
+  const commitEdit = () => {
+    const trimmed = editText.trim();
+    if (trimmed && trimmed !== item.text) updateItem(item.id, { text: trimmed });
+    else setEditText(item.text);
+    setEditing(false);
+  };
 
   return (
-    <TouchableOpacity
-      style={styles.taskRow}
-      onPress={() => updateItem(item.id, { completed: !item.completed })}
-      activeOpacity={0.6}
-    >
-      <View style={[styles.checkbox, item.completed && styles.checkboxDone]}>
-        {item.completed && <Text style={styles.checkmark}>✓</Text>}
-      </View>
-      <Text style={[styles.taskText, item.completed && styles.taskTextDone]} numberOfLines={2}>
-        {item.text}
-      </Text>
-    </TouchableOpacity>
+    <View style={styles.taskRow}>
+      {item.type === 'task' && (
+        <TouchableOpacity
+          onPress={() => updateItem(item.id, { completed: !item.completed })}
+          style={[styles.checkbox, item.completed && styles.checkboxDone]}
+        >
+          {item.completed && <Text style={styles.checkmark}>✓</Text>}
+        </TouchableOpacity>
+      )}
+      {editing ? (
+        <TextInput
+          style={styles.editInput}
+          value={editText}
+          onChangeText={setEditText}
+          onBlur={commitEdit}
+          onSubmitEditing={commitEdit}
+          autoFocus
+        />
+      ) : (
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => { setEditText(item.text); setEditing(true); }}
+          onLongPress={() => deleteItem(item.id)}
+        >
+          <Text style={[styles.taskText, item.completed && styles.taskTextDone]} numberOfLines={3}>
+            {item.text}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
 export function InboxScreen() {
   const items = usePlannerStore((s) => s.items);
   const addItem = usePlannerStore((s) => s.addItem);
+  const insets = useSafeAreaInsets();
   const inboxItems = selectInboxItems(items);
   const [addText, setAddText] = useState('');
-  const inputRef = useRef<TextInput>(null);
 
   const handleAdd = () => {
     const trimmed = addText.trim();
@@ -36,23 +68,31 @@ export function InboxScreen() {
     setAddText('');
   };
 
+  const renderItem = useCallback(({ item }: { item: PlannerItem }) => (
+    <TaskRow item={item} />
+  ), []);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Inbox</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <Text style={styles.title}>Inbox</Text>
+      </View>
 
       <FlatList
         data={inboxItems}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TaskRow item={item} />}
+        renderItem={renderItem}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={styles.empty}>Inbox is empty.</Text>
         }
       />
 
-      <View style={styles.addBar}>
+      <View style={[styles.addBar, { paddingBottom: 8 }]}>
         <TextInput
-          ref={inputRef}
           style={styles.addInput}
           placeholder="Add to inbox..."
           placeholderTextColor="#a8a29e"
@@ -65,17 +105,18 @@ export function InboxScreen() {
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fafaf9' },
-  title: { fontSize: 28, fontWeight: '700', color: '#1c1917', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16 },
-  list: { paddingHorizontal: 20, paddingBottom: 80 },
+  header: { paddingHorizontal: 20, paddingBottom: 12 },
+  title: { fontSize: 28, fontWeight: '700', color: '#1c1917' },
+  list: { paddingBottom: 80 },
   empty: { fontSize: 14, color: '#a8a29e', textAlign: 'center', marginTop: 40 },
   taskRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e7e5e4',
   },
   checkbox: {
@@ -86,8 +127,9 @@ const styles = StyleSheet.create({
   checkmark: { fontSize: 13, color: '#fff', fontWeight: '600' },
   taskText: { flex: 1, fontSize: 15, color: '#1c1917', lineHeight: 21 },
   taskTextDone: { color: '#a8a29e', textDecorationLine: 'line-through' },
+  editInput: { flex: 1, fontSize: 15, color: '#1c1917', padding: 0 },
   addBar: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#e7e5e4', backgroundColor: '#fafaf9',
   },
   addInput: {

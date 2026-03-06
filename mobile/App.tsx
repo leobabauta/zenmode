@@ -2,18 +2,21 @@ import { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { setupSupabase } from './src/lib/supabaseInit';
 import { setupSync } from './src/lib/syncInit';
 import { getSupabase } from '../shared/lib/supabase';
 import { useAuthStore } from '../shared/store/useAuthStore';
-import { pullFromSupabase, pullPreferences } from '../shared/lib/sync';
+import { pullFromSupabase, pullPreferences, flushChangedNow, flushDeletedNow, flushPreferencesNow } from '../shared/lib/sync';
 
 import { LoginScreen } from './src/screens/LoginScreen';
 import { TodayScreen } from './src/screens/TodayScreen';
+import { TimelineScreen } from './src/screens/TimelineScreen';
 import { InboxScreen } from './src/screens/InboxScreen';
+import { ListsScreen } from './src/screens/ListsScreen';
+import { FocusTimerScreen } from './src/screens/FocusTimerScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 
 // Initialize Supabase and sync
@@ -24,9 +27,15 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = { Today: '☀', Inbox: '📥', Settings: '⚙' };
+  const icons: Record<string, string> = {
+    Today: '☀️',
+    Timeline: '📅',
+    Inbox: '📥',
+    Lists: '📋',
+    Focus: '⏱',
+  };
   return (
-    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>
+    <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4 }}>
       {icons[label] ?? '•'}
     </Text>
   );
@@ -41,12 +50,14 @@ function MainTabs() {
         tabBarActiveTintColor: '#1c1917',
         tabBarInactiveTintColor: '#a8a29e',
         tabBarStyle: { backgroundColor: '#fafaf9', borderTopColor: '#e7e5e4' },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
       })}
     >
       <Tab.Screen name="Today" component={TodayScreen} />
+      <Tab.Screen name="Timeline" component={TimelineScreen} />
       <Tab.Screen name="Inbox" component={InboxScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Lists" component={ListsScreen} />
+      <Tab.Screen name="Focus" component={FocusTimerScreen} />
     </Tab.Navigator>
   );
 }
@@ -81,6 +92,20 @@ export default function App() {
     pullFromSupabase().then(() => pullPreferences());
   }, [user]);
 
+  // Sync on app state changes (background/foreground)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && user) {
+        pullFromSupabase().then(() => pullPreferences());
+      } else if (nextState === 'background') {
+        flushChangedNow();
+        flushDeletedNow();
+        flushPreferencesNow();
+      }
+    });
+    return () => subscription.remove();
+  }, [user]);
+
   if (loading) return null;
 
   return (
@@ -89,6 +114,7 @@ export default function App() {
         {user ? (
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </Stack.Navigator>
         ) : (
           <Stack.Navigator screenOptions={{ headerShown: false }}>
