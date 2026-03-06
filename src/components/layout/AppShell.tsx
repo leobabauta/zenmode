@@ -119,6 +119,11 @@ export function AppShell() {
         usePlannerStore.getState().setView('stats');
         return;
       }
+      if (e.key === 'a') {
+        e.preventDefault();
+        usePlannerStore.getState().setView('archive');
+        return;
+      }
       if (e.key === 'g') {
         e.preventDefault();
         const state = usePlannerStore.getState();

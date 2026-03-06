@@ -52,7 +52,7 @@ const NAV_ITEM_DEFS: NavItemDef[] = [
   {
     id: 'archive',
     label: 'Archive',
-    shortcut: undefined,
+    shortcut: 'A',
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -183,6 +183,8 @@ export function Sidebar() {
 
   const [creatingList, setCreatingList] = useState(false);
   const [newListName, setNewListName] = useState('');
+  const [listsCollapsed, setListsCollapsed] = useState(false);
+  const [labelsCollapsed, setLabelsCollapsed] = useState(false);
   const newListInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
@@ -360,73 +362,90 @@ export function Sidebar() {
       {/* Custom lists section */}
       {(customLists.length > 0 || creatingList) && (
         <div className="mt-3 px-3">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1">
+          <button
+            onClick={() => setListsCollapsed(!listsCollapsed)}
+            className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1 hover:text-[var(--color-text-secondary)] transition-colors"
+          >
+            <svg className={cn('w-3 h-3 transition-transform', listsCollapsed && '-rotate-90')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
             Lists
-          </span>
-          <div className="mt-1.5 space-y-0.5">
-            {[...customLists].sort((a, b) => a.order - b.order).map((list) => {
-              const isActive = view === 'list' && activeListId === list.id;
-              return (
-                <button
-                  key={list.id}
-                  onClick={() => { setView('list'); setActiveListId(list.id); }}
-                  className={cn(
-                    'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
-                    isActive
-                      ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
-                  )}
-                >
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <span className="truncate">{list.name}</span>
-                </button>
-              );
-            })}
-          </div>
+          </button>
+          {!listsCollapsed && (
+            <>
+              <div className="mt-1.5 space-y-0.5">
+                {[...customLists].sort((a, b) => a.order - b.order).map((list) => {
+                  const isActive = view === 'list' && activeListId === list.id;
+                  return (
+                    <button
+                      key={list.id}
+                      onClick={() => { setView('list'); setActiveListId(list.id); }}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+                        isActive
+                          ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+                      )}
+                    >
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      <span className="truncate">{list.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Create new list */}
+              <div className="mt-1">
+                {creatingList ? (
+                  <div className="px-3 py-1">
+                    <input
+                      ref={newListInputRef}
+                      value={newListName}
+                      onChange={(e) => setNewListName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCreateList();
+                        if (e.key === 'Escape') { setCreatingList(false); setNewListName(''); }
+                      }}
+                      onBlur={() => { if (!newListName.trim()) { setCreatingList(false); setNewListName(''); } }}
+                      placeholder="List name"
+                      className="w-full text-sm bg-transparent border-b border-[var(--color-border)] outline-none py-1 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setCreatingList(true)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100',
+                      'text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-secondary)]',
+                    )}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Create new list</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
-
-      {/* Create new list */}
-      <div className="px-2 mt-1">
-        {creatingList ? (
-          <div className="px-3 py-1">
-            <input
-              ref={newListInputRef}
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateList();
-                if (e.key === 'Escape') { setCreatingList(false); setNewListName(''); }
-              }}
-              onBlur={() => { if (!newListName.trim()) { setCreatingList(false); setNewListName(''); } }}
-              placeholder="List name"
-              className="w-full text-sm bg-transparent border-b border-[var(--color-border)] outline-none py-1 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)]"
-            />
-          </div>
-        ) : (
-          <button
-            onClick={() => setCreatingList(true)}
-            className={cn(
-              'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100',
-              'text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-secondary)]',
-            )}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Create new list</span>
-          </button>
-        )}
-      </div>
 
       {/* Labels section with drag-to-reorder */}
       {sortedHashtags.length > 0 && (
         <div className="mt-4 px-3 overflow-y-auto">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1">
+          <button
+            onClick={() => setLabelsCollapsed(!labelsCollapsed)}
+            className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1 hover:text-[var(--color-text-secondary)] transition-colors"
+          >
+            <svg className={cn('w-3 h-3 transition-transform', labelsCollapsed && '-rotate-90')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
             Labels
-          </span>
+          </button>
+          {!labelsCollapsed && (
           <div className="mt-1.5 space-y-0.5">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleLabelDragEnd}>
               <SortableContext items={sortedHashtags} strategy={verticalListSortingStrategy}>
@@ -466,6 +485,7 @@ export function Sidebar() {
               </SortableContext>
             </DndContext>
           </div>
+          )}
         </div>
       )}
       {/* Spacer to push bottom items down */}
