@@ -289,10 +289,10 @@ export function TaskItem({
           label="Set recurrence"
           onClick={() => setShowRecurrence((v) => !v)}
           className={cn(
-            'flex-shrink-0',
+            'flex-shrink-0 opacity-0 group-hover:opacity-100',
             item.recurrence
-              ? 'text-[var(--color-accent)] opacity-100'
-              : 'opacity-0 group-hover:opacity-100'
+              ? 'group-hover:text-[var(--color-accent)]'
+              : ''
           )}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

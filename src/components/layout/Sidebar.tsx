@@ -335,8 +335,8 @@ export function Sidebar() {
           )}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 8H5m0 0l4-4m-4 4l4 4" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 16h14m0 0l-4-4m4 4l-4 4" />
           </svg>
         </button>
       </div>

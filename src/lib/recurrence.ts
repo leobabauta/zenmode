@@ -58,3 +58,30 @@ export function computeNextOccurrence(currentDayKey: string, recurrence: Recurre
 
   return formatDayKey(next);
 }
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Returns a human-readable description of a recurrence, e.g. "Every week on Wed" or "Every 3 days".
+ */
+export function describeRecurrence(rec: Recurrence): string {
+  switch (rec.type) {
+    case 'days':
+      return rec.interval === 1 ? 'Every day' : `Every ${rec.interval} days`;
+    case 'weeks': {
+      const days = (rec.weekdays ?? []).map((d) => DAY_NAMES[d]);
+      if (days.length === 0) return 'Every week';
+      if (days.length === 1) return `Every week on ${days[0]}`;
+      return `Every week on ${days.join(', ')}`;
+    }
+    case 'months': {
+      const day = rec.dayOfMonth ?? 1;
+      const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
+      return `Every month on the ${day}${suffix}`;
+    }
+    case 'weekday':
+      return rec.weekday != null ? `Every week on ${DAY_NAMES[rec.weekday]}` : 'Every week';
+    default:
+      return 'Recurring';
+  }
+}

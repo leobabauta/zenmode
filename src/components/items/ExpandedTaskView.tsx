@@ -6,6 +6,7 @@ import { IconButton } from '../ui/IconButton';
 import { HashtagText } from '../ui/HashtagText';
 import { FocusTimer } from '../ui/FocusTimer';
 import { cn } from '../../lib/utils';
+import { describeRecurrence } from '../../lib/recurrence';
 import type { PlannerItem } from '../../types';
 
 interface ChildItemProps {
@@ -231,6 +232,15 @@ export function ExpandedTaskView() {
             <p className="text-xs text-[var(--color-text-muted)] mt-1">
               Created on {createdDate}
             </p>
+            {task.recurrence && (
+              <p className="text-xs text-[var(--color-accent)] mt-0.5 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5M20 20v-5h-5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.49 9A9 9 0 005.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 013.51 15" />
+                </svg>
+                {describeRecurrence(task.recurrence)}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             <button
