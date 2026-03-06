@@ -6,7 +6,7 @@ import { usePlannerStore, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
 
-const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'stats', 'weekPlan', 'weekReviewPage', 'archive'];
+const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'weekPlan', 'weekReviewPage', 'archive'];
 
 const NAV_ITEM_DEFS: NavItemDef[] = [
   {
@@ -46,16 +46,6 @@ const NAV_ITEM_DEFS: NavItemDef[] = [
     icon: (
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
-      </svg>
-    ),
-  },
-  {
-    id: 'stats',
-    label: 'Stats',
-    shortcut: 'S',
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
       </svg>
     ),
   },
@@ -208,6 +198,7 @@ export function Sidebar() {
   const reorderNav = usePlannerStore((s) => s.reorderNav);
   const labelOrder = usePlannerStore((s) => s.labelOrder);
   const reorderLabels = usePlannerStore((s) => s.reorderLabels);
+  const setShowSettings = usePlannerStore((s) => s.setShowSettings);
   const user = useAuthStore((s) => s.user);
 
   const [creatingList, setCreatingList] = useState(false);
@@ -243,6 +234,17 @@ export function Sidebar() {
     }
     return ordered;
   }, [allHashtags, labelOrder]);
+
+  // Show stats only after a week of data
+  const hasWeekOfData = useMemo(() => {
+    const vals = Object.values(items);
+    if (vals.length === 0) return false;
+    const earliest = vals.reduce((min, item) => {
+      const t = new Date(item.createdAt).getTime();
+      return t < min ? t : min;
+    }, Infinity);
+    return Date.now() - earliest >= 7 * 24 * 60 * 60 * 1000;
+  }, [items]);
 
   // Sort nav items by navOrder, falling back to default for any missing
   const effectiveNavOrder = navOrder && navOrder.length > 0 ? navOrder : DEFAULT_NAV_ORDER;
@@ -441,7 +443,7 @@ export function Sidebar() {
 
       {/* Labels section with drag-to-reorder */}
       {sortedHashtags.length > 0 && (
-        <div className="mt-4 px-3 flex-1 overflow-y-auto">
+        <div className="mt-4 px-3 overflow-y-auto">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1">
             Labels
           </span>
@@ -486,6 +488,41 @@ export function Sidebar() {
           </div>
         </div>
       )}
+      {/* Spacer to push bottom items down */}
+      <div className="flex-1" />
+
+      {/* Bottom section: Stats + Settings */}
+      <div className="px-2 pb-2 space-y-0.5 flex-shrink-0 border-t border-[var(--color-border)] pt-2 mt-2">
+        {hasWeekOfData && (
+          <button
+            onClick={() => setView('stats' as Parameters<typeof setView>[0])}
+            className={cn(
+              'w-full flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-md text-sm transition-colors duration-100',
+              view === 'stats'
+                ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+            )}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span className="font-medium">Stats</span>
+          </button>
+        )}
+        <button
+          onClick={() => setShowSettings(true)}
+          className={cn(
+            'w-full flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-md text-sm transition-colors duration-100',
+            'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+          )}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span className="font-medium">Settings</span>
+        </button>
+      </div>
     </aside>
   );
 }
