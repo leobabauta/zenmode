@@ -113,11 +113,20 @@ export async function pullFromSupabase(): Promise<void> {
     // If equal timestamps, keep local (already in merged)
   }
 
-  // Remove local items that don't exist remotely (deleted on another device)
+  // Handle local items that don't exist remotely.
+  // If the item was updated very recently (within 30s), keep it — it likely hasn't been pushed yet.
+  // Otherwise, remove it — it was probably deleted on another device.
   const remoteIds = new Set(remoteItems.map((r) => r.id));
+  const recentThreshold = Date.now() - 30_000;
   for (const id of Object.keys(localItems)) {
     if (!remoteIds.has(id)) {
-      delete merged[id];
+      const localUpdated = new Date(localItems[id].updatedAt).getTime();
+      if (localUpdated > recentThreshold) {
+        // Recently modified locally — keep and push
+        localNewer.push(localItems[id]);
+      } else {
+        delete merged[id];
+      }
     }
   }
 
