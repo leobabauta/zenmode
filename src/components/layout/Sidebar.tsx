@@ -1,7 +1,108 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { usePlannerStore, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
+
+const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'stats', 'weekPlan', 'weekReviewPage', 'archive'];
+
+function DragHandle({ className }: { className?: string }) {
+  return (
+    <svg className={cn('w-3.5 h-3.5', className)} viewBox="0 0 16 16" fill="currentColor">
+      <circle cx="5.5" cy="3.5" r="1.5" />
+      <circle cx="10.5" cy="3.5" r="1.5" />
+      <circle cx="5.5" cy="8" r="1.5" />
+      <circle cx="10.5" cy="8" r="1.5" />
+      <circle cx="5.5" cy="12.5" r="1.5" />
+      <circle cx="10.5" cy="12.5" r="1.5" />
+    </svg>
+  );
+}
+
+interface NavItemDef {
+  id: string;
+  label: string;
+  shortcut: string | undefined;
+  icon: React.ReactNode;
+}
+
+function SortableNavItem({ nav, isActive, onSetView }: { nav: NavItemDef; isActive: boolean; onSetView: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: nav.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group/nav relative flex items-center">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/nav:opacity-100 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-opacity z-10"
+      >
+        <DragHandle />
+      </div>
+      <button
+        onClick={onSetView}
+        className={cn(
+          'w-full flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-md text-sm transition-colors duration-100',
+          isActive
+            ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+            : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+        )}
+      >
+        {nav.icon}
+        <span className="font-medium">{nav.label}</span>
+        {nav.shortcut && (
+          <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">
+            {nav.shortcut}
+          </kbd>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function SortableLabelRow({ tag, isActive, color, onSelect, onSetColor, onRename, onDelete }: {
+  tag: string;
+  isActive: boolean;
+  color: string;
+  onSelect: () => void;
+  onSetColor: (color: string) => void;
+  onRename: (newName: string) => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tag });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="group/label relative flex items-center">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover/label:opacity-100 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-opacity z-10"
+      >
+        <DragHandle />
+      </div>
+      <LabelRowContent
+        tag={tag}
+        isActive={isActive}
+        color={color}
+        onSelect={onSelect}
+        onSetColor={onSetColor}
+        onRename={onRename}
+        onDelete={onDelete}
+      />
+    </div>
+  );
+}
 
 export function Sidebar() {
   const collapsed = usePlannerStore((s) => s.sidebarCollapsed);
@@ -20,11 +121,19 @@ export function Sidebar() {
   const activeListId = usePlannerStore((s) => s.activeListId);
   const addCustomList = usePlannerStore((s) => s.addCustomList);
   const setActiveListId = usePlannerStore((s) => s.setActiveListId);
+  const navOrder = usePlannerStore((s) => s.navOrder);
+  const reorderNav = usePlannerStore((s) => s.reorderNav);
+  const labelOrder = usePlannerStore((s) => s.labelOrder);
+  const reorderLabels = usePlannerStore((s) => s.reorderLabels);
   const user = useAuthStore((s) => s.user);
 
   const [creatingList, setCreatingList] = useState(false);
   const [newListName, setNewListName] = useState('');
   const newListInputRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   useEffect(() => {
     if (creatingList) setTimeout(() => newListInputRef.current?.focus(), 0);
@@ -38,6 +147,19 @@ export function Sidebar() {
     });
     return Array.from(tagSet).sort();
   }, [items]);
+
+  // Sort hashtags by labelOrder, falling back to alphabetical for new ones
+  const sortedHashtags = useMemo(() => {
+    if (!labelOrder || labelOrder.length === 0) return allHashtags;
+    const ordered: string[] = [];
+    for (const tag of labelOrder) {
+      if (allHashtags.includes(tag)) ordered.push(tag);
+    }
+    for (const tag of allHashtags) {
+      if (!ordered.includes(tag)) ordered.push(tag);
+    }
+    return ordered;
+  }, [allHashtags, labelOrder]);
 
   if (collapsed) {
     return (
@@ -56,9 +178,9 @@ export function Sidebar() {
     );
   }
 
-  const navItems = [
+  const navItemDefs: NavItemDef[] = [
     {
-      id: 'timeline' as const,
+      id: 'timeline',
       label: 'Home',
       shortcut: 'H',
       icon: (
@@ -68,7 +190,7 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'inbox' as const,
+      id: 'inbox',
       label: 'Inbox',
       shortcut: 'I',
       icon: (
@@ -78,7 +200,7 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'today' as const,
+      id: 'today',
       label: 'Today',
       shortcut: 'T',
       icon: (
@@ -88,7 +210,7 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'later' as const,
+      id: 'later',
       label: 'Later',
       shortcut: 'L',
       icon: (
@@ -98,7 +220,7 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'stats' as const,
+      id: 'stats',
       label: 'Stats',
       shortcut: 'S',
       icon: (
@@ -108,9 +230,9 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'weekPlan' as const,
+      id: 'weekPlan',
       label: "Week's Plan",
-      shortcut: undefined as string | undefined,
+      shortcut: undefined,
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -118,9 +240,9 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'weekReviewPage' as const,
+      id: 'weekReviewPage',
       label: 'Week Review',
-      shortcut: undefined as string | undefined,
+      shortcut: undefined,
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -128,9 +250,9 @@ export function Sidebar() {
       ),
     },
     {
-      id: 'archive' as const,
+      id: 'archive',
       label: 'Archive',
-      shortcut: undefined as string | undefined,
+      shortcut: undefined,
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -138,6 +260,44 @@ export function Sidebar() {
       ),
     },
   ];
+
+  // Sort nav items by navOrder, falling back to default for any missing
+  const effectiveNavOrder = navOrder && navOrder.length > 0 ? navOrder : DEFAULT_NAV_ORDER;
+  const sortedNavItems = useMemo(() => {
+    const byId = new Map(navItemDefs.map((n) => [n.id, n]));
+    const ordered: NavItemDef[] = [];
+    for (const id of effectiveNavOrder) {
+      const item = byId.get(id);
+      if (item) ordered.push(item);
+    }
+    // Add any items not yet in the order
+    for (const item of navItemDefs) {
+      if (!ordered.find((o) => o.id === item.id)) ordered.push(item);
+    }
+    return ordered;
+  }, [effectiveNavOrder]);
+
+  const handleNavDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const currentIds = sortedNavItems.map((n) => n.id);
+    const oldIndex = currentIds.indexOf(active.id as string);
+    const newIndex = currentIds.indexOf(over.id as string);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      reorderNav(arrayMove(currentIds, oldIndex, newIndex));
+    }
+  };
+
+  const handleLabelDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const currentTags = sortedHashtags;
+    const oldIndex = currentTags.indexOf(active.id as string);
+    const newIndex = currentTags.indexOf(over.id as string);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      reorderLabels(arrayMove([...currentTags], oldIndex, newIndex));
+    }
+  };
 
   const handleCreateList = () => {
     const name = newListName.trim();
@@ -176,7 +336,8 @@ export function Sidebar() {
           )}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
@@ -199,31 +360,20 @@ export function Sidebar() {
         </kbd>
       </button>
 
-      {/* Nav items */}
+      {/* Nav items with drag-to-reorder */}
       <nav className="mt-1 px-2 space-y-0.5">
-        {navItems.map((nav) => {
-          const isActive = view === nav.id;
-          return (
-            <button
-              key={nav.id}
-              onClick={() => setView(nav.id)}
-              className={cn(
-                'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100',
-                isActive
-                  ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
-              )}
-            >
-              {nav.icon}
-              <span className="font-medium">{nav.label}</span>
-              {nav.shortcut && (
-                <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5 text-[var(--color-text-muted)]">
-                  {nav.shortcut}
-                </kbd>
-              )}
-            </button>
-          );
-        })}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
+          <SortableContext items={sortedNavItems.map((n) => n.id)} strategy={verticalListSortingStrategy}>
+            {sortedNavItems.map((nav) => (
+              <SortableNavItem
+                key={nav.id}
+                nav={nav}
+                isActive={view === nav.id}
+                onSetView={() => setView(nav.id as Parameters<typeof setView>[0])}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </nav>
 
       {/* Custom lists section */}
@@ -290,46 +440,50 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Labels section */}
-      {allHashtags.length > 0 && (
+      {/* Labels section with drag-to-reorder */}
+      {sortedHashtags.length > 0 && (
         <div className="mt-4 px-3 flex-1 overflow-y-auto">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1">
             Labels
           </span>
           <div className="mt-1.5 space-y-0.5">
-            {allHashtags.map((tag) => (
-              <LabelRow
-                key={tag}
-                tag={tag}
-                isActive={view === 'hashtag' && activeHashtag === tag}
-                color={getLabelColor(tag)}
-                onSelect={() => setHashtagView(tag)}
-                onSetColor={(color) => setLabelColor(tag, color)}
-                onRename={(newTag) => {
-                  const oldTag = tag;
-                  const newHashtag = `#${newTag}`;
-                  if (newHashtag.toLowerCase() !== oldTag.toLowerCase()) {
-                    setLabelColor(newHashtag, getLabelColor(oldTag));
-                    Object.values(items).forEach((item) => {
-                      if (item.text.toLowerCase().includes(oldTag.toLowerCase())) {
-                        const updated = item.text.replace(new RegExp(oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), newHashtag);
-                        updateItem(item.id, { text: updated });
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleLabelDragEnd}>
+              <SortableContext items={sortedHashtags} strategy={verticalListSortingStrategy}>
+                {sortedHashtags.map((tag) => (
+                  <SortableLabelRow
+                    key={tag}
+                    tag={tag}
+                    isActive={view === 'hashtag' && activeHashtag === tag}
+                    color={getLabelColor(tag)}
+                    onSelect={() => setHashtagView(tag)}
+                    onSetColor={(color) => setLabelColor(tag, color)}
+                    onRename={(newTag) => {
+                      const oldTag = tag;
+                      const newHashtag = `#${newTag}`;
+                      if (newHashtag.toLowerCase() !== oldTag.toLowerCase()) {
+                        setLabelColor(newHashtag, getLabelColor(oldTag));
+                        Object.values(items).forEach((item) => {
+                          if (item.text.toLowerCase().includes(oldTag.toLowerCase())) {
+                            const updated = item.text.replace(new RegExp(oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), newHashtag);
+                            updateItem(item.id, { text: updated });
+                          }
+                        });
+                        setHashtagView(newHashtag.toLowerCase());
                       }
-                    });
-                    setHashtagView(newHashtag.toLowerCase());
-                  }
-                }}
-                onDelete={() => {
-                  Object.values(items).forEach((item) => {
-                    if (item.text.toLowerCase().includes(tag.toLowerCase())) {
-                      const updated = item.text.replace(new RegExp(`\\s*${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'gi'), ' ').trim();
-                      updateItem(item.id, { text: updated });
-                    }
-                  });
-                  setView('timeline');
-                }}
-              />
-            ))}
+                    }}
+                    onDelete={() => {
+                      Object.values(items).forEach((item) => {
+                        if (item.text.toLowerCase().includes(tag.toLowerCase())) {
+                          const updated = item.text.replace(new RegExp(`\\s*${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'gi'), ' ').trim();
+                          updateItem(item.id, { text: updated });
+                        }
+                      });
+                      setView('timeline');
+                    }}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       )}
@@ -337,8 +491,8 @@ export function Sidebar() {
   );
 }
 
-/** Label row with 3-dot context menu */
-function LabelRow({
+/** Label row content with 3-dot context menu (used inside SortableLabelRow) */
+function LabelRowContent({
   tag,
   isActive,
   color,
@@ -381,9 +535,9 @@ function LabelRow({
   };
 
   return (
-    <div className="group relative flex items-center">
+    <div className="flex-1 min-w-0 relative flex items-center">
       {editing ? (
-        <div className="flex items-center gap-1 px-3 py-1.5 w-full">
+        <div className="flex items-center gap-1 pl-6 pr-3 py-1.5 w-full">
           <span className="text-sm" style={{ color }}>#</span>
           <input
             ref={editRef}
@@ -402,7 +556,7 @@ function LabelRow({
         <button
           onClick={onSelect}
           className={cn(
-            'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+            'w-full flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
             isActive
               ? 'bg-[var(--color-accent-tint)]'
               : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
@@ -415,7 +569,7 @@ function LabelRow({
 
       {/* 3-dot menu trigger */}
       {!editing && (
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity" ref={menuRef}>
+        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/label:opacity-100 transition-opacity" ref={menuRef}>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); setColorPickerOpen(false); }}
             className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"

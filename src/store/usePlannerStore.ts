@@ -60,6 +60,8 @@ interface PlannerState {
   laterExpanded: boolean;
   labelColors: Record<string, string>;
   deleteConfirmItemId: string | null;
+  navOrder: string[];
+  labelOrder: string[];
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
@@ -126,6 +128,8 @@ interface PlannerState {
   sortCompletedToTop: (context: { dayKey?: string; isLater?: boolean; listId?: string; hashtag?: string }) => void;
   archiveCompleted: (context: { isLater?: boolean; listId?: string; hashtag?: string }) => void;
   unarchiveItem: (id: string) => void;
+  reorderNav: (orderedIds: string[]) => void;
+  reorderLabels: (orderedTags: string[]) => void;
   startSelection: (id: string | null) => void;
   moveFocus: (id: string | null) => void;
   clearSelection: () => void;
@@ -180,6 +184,8 @@ export const usePlannerStore = create<PlannerState>()(
       laterExpanded: true,
       labelColors: {},
       deleteConfirmItemId: null,
+      navOrder: ['timeline', 'inbox', 'today', 'later', 'stats', 'weekPlan', 'weekReviewPage', 'archive'],
+      labelOrder: [],
 
       getLabelColor: (tag: string) => {
         const key = tag.toLowerCase();
@@ -898,6 +904,13 @@ export const usePlannerStore = create<PlannerState>()(
         });
       },
 
+      reorderNav: (orderedIds) => {
+        set((state) => { state.navOrder = orderedIds; });
+      },
+      reorderLabels: (orderedTags) => {
+        set((state) => { state.labelOrder = orderedTags; });
+      },
+
       startSelection: (id) => {
         set((state) => { state.selectionAnchorId = id; state.selectionFocusId = id; });
       },
@@ -910,7 +923,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'paso-planner-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder }),
     }
   )
 );
@@ -918,7 +931,7 @@ export const usePlannerStore = create<PlannerState>()(
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate'] as const;
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items
