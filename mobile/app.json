@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "zenmode",
+    "slug": "zenmode",
+    "version": "0.5.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "zenmode",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fafaf9"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "net.zenhabits.zenmode"
+    },
+    "android": {
+      "package": "net.zenhabits.zenmode",
+      "adaptiveIcon": {
+        "backgroundColor": "#fafaf9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

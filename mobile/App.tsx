@@ -1,0 +1,101 @@
+import { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { setupSupabase } from './src/lib/supabaseInit';
+import { setupSync } from './src/lib/syncInit';
+import { getSupabase } from '../shared/lib/supabase';
+import { useAuthStore } from '../shared/store/useAuthStore';
+import { pullFromSupabase, pullPreferences } from '../shared/lib/sync';
+
+import { LoginScreen } from './src/screens/LoginScreen';
+import { TodayScreen } from './src/screens/TodayScreen';
+import { InboxScreen } from './src/screens/InboxScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+
+// Initialize Supabase and sync
+setupSupabase();
+setupSync();
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function TabIcon({ label, focused }: { label: string; focused: boolean }) {
+  const icons: Record<string, string> = { Today: '☀', Inbox: '📥', Settings: '⚙' };
+  return (
+    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.4 }}>
+      {icons[label] ?? '•'}
+    </Text>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
+        tabBarActiveTintColor: '#1c1917',
+        tabBarInactiveTintColor: '#a8a29e',
+        tabBarStyle: { backgroundColor: '#fafaf9', borderTopColor: '#e7e5e4' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+      })}
+    >
+      <Tab.Screen name="Today" component={TodayScreen} />
+      <Tab.Screen name="Inbox" component={InboxScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
+    </Tab.Navigator>
+  );
+}
+
+export default function App() {
+  const { user, loading } = useAuthStore();
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) {
+      useAuthStore.getState().setLoading(false);
+      return;
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      useAuthStore.getState().setAuth(session?.user ?? null, session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        useAuthStore.getState().setAuth(session?.user ?? null, session);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Pull data on login
+  useEffect(() => {
+    if (!user) return;
+    pullFromSupabase().then(() => pullPreferences());
+  }, [user]);
+
+  if (loading) return null;
+
+  return (
+    <SafeAreaProvider>
+      <NavigationContainer>
+        {user ? (
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Main" component={MainTabs} />
+          </Stack.Navigator>
+        ) : (
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Login" component={LoginScreen} />
+          </Stack.Navigator>
+        )}
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
+}
