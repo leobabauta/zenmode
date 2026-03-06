@@ -8,6 +8,89 @@ import { cn } from '../../lib/utils';
 
 const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'stats', 'weekPlan', 'weekReviewPage', 'archive'];
 
+const NAV_ITEM_DEFS: NavItemDef[] = [
+  {
+    id: 'timeline',
+    label: 'Home',
+    shortcut: 'H',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" />
+      </svg>
+    ),
+  },
+  {
+    id: 'inbox',
+    label: 'Inbox',
+    shortcut: 'I',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'today',
+    label: 'Today',
+    shortcut: 'T',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'later',
+    label: 'Later',
+    shortcut: 'L',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
+      </svg>
+    ),
+  },
+  {
+    id: 'stats',
+    label: 'Stats',
+    shortcut: 'S',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'weekPlan',
+    label: "Week's Plan",
+    shortcut: undefined,
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'weekReviewPage',
+    label: 'Week Review',
+    shortcut: undefined,
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'archive',
+    label: 'Archive',
+    shortcut: undefined,
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+      </svg>
+    ),
+  },
+];
+
 function DragHandle({ className }: { className?: string }) {
   return (
     <svg className={cn('w-3.5 h-3.5', className)} viewBox="0 0 16 16" fill="currentColor">
@@ -161,6 +244,21 @@ export function Sidebar() {
     return ordered;
   }, [allHashtags, labelOrder]);
 
+  // Sort nav items by navOrder, falling back to default for any missing
+  const effectiveNavOrder = navOrder && navOrder.length > 0 ? navOrder : DEFAULT_NAV_ORDER;
+  const sortedNavItems = useMemo(() => {
+    const byId = new Map(NAV_ITEM_DEFS.map((n) => [n.id, n]));
+    const ordered: NavItemDef[] = [];
+    for (const id of effectiveNavOrder) {
+      const item = byId.get(id);
+      if (item) ordered.push(item);
+    }
+    for (const item of NAV_ITEM_DEFS) {
+      if (!ordered.find((o) => o.id === item.id)) ordered.push(item);
+    }
+    return ordered;
+  }, [effectiveNavOrder]);
+
   if (collapsed) {
     return (
       <div className="flex-shrink-0 flex flex-col items-center pt-2 px-1">
@@ -177,105 +275,6 @@ export function Sidebar() {
       </div>
     );
   }
-
-  const navItemDefs: NavItemDef[] = [
-    {
-      id: 'timeline',
-      label: 'Home',
-      shortcut: 'H',
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" />
-        </svg>
-      ),
-    },
-    {
-      id: 'inbox',
-      label: 'Inbox',
-      shortcut: 'I',
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-        </svg>
-      ),
-    },
-    {
-      id: 'today',
-      label: 'Today',
-      shortcut: 'T',
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'later',
-      label: 'Later',
-      shortcut: 'L',
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
-        </svg>
-      ),
-    },
-    {
-      id: 'stats',
-      label: 'Stats',
-      shortcut: 'S',
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'weekPlan',
-      label: "Week's Plan",
-      shortcut: undefined,
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-        </svg>
-      ),
-    },
-    {
-      id: 'weekReviewPage',
-      label: 'Week Review',
-      shortcut: undefined,
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'archive',
-      label: 'Archive',
-      shortcut: undefined,
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-        </svg>
-      ),
-    },
-  ];
-
-  // Sort nav items by navOrder, falling back to default for any missing
-  const effectiveNavOrder = navOrder && navOrder.length > 0 ? navOrder : DEFAULT_NAV_ORDER;
-  const sortedNavItems = useMemo(() => {
-    const byId = new Map(navItemDefs.map((n) => [n.id, n]));
-    const ordered: NavItemDef[] = [];
-    for (const id of effectiveNavOrder) {
-      const item = byId.get(id);
-      if (item) ordered.push(item);
-    }
-    // Add any items not yet in the order
-    for (const item of navItemDefs) {
-      if (!ordered.find((o) => o.id === item.id)) ordered.push(item);
-    }
-    return ordered;
-  }, [effectiveNavOrder]);
 
   const handleNavDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
