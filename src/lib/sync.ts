@@ -2,6 +2,10 @@ import { supabase } from './supabase';
 import { usePlannerStore } from '../store/usePlannerStore';
 import type { PlannerItem } from '../types';
 
+// Track IDs confirmed to exist on remote (seen during pull or successfully pushed).
+// Local-only items NOT in this set are new/unpushed and must never be auto-deleted.
+const knownRemoteIds = new Set<string>();
+
 // --- Row <-> Item transforms ---
 
 interface ItemRow {
@@ -113,19 +117,22 @@ export async function pullFromSupabase(): Promise<void> {
     // If equal timestamps, keep local (already in merged)
   }
 
-  // Handle local items that don't exist remotely.
-  // If the item was updated very recently (within 30s), keep it — it likely hasn't been pushed yet.
-  // Otherwise, remove it — it was probably deleted on another device.
+  // Record all remote IDs so we know what exists on the server.
   const remoteIds = new Set(remoteItems.map((r) => r.id));
-  const recentThreshold = Date.now() - 30_000;
+  for (const id of remoteIds) knownRemoteIds.add(id);
+
+  // Handle local items that don't exist remotely.
+  // Only delete if we previously saw the item on the remote (it was deleted on another device).
+  // If we never saw it remotely, it's a new/unpushed item — keep and push it.
   for (const id of Object.keys(localItems)) {
     if (!remoteIds.has(id)) {
-      const localUpdated = new Date(localItems[id].updatedAt).getTime();
-      if (localUpdated > recentThreshold) {
-        // Recently modified locally — keep and push
-        localNewer.push(localItems[id]);
-      } else {
+      if (knownRemoteIds.has(id)) {
+        // Was on remote before but now gone — deleted on another device
         delete merged[id];
+        knownRemoteIds.delete(id);
+      } else {
+        // Never seen on remote — new local item, keep and push
+        localNewer.push(localItems[id]);
       }
     }
   }
@@ -139,7 +146,11 @@ export async function pullFromSupabase(): Promise<void> {
     const { error: upsertError } = await supabase
       .from('items')
       .upsert(rows, { onConflict: 'id' });
-    if (upsertError) console.error('push local-newer error:', upsertError);
+    if (upsertError) {
+      console.error('push local-newer error:', upsertError);
+    } else {
+      for (const item of localNewer) knownRemoteIds.add(item.id);
+    }
   }
 }
 
@@ -171,7 +182,12 @@ async function flushChanged(): Promise<void> {
 
   if (rows.length > 0) {
     const { error } = await supabase.from('items').upsert(rows, { onConflict: 'id' });
-    if (error) console.error('pushChanged error:', error);
+    if (error) {
+      console.error('pushChanged error:', error);
+    } else {
+      // Mark as confirmed on remote so pull won't delete them
+      for (const id of ids) knownRemoteIds.add(id);
+    }
   }
 }
 
