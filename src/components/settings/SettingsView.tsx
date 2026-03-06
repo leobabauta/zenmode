@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectItemsForDay, selectInboxItems, selectLaterItems, selectChildItems } from '../../store/usePlannerStore';
 import { requestCalendarAccess } from '../../lib/googleCalendar';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
 import type { PlannerItem } from '../../types';
 
 const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -53,8 +55,45 @@ export function SettingsView() {
 
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+  const user = useAuthStore((s) => s.user);
+
   const [calConnecting, setCalConnecting] = useState(false);
   const [calError, setCalError] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleLogout = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    usePlannerStore.persist.clearStorage();
+    window.location.reload();
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!supabase || !user) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      // Delete all user items
+      const { error: itemsErr } = await supabase.from('items').delete().eq('user_id', user.id);
+      if (itemsErr) throw itemsErr;
+      // Delete user preferences
+      const { error: prefsErr } = await supabase.from('user_preferences').delete().eq('user_id', user.id);
+      if (prefsErr) throw prefsErr;
+      // Delete auth account via Edge Function
+      const { error: deleteErr } = await supabase.functions.invoke('delete-user');
+      if (deleteErr) throw deleteErr;
+      // Clear local storage and sign out
+      usePlannerStore.persist.clearStorage();
+      await supabase.auth.signOut();
+      window.location.reload();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete account');
+      setDeleteLoading(false);
+    }
+  };
 
   const handleConnectCalendar = async () => {
     setCalConnecting(true);
@@ -461,6 +500,78 @@ export function SettingsView() {
               <p className="mt-2 text-xs text-green-600 dark:text-green-400">Import complete!</p>
             )}
           </div>
+
+          {/* Account section */}
+          {supabase && user && (
+            <div>
+              <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">Account</h3>
+              <p className="text-xs text-[var(--color-text-muted)] mb-3">{user.email}</p>
+
+              <div className="flex flex-col gap-2">
+                {/* Log out */}
+                {!showLogoutConfirm ? (
+                  <button
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="w-fit px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+                  >
+                    Log out
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[var(--color-text-secondary)]">Log out?</span>
+                    <button
+                      onClick={handleLogout}
+                      className="px-3 py-1.5 text-sm rounded-md bg-stone-700 text-white hover:bg-stone-800 transition-colors"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => setShowLogoutConfirm(false)}
+                      className="px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {/* Delete account */}
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-fit px-3 py-1.5 text-sm rounded-md border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                  >
+                    Delete account
+                  </button>
+                ) : (
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800">
+                    <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">Are you sure?</p>
+                    <p className="text-xs text-red-600 dark:text-red-400/80 mb-3">
+                      This will permanently delete your account and all your data (tasks, notes, and preferences). This action cannot be undone.
+                    </p>
+                    {deleteError && (
+                      <p className="text-xs text-red-600 mb-2">{deleteError}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleDeleteAccount}
+                        disabled={deleteLoading}
+                        className="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        {deleteLoading ? 'Deleting...' : 'Yes, delete everything'}
+                      </button>
+                      <button
+                        onClick={() => { setShowDeleteConfirm(false); setDeleteError(null); }}
+                        disabled={deleteLoading}
+                        className="px-3 py-1.5 text-sm rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
