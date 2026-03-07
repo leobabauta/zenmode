@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
     let nextOrder = (existingItems?.[0]?.order ?? -1) + 1;
     const now = new Date().toISOString();
 
-    // Create item rows — only include columns known to exist in the DB
+    // Create item rows
     const rows = tasks.map((text) => ({
       id: nanoid(),
       user_id: user.id,
@@ -189,6 +189,7 @@ Deno.serve(async (req) => {
       order: nextOrder++,
       created_at: now,
       updated_at: now,
+      notes: cleanedBody || null,
     }));
 
     const { error: insertError } = await supabase.from('items').insert(rows);

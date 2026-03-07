@@ -125,12 +125,13 @@ function ChildItem({ item, editTrigger, onFocusPrev, onFocusNext }: ChildItemPro
 }
 
 export function ExpandedTaskView() {
-  const { expandedTaskId, items, setExpandedTask, addItem, deleteItem, expandedTaskFullScreen, setExpandedTaskFullScreen, addTimerSession } = usePlannerStore(useShallow((s) => ({
+  const { expandedTaskId, items, setExpandedTask, addItem, deleteItem, updateItem, expandedTaskFullScreen, setExpandedTaskFullScreen, addTimerSession } = usePlannerStore(useShallow((s) => ({
     expandedTaskId: s.expandedTaskId,
     items: s.items,
     setExpandedTask: s.setExpandedTask,
     addItem: s.addItem,
     deleteItem: s.deleteItem,
+    updateItem: s.updateItem,
     expandedTaskFullScreen: s.expandedTaskFullScreen,
     setExpandedTaskFullScreen: s.setExpandedTaskFullScreen,
     addTimerSession: s.addTimerSession,
@@ -139,6 +140,9 @@ export function ExpandedTaskView() {
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
+  const [notesText, setNotesText] = useState('');
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   const timerStartRef = useRef<string>(new Date().toISOString());
   // editRequest: { index, tick } — index is the child to edit (-1 = new last child), tick always increments
   const [editRequest, setEditRequest] = useState<{ index: number; tick: number } | null>(null);
@@ -147,6 +151,12 @@ export function ExpandedTaskView() {
 
   const task = expandedTaskId ? items[expandedTaskId] : null;
   const children = expandedTaskId ? selectChildItems(items, expandedTaskId) : [];
+
+  // Sync notes text when task changes
+  useEffect(() => {
+    setNotesText(task?.notes || '');
+    setIsEditingNotes(false);
+  }, [expandedTaskId]);
 
   const focusTextarea = useCallback(() => {
     // Small delay to let React finish re-rendering after item deletion
@@ -295,7 +305,50 @@ export function ExpandedTaskView() {
           </div>
         )}
 
-        {/* Notes / sub-tasks area + textarea input */}
+        {/* Notes field */}
+        <div className={cn(
+          'py-3',
+          expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'px-5'
+        )}>
+          {isEditingNotes ? (
+            <textarea
+              ref={notesRef}
+              value={notesText}
+              onChange={(e) => setNotesText(e.target.value)}
+              onBlur={() => {
+                const trimmed = notesText.trim();
+                if (trimmed !== (task?.notes || '')) {
+                  updateItem(expandedTaskId!, { notes: trimmed || undefined });
+                }
+                setIsEditingNotes(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation();
+                  setNotesText(task?.notes || '');
+                  setIsEditingNotes(false);
+                }
+              }}
+              rows={Math.max(notesText.split('\n').length, 3)}
+              placeholder="Add notes..."
+              className="w-full bg-transparent text-sm text-[var(--color-text-secondary)] outline-none resize-none"
+              autoFocus
+            />
+          ) : (
+            <div
+              onClick={() => setIsEditingNotes(true)}
+              className="cursor-text min-h-[20px]"
+            >
+              {task?.notes ? (
+                <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap break-words">{task.notes}</p>
+              ) : (
+                <p className="text-sm text-[var(--color-text-muted)] italic">Add notes...</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sub-tasks area + textarea input */}
         <div className={cn(
           'flex-1 overflow-y-auto py-3 flex flex-col',
           expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'px-5'
