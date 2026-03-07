@@ -3,9 +3,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nanoid } from 'nanoid/non-secure';
-import type { PlannerItem, ItemType, CustomList } from '../../shared/types';
-import { toDayKey } from '../../shared/lib/dates';
-import { markChanged, markDeleted, pushPreferences } from '../../shared/lib/sync';
+import type { PlannerItem, ItemType, CustomList } from '../../../shared/types';
+import { toDayKey } from '../../../shared/lib/dates';
+import { markChanged, markDeleted, pushPreferences } from '../../../shared/lib/sync';
 
 interface PlannerState {
   items: Record<string, PlannerItem>;
@@ -196,7 +196,7 @@ export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: st
 
 export function selectInboxItems(items: Record<string, PlannerItem>) {
   return Object.values(items)
-    .filter((i) => i.dayKey === null && !i.isLater && !i.parentId && !i.isArchived)
+    .filter((i) => i.dayKey === null && !i.isLater && !i.parentId && !i.isArchived && !i.listId)
     .sort((a, b) => a.order - b.order);
 }
 

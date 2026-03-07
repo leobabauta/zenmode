@@ -58,12 +58,13 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Verify shared secret to prevent unauthorized submissions
   const webhookSecret = Deno.env.get('EMAIL_WEBHOOK_SECRET');
   if (webhookSecret) {
+    const url = new URL(req.url);
+    const querySecret = url.searchParams.get('secret');
     const authHeader = req.headers.get('Authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    if (token !== webhookSecret) {
+    const bearerToken = authHeader?.replace('Bearer ', '');
+    if (querySecret !== webhookSecret && bearerToken !== webhookSecret) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +84,15 @@ Deno.serve(async (req) => {
     // - html (HTML body)
     const payload = await req.json();
 
-    const senderEmail = (payload.envelope?.from || '').toLowerCase().trim();
+    let senderEmail = (payload.envelope?.from || '').toLowerCase().trim();
+
+    // Cloudflare Email Routing uses SRS (Sender Rewriting Scheme)
+    // Format: srs0=hash=tt=originaldomain=user@forwardingdomain
+    const srsMatch = senderEmail.match(/^srs0=[^=]+=\w+=([^=]+)=([^@]+)@/);
+    if (srsMatch) {
+      senderEmail = `${srsMatch[2]}@${srsMatch[1]}`;
+      console.log(`SRS decoded sender: ${senderEmail}`);
+    }
     const subject = payload.headers?.subject || '';
     const plainBody = payload.plain || '';
 
@@ -103,6 +112,17 @@ Deno.serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    // Ignore automated emails (e.g. Cloudflare verification)
+    if (senderEmail.endsWith('@cloudflare.com') || senderEmail.endsWith('@notify.cloudflare.com')) {
+      return new Response(JSON.stringify({ success: true, skipped: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Sender email: "${senderEmail}"`);
+    console.log(`Known users: ${userData.users.map((u) => u.email).join(', ')}`);
 
     const user = userData.users.find((u) => u.email?.toLowerCase() === senderEmail);
     if (!user) {
@@ -150,7 +170,6 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .is('day_key', null)
       .eq('is_later', false)
-      .eq('is_archived', false)
       .is('parent_id', null)
       .order('order', { ascending: false })
       .limit(1);
@@ -158,7 +177,7 @@ Deno.serve(async (req) => {
     let nextOrder = (existingItems?.[0]?.order ?? -1) + 1;
     const now = new Date().toISOString();
 
-    // Create item rows
+    // Create item rows — only include columns known to exist in the DB
     const rows = tasks.map((text) => ({
       id: nanoid(),
       user_id: user.id,
@@ -170,16 +189,6 @@ Deno.serve(async (req) => {
       order: nextOrder++,
       created_at: now,
       updated_at: now,
-      recurrence: null,
-      parent_id: null,
-      consecutive_moves: 0,
-      is_priority: false,
-      is_medium_priority: false,
-      is_practice: false,
-      list_id: null,
-      completed_at: null,
-      timer_sessions: null,
-      is_archived: false,
     }));
 
     const { error: insertError } = await supabase.from('items').insert(rows);

@@ -1007,7 +1007,7 @@ export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: st
 
 export function selectInboxItems(items: Record<string, PlannerItem>) {
   return Object.values(items)
-    .filter((i) => i.dayKey === null && !i.isLater && !i.parentId && !i.isArchived)
+    .filter((i) => i.dayKey === null && !i.isLater && !i.parentId && !i.isArchived && !i.listId)
     .sort((a, b) => a.order - b.order);
 }
 
