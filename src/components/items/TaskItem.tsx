@@ -6,6 +6,7 @@ import { Checkbox } from '../ui/Checkbox';
 import { IconButton } from '../ui/IconButton';
 import { RecurrencePopover } from '../ui/RecurrencePopover';
 import { HashtagText } from '../ui/HashtagText';
+import { useToast } from '../ui/Toast';
 import { cn } from '../../lib/utils';
 import type { PlannerItem } from '../../types';
 
@@ -33,7 +34,7 @@ export function TaskItem({
   onShiftSelectPrev, onShiftSelectNext, onMoveUp, onMoveDown,
   onInsertAfter, dragHandleProps,
 }: TaskItemProps) {
-  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, setExpandedTask, setShowMoveModal, setHashtagView } = usePlannerStore(useShallow((s) => ({
+  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, setExpandedTask, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
     promptDeleteItem: s.promptDeleteItem,
     setRecurrence: s.setRecurrence,
@@ -42,7 +43,9 @@ export function TaskItem({
     setExpandedTask: s.setExpandedTask,
     setShowMoveModal: s.setShowMoveModal,
     setHashtagView: s.setHashtagView,
+    unarchiveItem: s.unarchiveItem,
   })));
+  const { show: showToast } = useToast();
   const hasChildren = usePlannerStore((s) => selectChildItems(s.items, item.id).length > 0);
   const [isEditing, setIsEditing] = useState(false);
   const [showRecurrence, setShowRecurrence] = useState(false);
@@ -199,7 +202,27 @@ export function TaskItem({
       <div className="mt-0.5">
         <Checkbox
           checked={item.completed}
-          onChange={(checked) => updateItem(item.id, { completed: checked })}
+          onChange={(checked) => {
+            updateItem(item.id, { completed: checked });
+            // Auto-archive inbox/later items on completion
+            if (checked && !item.dayKey && !item.listId) {
+              const isInboxOrLater = !item.dayKey;
+              if (isInboxOrLater) {
+                setTimeout(() => {
+                  usePlannerStore.setState((state) => {
+                    const it = state.items[item.id];
+                    if (it) {
+                      it.isArchived = true;
+                      it.updatedAt = new Date().toISOString();
+                    }
+                  });
+                  showToast('Moved to Archive', () => {
+                    unarchiveItem(item.id);
+                  });
+                }, 300);
+              }
+            }
+          }}
         />
       </div>
 

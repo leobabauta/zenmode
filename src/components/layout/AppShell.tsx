@@ -131,23 +131,6 @@ export function AppShell() {
         usePlannerStore.getState().setView('archive');
         return;
       }
-      if (e.key === 'g') {
-        e.preventDefault();
-        const state = usePlannerStore.getState();
-        const v = state.view;
-        if (v === 'today') {
-          state.sortCompletedToTop({ dayKey: toDayKey(new Date()) });
-        } else if (v === 'inbox') {
-          state.sortCompletedToTop({});
-        } else if (v === 'later') {
-          state.sortCompletedToTop({ isLater: true });
-        } else if (v === 'hashtag' && state.activeHashtag) {
-          state.sortCompletedToTop({ hashtag: state.activeHashtag });
-        } else if (v === 'list' && state.activeListId) {
-          state.sortCompletedToTop({ listId: state.activeListId });
-        }
-        return;
-      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

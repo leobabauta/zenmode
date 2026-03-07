@@ -8,6 +8,7 @@ import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow } from './lib/sync';
 import { LoginPage } from './components/auth/LoginPage';
+import { ToastProvider } from './components/ui/Toast';
 
 export default function App() {
   const isMobile = useIsMobile();
@@ -199,5 +200,9 @@ export default function App() {
     return null;
   }
 
-  return isMobile ? <MobileApp /> : <AppShell />;
+  return (
+    <ToastProvider>
+      {isMobile ? <MobileApp /> : <AppShell />}
+    </ToastProvider>
+  );
 }

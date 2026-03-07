@@ -8,7 +8,6 @@ import { GreetingBanner } from '../ui/GreetingBanner';
 
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
-  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
   const setView = usePlannerStore((s) => s.setView);
   const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
   const reviewRitualEnabled = usePlannerStore((s) => s.reviewRitualEnabled);
@@ -66,10 +65,7 @@ export function TodayView() {
             <ItemList items={nonPracticeItems} />
           </div>
           <AddItemForm dayKey={dayKey} className="mt-1" />
-          <SortArchiveButtons
-            items={todayItems}
-            onSort={() => sortCompletedToTop({ dayKey })}
-          />
+          <SortArchiveButtons items={todayItems} />
         </div>
       </div>
     </div>

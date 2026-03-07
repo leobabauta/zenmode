@@ -22,7 +22,6 @@ const SECTIONS = [
     shortcuts: [
       { keys: 'N', desc: 'New task' },
       { keys: '\u2318K', desc: 'Command palette' },
-      { keys: 'G', desc: 'Sort completed to top' },
     ],
   },
   {

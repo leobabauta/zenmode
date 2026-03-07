@@ -10,7 +10,6 @@ export function CustomListView() {
   const customLists = usePlannerStore((s) => s.customLists);
   const renameCustomList = usePlannerStore((s) => s.renameCustomList);
   const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
-  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
 
   const [editing, setEditing] = useState(false);
@@ -121,7 +120,6 @@ export function CustomListView() {
           <AddItemForm dayKey={null} className="mt-1" listId={activeListId} />
           <SortArchiveButtons
             items={listItems}
-            onSort={() => sortCompletedToTop({ listId: activeListId })}
             onArchive={() => archiveCompleted({ listId: activeListId })}
           />
         </div>

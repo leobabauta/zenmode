@@ -5,7 +5,6 @@ import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 
 export function LaterView() {
   const items = usePlannerStore((s) => s.items);
-  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const laterItems = selectLaterItems(items);
 
@@ -28,7 +27,6 @@ export function LaterView() {
           <AddItemForm dayKey={null} isLater className="mt-1" />
           <SortArchiveButtons
             items={laterItems}
-            onSort={() => sortCompletedToTop({ isLater: true })}
             onArchive={() => archiveCompleted({ isLater: true })}
           />
         </div>

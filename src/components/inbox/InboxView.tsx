@@ -5,7 +5,6 @@ import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 
 export function InboxView() {
   const items = usePlannerStore((s) => s.items);
-  const sortCompletedToTop = usePlannerStore((s) => s.sortCompletedToTop);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const inboxItems = selectInboxItems(items);
 
@@ -28,7 +27,6 @@ export function InboxView() {
           <AddItemForm dayKey={null} className="mt-1" />
           <SortArchiveButtons
             items={inboxItems}
-            onSort={() => sortCompletedToTop({})}
             onArchive={() => archiveCompleted({})}
           />
         </div>

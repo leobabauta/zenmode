@@ -53,6 +53,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── Toast animation ──────────────────────────────────── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* ── Confetti animations ───────────────────────────────── */
 @keyframes confetti-pop {
   0% { transform: translate(-50%, -50%) translate(0, 0); opacity: 1; }
