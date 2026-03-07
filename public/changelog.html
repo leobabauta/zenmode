@@ -16,6 +16,9 @@
     .version { display: inline-block; background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 6px; padding: 0.125rem 0.5rem; font-size: 0.8125rem; font-weight: 600; color: #57534e; }
     .roadmap-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; font-size: 0.9375rem; }
     .roadmap-dot { width: 8px; height: 8px; border-radius: 50%; background: #d6d3d1; flex-shrink: 0; }
+    .roadmap-dot.in-progress { background: #3b82f6; }
+    .roadmap-dot.up-next { background: #a78bfa; }
+    .roadmap-status { font-size: 0.75rem; color: #78716c; margin-left: 0.25rem; }
     .divider { border: none; border-top: 1px solid #e7e5e4; margin: 2rem 0; }
 
     /* Feedback form */
@@ -42,7 +45,22 @@
   <!-- Changelog -->
   <h2>Changelog</h2>
 
-  <h3><span class="version">v0.5</span> &mdash; Current Release</h3>
+  <h3><span class="version">v0.6</span> &mdash; Current Release</h3>
+  <ul>
+    <li><strong>Email-to-Task</strong> &mdash; Forward emails to create tasks in your Inbox automatically</li>
+    <li><strong>Subtasks</strong> &mdash; Option+drag a task onto another to nest it as a subtask, with collapsible display</li>
+    <li><strong>Clickable Priority Stars</strong> &mdash; Click to cycle between no priority, medium (blue), and high (yellow)</li>
+    <li><strong>Drag to Sidebar</strong> &mdash; Drag tasks to Inbox, Later, Archive, custom lists, or labels in the sidebar</li>
+    <li><strong>Daily Review Notes</strong> &mdash; Review notes now have a golden highlight and show completed priority stars</li>
+    <li><strong>Move Modal Improvements</strong> &mdash; Type a custom list name to highlight and select it</li>
+    <li><strong>Label View Add Items</strong> &mdash; New items created in a label view automatically get the hashtag</li>
+    <li><strong>Sidebar Reordering</strong> &mdash; Drag to reorder nav items and labels in the sidebar</li>
+    <li><strong>View Persistence</strong> &mdash; Your current view and sidebar state are remembered across page refreshes</li>
+    <li><strong>Command Palette</strong> &mdash; Quick access to navigation and task creation with Cmd+K</li>
+    <li><strong>Completion Confetti</strong> &mdash; Full-screen celebration when you complete all tasks for the day</li>
+  </ul>
+
+  <h3><span class="version">v0.5</span></h3>
   <ul>
     <li><strong>Daily Planning Ritual</strong> &mdash; A guided 3-step morning workflow to set intentions, choose a practice, and plan your day</li>
     <li><strong>Daily Review Ritual</strong> &mdash; Evening reflection prompt to review your day</li>
@@ -75,10 +93,9 @@
   <p style="font-size: 0.875rem; color: #78716c;">Planned features &mdash; no timeline, but these are on our list.</p>
 
   <div style="margin-top: 1rem;">
-    <div class="roadmap-item"><span class="roadmap-dot"></span> Android app</div>
-    <div class="roadmap-item"><span class="roadmap-dot"></span> iOS app</div>
+    <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> Android app <span class="roadmap-status">(in progress)</span></div>
+    <div class="roadmap-item"><span class="roadmap-dot up-next"></span> iOS app <span class="roadmap-status">(up next)</span></div>
     <div class="roadmap-item"><span class="roadmap-dot"></span> Desktop app</div>
-    <div class="roadmap-item"><span class="roadmap-dot"></span> Add tasks by forwarding emails</div>
     <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add browser extension</div>
     <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add desktop extension</div>
     <div class="roadmap-item"><span class="roadmap-dot"></span> Show progress towards longer-term goals</div>

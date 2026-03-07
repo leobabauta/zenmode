@@ -178,6 +178,9 @@ export function MoveModal() {
     : -1;
   const matchInbox = inputLower ? 'inbox'.startsWith(inputLower) : false;
   const matchArchive = inputLower ? 'archive'.startsWith(inputLower) : false;
+  const matchingListIdx = inputLower
+    ? customLists.findIndex((l) => l.name.toLowerCase().startsWith(inputLower))
+    : -1;
 
   const handleMove = (targetDayKey: string) => {
     const selectedIds = getSelectedItemIds(items, selectionAnchorId, selectionFocusId);
@@ -212,6 +215,7 @@ export function MoveModal() {
   };
 
   const handleSubmit = () => {
+    if (matchingListIdx >= 0) { handleMoveToList(customLists[matchingListIdx].id); return; }
     if (matchInbox) { handleMoveToInbox(); return; }
     if (matchArchive) { handleMoveToArchive(); return; }
     if (matchingPresetIdx >= 0) {
@@ -255,7 +259,8 @@ export function MoveModal() {
           />
           {inputValue.trim() && (() => {
             let hint: string | null = null;
-            if (matchInbox) hint = 'Move to Inbox';
+            if (matchingListIdx >= 0) hint = `Move to ${customLists[matchingListIdx].name}`;
+            else if (matchInbox) hint = 'Move to Inbox';
             else if (matchArchive) hint = 'Move to Archive (Later)';
             else if (matchingPresetIdx >= 0) hint = `Move to ${presets[matchingPresetIdx].label} — ${format(presets[matchingPresetIdx].date, 'EEE, MMM d')}`;
             else if (parsedDate) hint = `Move to ${format(parsedDate, 'EEEE, MMM d, yyyy')}`;
@@ -328,20 +333,27 @@ export function MoveModal() {
         {/* Custom Lists */}
         {customLists.length > 0 && (
           <div className="border-t border-[var(--color-border)]">
-            {[...customLists].sort((a, b) => a.order - b.order).map((list) => (
-              <button
-                key={list.id}
-                onClick={() => handleMoveToList(list.id)}
-                className={cn(
-                  'w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors',
-                  'hover:bg-[var(--color-surface)]',
-                )}
-              >
-                <span className="font-medium text-[var(--color-text-primary)]">
-                  {list.name}
-                </span>
-              </button>
-            ))}
+            {[...customLists].sort((a, b) => a.order - b.order).map((list) => {
+              const isHighlighted = matchingListIdx >= 0 && customLists[matchingListIdx].id === list.id;
+              return (
+                <button
+                  key={list.id}
+                  onClick={() => handleMoveToList(list.id)}
+                  className={cn(
+                    'w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors',
+                    'hover:bg-[var(--color-surface)]',
+                    isHighlighted && 'bg-[var(--color-accent-tint)]',
+                  )}
+                >
+                  <span className={cn(
+                    'font-medium',
+                    isHighlighted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]',
+                  )}>
+                    {list.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

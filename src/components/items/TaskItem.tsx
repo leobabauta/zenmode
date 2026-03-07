@@ -386,7 +386,7 @@ export function TaskItem({
           item.isPriority
             ? 'bg-amber-400 ring-1 ring-amber-400/30'
             : item.isMediumPriority
-              ? 'bg-blue-400 ring-1 ring-blue-400/30'
+              ? 'bg-blue-400/60 ring-1 ring-blue-400/20'
               : 'opacity-0 group-hover:opacity-100 border border-[var(--color-border)] hover:border-blue-300',
         )}
         title={item.isPriority ? 'High priority (click to remove)' : item.isMediumPriority ? 'Medium priority (click for high)' : 'Set priority'}
