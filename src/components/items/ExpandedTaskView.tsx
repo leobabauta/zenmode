@@ -166,11 +166,7 @@ export function ExpandedTaskView() {
   const submitLine = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || !task) return;
-    if (trimmed.startsWith('[] ') && trimmed.length > 3) {
-      addItem({ type: 'task', text: trimmed.slice(3).trim(), dayKey: task.dayKey, parentId: task.id });
-    } else {
-      addItem({ type: 'note', text: trimmed, dayKey: task.dayKey, parentId: task.id });
-    }
+    addItem({ type: 'task', text: trimmed, dayKey: task.dayKey, parentId: task.id });
   };
 
   const closeAndSave = () => {
@@ -377,7 +373,7 @@ export function ExpandedTaskView() {
           <div className="relative flex-1 min-h-[80px]">
             {isFocused && !inputText && (
               <span className="absolute top-0 left-0 text-sm text-[var(--color-text-muted)] pointer-events-none">
-                Note ([] to create a task)
+                Add a sub-task...
               </span>
             )}
             <textarea
@@ -385,16 +381,7 @@ export function ExpandedTaskView() {
               value={inputText}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === '[] ' && task) {
-                  addItem({ type: 'task', text: '', dayKey: task.dayKey, parentId: task.id });
-                  setInputText('');
-                  requestEditAt(-1);  // -1 = last child
-                  return;
-                }
-                setInputText(val);
-              }}
+              onChange={(e) => setInputText(e.target.value)}
               onPaste={(e) => {
                 const pasted = e.clipboardData.getData('text');
                 if (pasted.includes('\n')) {

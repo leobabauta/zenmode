@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       senderEmail = `${srsMatch[2]}@${srsMatch[1]}`;
       console.log(`SRS decoded sender: ${senderEmail}`);
     }
-    const subject = payload.headers?.subject || '';
+    const subject = (payload.headers?.subject || '').replace(/^(?:fwd?|re):\s*/gi, '');
     const plainBody = payload.plain || '';
 
     if (!senderEmail) {
@@ -144,9 +144,7 @@ Deno.serve(async (req) => {
     if (listItems) {
       // Body contains a list — each item becomes a task
       // Prepend subject as context if it's meaningful
-      const prefix = subject && !subject.toLowerCase().startsWith('re:')
-        ? `${subject}: `
-        : '';
+      const prefix = subject ? `${subject}: ` : '';
       for (const item of listItems) {
         tasks.push(prefix ? `${prefix}${item}` : item);
       }
