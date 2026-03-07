@@ -501,10 +501,24 @@ export function SettingsView() {
             )}
           </div>
 
+          {/* Changelog link */}
+          <div>
+            <a
+              href="/changelog.html"
+              className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Changelog & Roadmap
+            </a>
+          </div>
+
           {/* Account section */}
           {supabase && user && (
             <div>
               <h3 className="text-sm font-medium text-[var(--color-text-primary)] mb-3">Account</h3>
+              <AccountName user={user} />
               <p className="text-xs text-[var(--color-text-muted)] mb-3">{user.email}</p>
 
               <div className="flex flex-col gap-2">
@@ -575,6 +589,62 @@ export function SettingsView() {
         </div>
       </div>
     </>
+  );
+}
+
+function AccountName({ user }: { user: { id: string; user_metadata?: { full_name?: string } } }) {
+  const name = user.user_metadata?.full_name || '';
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) setTimeout(() => inputRef.current?.focus(), 0);
+  }, [editing]);
+
+  const save = async () => {
+    const trimmed = value.trim();
+    setEditing(false);
+    if (trimmed === name) return;
+    if (!supabase) return;
+    await supabase.auth.updateUser({ data: { full_name: trimmed } });
+    // Update the local auth store
+    useAuthStore.setState((s) => {
+      if (s.user) {
+        return { user: { ...s.user, user_metadata: { ...s.user.user_metadata, full_name: trimmed } } };
+      }
+      return s;
+    });
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') { setValue(name); setEditing(false); }
+        }}
+        onBlur={save}
+        placeholder="Your name"
+        className="text-sm font-medium text-[var(--color-text-primary)] bg-transparent border-b border-[var(--color-border)] outline-none mb-1 w-full"
+      />
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setValue(name); setEditing(true); }}
+      className="text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors mb-1 flex items-center gap-1"
+      title="Click to edit name"
+    >
+      {name || 'Add your name'}
+      <svg className="w-3 h-3 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    </button>
   );
 }
 
