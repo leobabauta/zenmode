@@ -959,7 +959,7 @@ export const usePlannerStore = create<PlannerState>()(
       },
     })),
     {
-      name: 'paso-planner-v1',
+      name: 'zenmode-v1',
       partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, googleCalendarConnected: state.googleCalendarConnected, googleCalendarDismissed: state.googleCalendarDismissed }),
     }
   )
