@@ -362,8 +362,7 @@ export function Sidebar() {
       </nav>
 
       {/* Custom lists section */}
-      {(customLists.length > 0 || creatingList) && (
-        <div className="mt-3 px-3">
+      <div className="mt-3 px-3">
           <button
             onClick={() => setListsCollapsed(!listsCollapsed)}
             className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1 hover:text-[var(--color-text-secondary)] transition-colors"
@@ -434,7 +433,6 @@ export function Sidebar() {
             </>
           )}
         </div>
-      )}
 
       {/* Labels section with drag-to-reorder */}
       {sortedHashtags.length > 0 && (

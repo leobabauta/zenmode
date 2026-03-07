@@ -1,4 +1,5 @@
 import { usePlannerStore, selectArchivedItems } from '../../store/usePlannerStore';
+import { Checkbox } from '../ui/Checkbox';
 
 export function ArchiveView() {
   const items = usePlannerStore((s) => s.items);
@@ -29,6 +30,9 @@ export function ArchiveView() {
                   key={item.id}
                   className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--color-surface)] transition-colors group"
                 >
+                  <div className="opacity-40 pointer-events-none">
+                    <Checkbox checked={item.completed} onChange={() => {}} />
+                  </div>
                   <span className="flex-1 text-sm text-[var(--color-text-secondary)] line-through">
                     {item.text}
                   </span>

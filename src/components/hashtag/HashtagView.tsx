@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { usePlannerStore, selectItemsForHashtag, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
-import { AddItemForm } from '../forms/AddItemForm';
 import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 import { cn } from '../../lib/utils';
 
@@ -24,6 +23,7 @@ export function HashtagView() {
 
   if (!activeHashtag) return null;
 
+  const addItem = usePlannerStore((s) => s.addItem);
   const taggedItems = selectItemsForHashtag(items, activeHashtag);
   const labelColor = getLabelColor(activeHashtag);
 
@@ -184,13 +184,87 @@ export function HashtagView() {
           <div className="min-h-[8px]">
             <ItemList items={taggedItems} />
           </div>
-          <AddItemForm dayKey={null} className="mt-1" />
+          <HashtagAddItemForm hashtag={activeHashtag} addItem={addItem} />
           <SortArchiveButtons
             items={taggedItems}
             onArchive={() => archiveCompleted({ hashtag: activeHashtag })}
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Custom add-item form that appends the hashtag to new tasks */
+function HashtagAddItemForm({ hashtag, addItem }: { hashtag: string; addItem: (payload: { type: 'task' | 'note'; text: string; dayKey: string | null }) => void }) {
+  const [active, setActive] = useState(false);
+  const [text, setText] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const open = () => {
+    setActive(true);
+    setText('');
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const close = () => {
+    setActive(false);
+    setText('');
+  };
+
+  const submit = () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    // Append hashtag if not already present
+    const taskText = trimmed.toLowerCase().includes(hashtag.toLowerCase())
+      ? trimmed
+      : `${trimmed} ${hashtag}`;
+    addItem({ type: 'task', text: taskText, dayKey: null });
+    setText('');
+    inputRef.current?.focus();
+  };
+
+  if (!active) {
+    return (
+      <button
+        onClick={open}
+        className={cn(
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm mt-1',
+          'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
+          'hover:bg-[var(--color-surface)] transition-colors duration-100',
+        )}
+      >
+        <span className="w-4 flex-shrink-0" />
+        <span className="w-5 flex-shrink-0 flex items-center justify-center">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+        </span>
+        Add item
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 mt-1">
+      <span className="w-4 flex-shrink-0" />
+      <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center mt-0.5">
+        <svg viewBox="0 0 16 16" className="w-full h-full" fill="none">
+          <circle cx="8" cy="8" r="6.5" stroke="var(--color-text-muted)" strokeWidth="1.5" strokeDasharray="2.5 2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <input
+        ref={inputRef}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { submit(); return; }
+          if (e.key === 'Escape') { close(); return; }
+        }}
+        onBlur={() => { if (!text.trim()) close(); }}
+        placeholder="Task"
+        className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none"
+      />
     </div>
   );
 }
