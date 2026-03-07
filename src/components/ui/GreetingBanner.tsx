@@ -1,4 +1,5 @@
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePlannerStore } from '../../store/usePlannerStore';
 import { formatDayLabel } from '../../lib/dates';
 
 const GUIDANCE = [
@@ -35,6 +36,7 @@ function getDailyGuidance(): string {
 
 export function GreetingBanner() {
   const user = useAuthStore((s) => s.user);
+  const setView = usePlannerStore((s) => s.setView);
   const firstName = getFirstName(user);
   const greeting = getGreeting();
   const today = new Date();
@@ -42,7 +44,10 @@ export function GreetingBanner() {
 
   return (
     <div className="mb-4">
-      <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+      <h1
+        className="text-2xl font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+        onClick={() => setView('today')}
+      >
         {greeting}{firstName ? `, ${firstName}` : ''}
       </h1>
       <p className="text-sm text-[var(--color-text-muted)] mt-0.5">

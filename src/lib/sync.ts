@@ -316,11 +316,10 @@ export async function pullPreferences(): Promise<void> {
     }
     const mergedLists = [...listById.values()].sort((a, b) => a.order - b.order);
 
+    // Don't overwrite transient UI state (view, sidebarCollapsed, activeHashtag, activeListId)
+    // — these are session-local and already persisted via zustand local storage.
     usePlannerStore.setState({
       theme: row.theme as 'light' | 'dark',
-      view: row.view as ReturnType<typeof usePlannerStore.getState>['view'],
-      activeHashtag: row.active_hashtag,
-      sidebarCollapsed: row.sidebar_collapsed,
       labelColors: row.label_colors,
       lastRitualDate: bestRitualDate,
       planningRitualEnabled: row.planning_ritual_enabled ?? true,
@@ -329,7 +328,6 @@ export async function pullPreferences(): Promise<void> {
       reviewRitualHour: row.review_ritual_hour ?? 17,
       lastReviewRitualDate: bestReviewDate,
       customLists: mergedLists,
-      activeListId: row.active_list_id ?? null,
     });
   }
 }
