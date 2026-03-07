@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   DragEndEvent,
   DragStartEvent,
@@ -24,6 +24,15 @@ function getContainerKey(item: { dayKey: string | null; isLater?: boolean }): st
 
 export function useDragAndDrop() {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const altKeyRef = useRef(false);
+
+  // Track Alt key state for subtask drop detection
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { altKeyRef.current = e.altKey; };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKey);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey); };
+  }, []);
   const { items, moveItem, reorderItems, sendToInbox, sendToLater, sendToList, updateItem, reorderNav, reorderLabels } = usePlannerStore(
     useShallow((s) => ({
       items: s.items,
@@ -118,6 +127,16 @@ export function useDragAndDrop() {
         sendToLater(activeIdStr);
         return;
       }
+      if (overId === 'sidebar-archive') {
+        usePlannerStore.setState((state) => {
+          const item = state.items[activeIdStr];
+          if (item) {
+            item.isArchived = true;
+            item.updatedAt = new Date().toISOString();
+          }
+        });
+        return;
+      }
       if (overId.startsWith('sidebar-list-')) {
         const listId = overId.slice('sidebar-list-'.length);
         sendToList(activeIdStr, listId);
@@ -134,32 +153,29 @@ export function useDragAndDrop() {
       return;
     }
 
-    // --- Drop task onto another task to make subtask ---
-    if (overId.startsWith('subtask-')) {
-      const parentId = overId.slice('subtask-'.length);
-      const activeItem = items[activeIdStr];
-      if (!activeItem || parentId === activeIdStr || activeItem.parentId === parentId) return;
-      // Don't allow making a parent into a child of its own child
-      if (items[parentId]?.parentId === activeIdStr) return;
-      usePlannerStore.setState((state) => {
-        const item = state.items[activeIdStr];
-        const parent = state.items[parentId];
-        if (!item || !parent) return;
-        // Count existing children to set order
-        const childCount = Object.values(state.items).filter((i) => i.parentId === parentId).length;
-        item.parentId = parentId;
-        item.dayKey = parent.dayKey;
-        item.isLater = parent.isLater;
-        item.listId = parent.listId;
-        item.order = childCount;
-        item.updatedAt = new Date().toISOString();
-      });
-      return;
-    }
-
-    // --- Normal task reorder/move ---
+    // --- Alt/Option+drop onto a task to make subtask ---
+    const altHeld = altKeyRef.current;
     const activeItem = items[activeIdStr];
     if (!activeItem) return;
+
+    if (altHeld && items[overId] && overId !== activeIdStr && activeItem.parentId !== overId) {
+      // Don't allow circular: parent becoming child of its own child
+      if (!(items[overId]?.parentId === activeIdStr)) {
+        usePlannerStore.setState((state) => {
+          const item = state.items[activeIdStr];
+          const parent = state.items[overId];
+          if (!item || !parent) return;
+          const childCount = Object.values(state.items).filter((i) => i.parentId === overId).length;
+          item.parentId = overId;
+          item.dayKey = parent.dayKey;
+          item.isLater = parent.isLater;
+          item.listId = parent.listId;
+          item.order = childCount;
+          item.updatedAt = new Date().toISOString();
+        });
+        return;
+      }
+    }
 
     const sourceContainerKey = getContainerKey(activeItem);
 

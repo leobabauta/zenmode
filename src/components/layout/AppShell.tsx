@@ -33,7 +33,7 @@ import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 
-// Custom collision detection: prefer sidebar/subtask droppables (pointer-based), fall back to rect intersection for sortables
+// Custom collision detection: prefer sidebar droppables (pointer-based), fall back to rect intersection for sortables
 const collisionDetection: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args);
   // Prefer sidebar drop targets

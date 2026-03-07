@@ -340,7 +340,7 @@ export function Sidebar() {
       <nav className="mt-1 px-2 space-y-0.5">
         <SortableContext items={sortedNavItems.map((n) => `nav-${n.id}`)} strategy={verticalListSortingStrategy}>
           {sortedNavItems.map((nav) => {
-            const isDropTarget = nav.id === 'inbox' || nav.id === 'later';
+            const isDropTarget = nav.id === 'inbox' || nav.id === 'later' || nav.id === 'archive';
             return isDropTarget ? (
               <SidebarDropTarget key={nav.id} id={`sidebar-${nav.id}`}>
                 <SortableNavItem

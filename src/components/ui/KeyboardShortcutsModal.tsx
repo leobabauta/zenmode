@@ -36,6 +36,7 @@ const SECTIONS = [
       { keys: 'M', desc: 'Move task to day' },
       { keys: 'Shift+I', desc: 'Send to Inbox' },
       { keys: 'Shift+E', desc: 'Send to Later' },
+      { keys: '⌥+Drag', desc: 'Drop onto task to make subtask' },
     ],
   },
 ];
