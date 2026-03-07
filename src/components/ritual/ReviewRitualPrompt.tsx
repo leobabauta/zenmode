@@ -1,4 +1,5 @@
 import { usePlannerStore } from '../../store/usePlannerStore';
+import { toDayKey } from '../../lib/dates';
 
 export function ReviewRitualPrompt() {
   const setShowReviewRitualPrompt = usePlannerStore((s) => s.setShowReviewRitualPrompt);
@@ -34,7 +35,10 @@ export function ReviewRitualPrompt() {
             Snooze 1hr
           </button>
           <button
-            onClick={() => setShowReviewRitualPrompt(false)}
+            onClick={() => {
+              setShowReviewRitualPrompt(false);
+              usePlannerStore.setState({ lastReviewRitualDate: toDayKey(new Date()), reviewRitualSnoozedUntil: null });
+            }}
             className="px-5 py-2 rounded-lg text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
           >
             Skip

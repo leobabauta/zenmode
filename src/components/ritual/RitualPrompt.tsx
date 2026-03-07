@@ -1,4 +1,5 @@
 import { usePlannerStore } from '../../store/usePlannerStore';
+import { toDayKey } from '../../lib/dates';
 
 export function RitualPrompt() {
   const setShowRitualPrompt = usePlannerStore((s) => s.setShowRitualPrompt);
@@ -31,7 +32,10 @@ export function RitualPrompt() {
             Snooze 1hr
           </button>
           <button
-            onClick={() => setShowRitualPrompt(false)}
+            onClick={() => {
+              setShowRitualPrompt(false);
+              usePlannerStore.setState({ lastRitualDate: toDayKey(new Date()), planningRitualSnoozedUntil: null });
+            }}
             className="px-5 py-2 rounded-lg text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
           >
             Skip
