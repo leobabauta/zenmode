@@ -128,13 +128,6 @@ export async function pullFromSupabase(): Promise<void> {
       console.error('pullFromSupabase error:', error, JSON.stringify(error));
       return;
     }
-    // Debug: check if notes is present in the first row
-    if (rows && rows.length > 0) {
-      const sample = rows[0] as Record<string, unknown>;
-      console.log('[sync] Sample row keys:', Object.keys(sample).join(', '));
-      console.log('[sync] Sample notes value:', sample.notes);
-    }
-
     const remoteItems = (rows as ItemRow[]).map(rowToItem);
 
     // Re-read local items AFTER the network call to get the freshest state.
