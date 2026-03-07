@@ -24,13 +24,17 @@ function getContainerKey(item: { dayKey: string | null; isLater?: boolean }): st
 
 export function useDragAndDrop() {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const { items, moveItem, reorderItems, sendToInbox, sendToLater } = usePlannerStore(
+  const { items, moveItem, reorderItems, sendToInbox, sendToLater, sendToList, updateItem, reorderNav, reorderLabels } = usePlannerStore(
     useShallow((s) => ({
       items: s.items,
       moveItem: s.moveItem,
       reorderItems: s.reorderItems,
       sendToInbox: s.sendToInbox,
       sendToLater: s.sendToLater,
+      sendToList: s.sendToList,
+      updateItem: s.updateItem,
+      reorderNav: s.reorderNav,
+      reorderLabels: s.reorderLabels,
     }))
   );
 
@@ -57,9 +61,81 @@ export function useDragAndDrop() {
 
     if (!over) return;
 
-    const activeItemId = String(active.id);
+    const activeIdStr = String(active.id);
     const overId = String(over.id);
-    const activeItem = items[activeItemId];
+
+    // --- Sidebar nav reorder ---
+    if (activeIdStr.startsWith('nav-') && overId.startsWith('nav-')) {
+      if (activeIdStr === overId) return;
+      const state = usePlannerStore.getState();
+      const navOrder = state.navOrder && state.navOrder.length > 0
+        ? state.navOrder
+        : ['timeline', 'inbox', 'today', 'later', 'archive'];
+      const activeNav = activeIdStr.slice(4);
+      const overNav = overId.slice(4);
+      const oldIndex = navOrder.indexOf(activeNav);
+      const newIndex = navOrder.indexOf(overNav);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderNav(arrayMove([...navOrder], oldIndex, newIndex));
+      }
+      return;
+    }
+
+    // --- Sidebar label reorder ---
+    if (activeIdStr.startsWith('label-') && overId.startsWith('label-')) {
+      if (activeIdStr === overId) return;
+      const state = usePlannerStore.getState();
+      const activeTag = activeIdStr.slice(6);
+      const overTag = overId.slice(6);
+      // Get current label order from store
+      const allHashtags = new Set<string>();
+      Object.values(state.items).forEach((item) => {
+        const matches = item.text.match(/(#[\w-]+)/g);
+        if (matches) matches.forEach((m) => allHashtags.add(m.toLowerCase()));
+      });
+      const tags = Array.from(allHashtags).sort();
+      const ordered = state.labelOrder && state.labelOrder.length > 0
+        ? state.labelOrder.filter((t) => tags.includes(t)).concat(tags.filter((t) => !state.labelOrder.includes(t)))
+        : tags;
+      const oldIndex = ordered.indexOf(activeTag);
+      const newIndex = ordered.indexOf(overTag);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderLabels(arrayMove([...ordered], oldIndex, newIndex));
+      }
+      return;
+    }
+
+    // --- Task drop onto sidebar target ---
+    if (overId.startsWith('sidebar-')) {
+      const activeItem = items[activeIdStr];
+      if (!activeItem) return; // only handle task/item drops
+
+      if (overId === 'sidebar-inbox') {
+        sendToInbox(activeIdStr);
+        return;
+      }
+      if (overId === 'sidebar-later') {
+        sendToLater(activeIdStr);
+        return;
+      }
+      if (overId.startsWith('sidebar-list-')) {
+        const listId = overId.slice('sidebar-list-'.length);
+        sendToList(activeIdStr, listId);
+        return;
+      }
+      if (overId.startsWith('sidebar-label-')) {
+        const tag = overId.slice('sidebar-label-'.length);
+        // Add the label to the item's text if not already present
+        if (!activeItem.text.toLowerCase().includes(tag.toLowerCase())) {
+          updateItem(activeIdStr, { text: `${activeItem.text} ${tag}` });
+        }
+        return;
+      }
+      return;
+    }
+
+    // --- Normal task reorder/move ---
+    const activeItem = items[activeIdStr];
     if (!activeItem) return;
 
     const sourceContainerKey = getContainerKey(activeItem);
@@ -79,7 +155,7 @@ export function useDragAndDrop() {
 
     // Same container: reorder
     if (sourceContainerKey === targetContainerKey) {
-      if (!targetItemId || targetItemId === activeItemId) return;
+      if (!targetItemId || targetItemId === activeIdStr) return;
 
       const containerItems =
         targetContainerKey === 'inbox'
@@ -88,7 +164,7 @@ export function useDragAndDrop() {
           ? selectLaterItems(items)
           : selectItemsForDay(items, targetContainerKey);
 
-      const oldIndex = containerItems.findIndex((i) => i.id === activeItemId);
+      const oldIndex = containerItems.findIndex((i) => i.id === activeIdStr);
       const newIndex = containerItems.findIndex((i) => i.id === targetItemId);
 
       if (oldIndex === newIndex) return;
@@ -105,9 +181,9 @@ export function useDragAndDrop() {
 
     // Different container
     if (targetContainerKey === 'inbox') {
-      sendToInbox(activeItemId);
+      sendToInbox(activeIdStr);
     } else if (targetContainerKey === 'later') {
-      sendToLater(activeItemId);
+      sendToLater(activeIdStr);
     } else {
       // Moving to a day column
       const targetDayKey = targetContainerKey;
@@ -115,9 +191,9 @@ export function useDragAndDrop() {
       const targetOrder = targetItemId && items[targetItemId]
         ? items[targetItemId].order
         : targetContainer.length;
-      moveItem(activeItemId, targetDayKey, targetOrder);
+      moveItem(activeIdStr, targetDayKey, targetOrder);
     }
-  }, [items, moveItem, reorderItems, sendToInbox, sendToLater]);
+  }, [items, moveItem, reorderItems, sendToInbox, sendToLater, sendToList, updateItem, reorderNav, reorderLabels]);
 
   const activeItem = activeId ? items[activeId] : null;
 

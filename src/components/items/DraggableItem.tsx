@@ -20,6 +20,8 @@ interface DraggableItemProps {
   onMoveDown?: () => void;
   onInsertAfter?: (text: string) => void;
   onDeleteAndFocusPrev?: () => void;
+  onToggleCollapse?: () => void;
+  isCollapsed?: boolean;
 }
 
 export function DraggableItem({
@@ -28,6 +30,7 @@ export function DraggableItem({
   onSelectPrev, onSelectNext,
   onShiftSelectPrev, onShiftSelectNext,
   onMoveUp, onMoveDown, onInsertAfter, onDeleteAndFocusPrev,
+  onToggleCollapse, isCollapsed,
 }: DraggableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -38,6 +41,7 @@ export function DraggableItem({
     onSelectPrev, onSelectNext,
     onShiftSelectPrev, onShiftSelectNext,
     onMoveUp, onMoveDown, onInsertAfter, onDeleteAndFocusPrev,
+    onToggleCollapse, isCollapsed,
   };
 
   const dragHandleProps = { ...attributes, ...listeners };

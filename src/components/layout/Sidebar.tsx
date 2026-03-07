@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePlannerStore, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -62,6 +62,16 @@ const NAV_ITEM_DEFS: NavItemDef[] = [
   },
 ];
 
+/** Drop target wrapper — registers with the outer AppShell DndContext for task drops */
+function SidebarDropTarget({ id, children }: { id: string; children: React.ReactNode }) {
+  const { isOver, setNodeRef } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={cn('rounded-md transition-colors', isOver && 'ring-2 ring-blue-500/50 bg-blue-500/10')}>
+      {children}
+    </div>
+  );
+}
+
 function DragHandle({ className }: { className?: string }) {
   return (
     <svg className={cn('w-3.5 h-3.5', className)} viewBox="0 0 16 16" fill="currentColor">
@@ -83,7 +93,7 @@ interface NavItemDef {
 }
 
 function SortableNavItem({ nav, isActive, onSetView }: { nav: NavItemDef; isActive: boolean; onSetView: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: nav.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `nav-${nav.id}` });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -120,7 +130,7 @@ function SortableNavItem({ nav, isActive, onSetView }: { nav: NavItemDef; isActi
   );
 }
 
-function SortableLabelRow({ tag, isActive, color, onSelect, onSetColor, onRename, onDelete }: {
+function SortableLabelRow({ tag, isActive, color, onSelect, onSetColor, onRename, onDelete, isDropOver }: {
   tag: string;
   isActive: boolean;
   color: string;
@@ -128,16 +138,24 @@ function SortableLabelRow({ tag, isActive, color, onSelect, onSetColor, onRename
   onSetColor: (color: string) => void;
   onRename: (newName: string) => void;
   onDelete: () => void;
+  isDropOver?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tag });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `label-${tag}` });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `sidebar-label-${tag}` });
+  const dropHighlight = isDropOver || isOver;
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : undefined,
   };
 
+  const mergedRef = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    setDropRef(node);
+  };
+
   return (
-    <div ref={setNodeRef} style={style} className="group/label relative flex items-center">
+    <div ref={mergedRef} style={style} className={cn('group/label relative flex items-center rounded-md transition-colors', dropHighlight && 'ring-2 ring-blue-500/50 bg-blue-500/10')}>
       <div
         {...attributes}
         {...listeners}
@@ -176,9 +194,7 @@ export function Sidebar() {
   const addCustomList = usePlannerStore((s) => s.addCustomList);
   const setActiveListId = usePlannerStore((s) => s.setActiveListId);
   const navOrder = usePlannerStore((s) => s.navOrder);
-  const reorderNav = usePlannerStore((s) => s.reorderNav);
   const labelOrder = usePlannerStore((s) => s.labelOrder);
-  const reorderLabels = usePlannerStore((s) => s.reorderLabels);
   const setShowSettings = usePlannerStore((s) => s.setShowSettings);
   const user = useAuthStore((s) => s.user);
 
@@ -189,10 +205,6 @@ export function Sidebar() {
   const showShortcuts = usePlannerStore((s) => s.showShortcuts);
   const setShowShortcuts = usePlannerStore((s) => s.setShowShortcuts);
   const newListInputRef = useRef<HTMLInputElement>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
 
   useEffect(() => {
     if (creatingList) setTimeout(() => newListInputRef.current?.focus(), 0);
@@ -263,28 +275,6 @@ export function Sidebar() {
     );
   }
 
-  const handleNavDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const currentIds = sortedNavItems.map((n) => n.id);
-    const oldIndex = currentIds.indexOf(active.id as string);
-    const newIndex = currentIds.indexOf(over.id as string);
-    if (oldIndex !== -1 && newIndex !== -1) {
-      reorderNav(arrayMove(currentIds, oldIndex, newIndex));
-    }
-  };
-
-  const handleLabelDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const currentTags = sortedHashtags;
-    const oldIndex = currentTags.indexOf(active.id as string);
-    const newIndex = currentTags.indexOf(over.id as string);
-    if (oldIndex !== -1 && newIndex !== -1) {
-      reorderLabels(arrayMove([...currentTags], oldIndex, newIndex));
-    }
-  };
-
   const handleCreateList = () => {
     const name = newListName.trim();
     if (name) {
@@ -346,20 +336,29 @@ export function Sidebar() {
         </kbd>
       </button>
 
-      {/* Nav items with drag-to-reorder */}
+      {/* Nav items with drag-to-reorder + drop targets for task moves */}
       <nav className="mt-1 px-2 space-y-0.5">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleNavDragEnd}>
-          <SortableContext items={sortedNavItems.map((n) => n.id)} strategy={verticalListSortingStrategy}>
-            {sortedNavItems.map((nav) => (
+        <SortableContext items={sortedNavItems.map((n) => `nav-${n.id}`)} strategy={verticalListSortingStrategy}>
+          {sortedNavItems.map((nav) => {
+            const isDropTarget = nav.id === 'inbox' || nav.id === 'later';
+            return isDropTarget ? (
+              <SidebarDropTarget key={nav.id} id={`sidebar-${nav.id}`}>
+                <SortableNavItem
+                  nav={nav}
+                  isActive={view === nav.id}
+                  onSetView={() => setView(nav.id as Parameters<typeof setView>[0])}
+                />
+              </SidebarDropTarget>
+            ) : (
               <SortableNavItem
                 key={nav.id}
                 nav={nav}
                 isActive={view === nav.id}
                 onSetView={() => setView(nav.id as Parameters<typeof setView>[0])}
               />
-            ))}
-          </SortableContext>
-        </DndContext>
+            );
+          })}
+        </SortableContext>
       </nav>
 
       {/* Custom lists section */}
@@ -380,21 +379,22 @@ export function Sidebar() {
                 {[...customLists].sort((a, b) => a.order - b.order).map((list) => {
                   const isActive = view === 'list' && activeListId === list.id;
                   return (
-                    <button
-                      key={list.id}
-                      onClick={() => { setView('list'); setActiveListId(list.id); }}
-                      className={cn(
-                        'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
-                        isActive
-                          ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
-                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
-                      )}
-                    >
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                      <span className="truncate">{list.name}</span>
-                    </button>
+                    <SidebarDropTarget key={list.id} id={`sidebar-list-${list.id}`}>
+                      <button
+                        onClick={() => { setView('list'); setActiveListId(list.id); }}
+                        className={cn(
+                          'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+                          isActive
+                            ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                            : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+                        )}
+                      >
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <span className="truncate">{list.name}</span>
+                      </button>
+                    </SidebarDropTarget>
                   );
                 })}
               </div>
@@ -450,43 +450,41 @@ export function Sidebar() {
           </button>
           {!labelsCollapsed && (
           <div className="mt-1.5 space-y-0.5">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleLabelDragEnd}>
-              <SortableContext items={sortedHashtags} strategy={verticalListSortingStrategy}>
-                {sortedHashtags.map((tag) => (
-                  <SortableLabelRow
-                    key={tag}
-                    tag={tag}
-                    isActive={view === 'hashtag' && activeHashtag === tag}
-                    color={getLabelColor(tag)}
-                    onSelect={() => setHashtagView(tag)}
-                    onSetColor={(color) => setLabelColor(tag, color)}
-                    onRename={(newTag) => {
-                      const oldTag = tag;
-                      const newHashtag = `#${newTag}`;
-                      if (newHashtag.toLowerCase() !== oldTag.toLowerCase()) {
-                        setLabelColor(newHashtag, getLabelColor(oldTag));
-                        Object.values(items).forEach((item) => {
-                          if (item.text.toLowerCase().includes(oldTag.toLowerCase())) {
-                            const updated = item.text.replace(new RegExp(oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), newHashtag);
-                            updateItem(item.id, { text: updated });
-                          }
-                        });
-                        setHashtagView(newHashtag.toLowerCase());
-                      }
-                    }}
-                    onDelete={() => {
+            <SortableContext items={sortedHashtags.map((t) => `label-${t}`)} strategy={verticalListSortingStrategy}>
+              {sortedHashtags.map((tag) => (
+                <SortableLabelRow
+                  key={tag}
+                  tag={tag}
+                  isActive={view === 'hashtag' && activeHashtag === tag}
+                  color={getLabelColor(tag)}
+                  onSelect={() => setHashtagView(tag)}
+                  onSetColor={(color) => setLabelColor(tag, color)}
+                  onRename={(newTag) => {
+                    const oldTag = tag;
+                    const newHashtag = `#${newTag}`;
+                    if (newHashtag.toLowerCase() !== oldTag.toLowerCase()) {
+                      setLabelColor(newHashtag, getLabelColor(oldTag));
                       Object.values(items).forEach((item) => {
-                        if (item.text.toLowerCase().includes(tag.toLowerCase())) {
-                          const updated = item.text.replace(new RegExp(`\\s*${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'gi'), ' ').trim();
+                        if (item.text.toLowerCase().includes(oldTag.toLowerCase())) {
+                          const updated = item.text.replace(new RegExp(oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), newHashtag);
                           updateItem(item.id, { text: updated });
                         }
                       });
-                      setView('timeline');
-                    }}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
+                      setHashtagView(newHashtag.toLowerCase());
+                    }
+                  }}
+                  onDelete={() => {
+                    Object.values(items).forEach((item) => {
+                      if (item.text.toLowerCase().includes(tag.toLowerCase())) {
+                        const updated = item.text.replace(new RegExp(`\\s*${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'gi'), ' ').trim();
+                        updateItem(item.id, { text: updated });
+                      }
+                    });
+                    setView('timeline');
+                  }}
+                />
+              ))}
+            </SortableContext>
           </div>
           )}
         </div>

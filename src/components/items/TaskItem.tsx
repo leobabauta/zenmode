@@ -25,6 +25,8 @@ interface TaskItemProps {
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onInsertAfter?: (text: string) => void;
+  onToggleCollapse?: () => void;
+  isCollapsed?: boolean;
   dragHandleProps?: Record<string, unknown>;
 }
 
@@ -32,7 +34,7 @@ export function TaskItem({
   item, isDragging, isSelected, isFocused,
   onSelect, onExtendSelection, onDeselect, onSelectPrev, onSelectNext,
   onShiftSelectPrev, onShiftSelectNext, onMoveUp, onMoveDown,
-  onInsertAfter, dragHandleProps,
+  onInsertAfter, onToggleCollapse, isCollapsed, dragHandleProps,
 }: TaskItemProps) {
   const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, setExpandedTask, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
@@ -198,6 +200,20 @@ export function TaskItem({
           <circle cx="10.5" cy="12.5" r="1.5" />
         </svg>
       </button>
+
+      {hasChildren && onToggleCollapse ? (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
+          className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors mt-0.5"
+        >
+          <svg className={cn('w-3 h-3 transition-transform', isCollapsed && '-rotate-90')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      ) : hasChildren ? (
+        <div className="w-4 flex-shrink-0" />
+      ) : null}
 
       <div className="mt-0.5">
         <Checkbox

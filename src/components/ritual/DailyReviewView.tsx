@@ -95,6 +95,7 @@ export function DailyReviewView() {
             <textarea
               value={reflection}
               onChange={(e) => setReflection(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setStep(2); } }}
               placeholder="What went well? What could have gone better?"
               autoFocus
               rows={4}
@@ -136,6 +137,7 @@ export function DailyReviewView() {
             <textarea
               value={blockers}
               onChange={(e) => setBlockers(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setStep(3); } }}
               placeholder="Distractions, missing info, energy levels..."
               rows={3}
               className="w-full px-4 py-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none"

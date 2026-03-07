@@ -82,6 +82,7 @@ export function WeeklyReviewView() {
             <textarea
               value={priorityReflections}
               onChange={(e) => setPriorityReflections(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setStep(2); } }}
               placeholder="How did you do on your priorities? What got done, what didn't?"
               autoFocus
               rows={4}
@@ -109,6 +110,7 @@ export function WeeklyReviewView() {
             <textarea
               value={wins}
               onChange={(e) => setWins(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setStep(3); } }}
               placeholder="Achievements, breakthroughs, things you're proud of..."
               autoFocus
               rows={4}
@@ -142,6 +144,7 @@ export function WeeklyReviewView() {
             <textarea
               value={learned}
               onChange={(e) => setLearned(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setStep(4); } }}
               placeholder="Key takeaways, surprises, adjustments for next week..."
               autoFocus
               rows={4}

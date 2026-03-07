@@ -23,6 +23,8 @@ interface NoteItemProps {
   onMoveDown?: () => void;
   onInsertAfter?: (text: string) => void;
   onDeleteAndFocusPrev?: () => void;
+  onToggleCollapse?: () => void;
+  isCollapsed?: boolean;
   dragHandleProps?: Record<string, unknown>;
 }
 

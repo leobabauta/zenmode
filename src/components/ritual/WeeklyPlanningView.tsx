@@ -214,6 +214,7 @@ export function WeeklyPlanningView() {
             <textarea
               value={intentions}
               onChange={(e) => setIntentions(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setStep(4); } }}
               placeholder="e.g. Stay focused on deep work, practice patience, prioritize health..."
               autoFocus
               rows={4}

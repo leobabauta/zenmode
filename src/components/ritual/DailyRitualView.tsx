@@ -460,6 +460,7 @@ export function DailyRitualView() {
               type="text"
               value={practice}
               onChange={(e) => setPractice(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSavePractice(); } }}
               placeholder="e.g. Deep listening, patience, staying present..."
               autoFocus
               className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/40"
