@@ -134,6 +134,29 @@ export function useDragAndDrop() {
       return;
     }
 
+    // --- Drop task onto another task to make subtask ---
+    if (overId.startsWith('subtask-')) {
+      const parentId = overId.slice('subtask-'.length);
+      const activeItem = items[activeIdStr];
+      if (!activeItem || parentId === activeIdStr || activeItem.parentId === parentId) return;
+      // Don't allow making a parent into a child of its own child
+      if (items[parentId]?.parentId === activeIdStr) return;
+      usePlannerStore.setState((state) => {
+        const item = state.items[activeIdStr];
+        const parent = state.items[parentId];
+        if (!item || !parent) return;
+        // Count existing children to set order
+        const childCount = Object.values(state.items).filter((i) => i.parentId === parentId).length;
+        item.parentId = parentId;
+        item.dayKey = parent.dayKey;
+        item.isLater = parent.isLater;
+        item.listId = parent.listId;
+        item.order = childCount;
+        item.updatedAt = new Date().toISOString();
+      });
+      return;
+    }
+
     // --- Normal task reorder/move ---
     const activeItem = items[activeIdStr];
     if (!activeItem) return;

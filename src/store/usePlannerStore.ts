@@ -333,7 +333,7 @@ export const usePlannerStore = create<PlannerState>()(
 
             const incomplete = siblings.filter((i) => !i.completed);
             const completed = siblings.filter((i) => i.completed);
-            const sorted = [...incomplete, ...completed];
+            const sorted = [...completed, ...incomplete];
             sorted.forEach((s, i) => {
               state.items[s.id].order = i;
             });

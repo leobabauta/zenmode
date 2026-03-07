@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, rectIntersection, type CollisionDetection } from '@dnd-kit/core';
 import { Sidebar } from './Sidebar';
 import { MainContent } from './MainContent';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -32,6 +32,17 @@ import { WeekReviewPage } from '../ritual/WeekReviewPage';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
+
+// Custom collision detection: prefer sidebar/subtask droppables (pointer-based), fall back to rect intersection for sortables
+const collisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  // Prefer sidebar drop targets
+  const sidebarHit = pointerCollisions.find((c) => String(c.id).startsWith('sidebar-'));
+  if (sidebarHit) return [sidebarHit];
+  // Use rect intersection for normal sortable reordering
+  const rectCollisions = rectIntersection(args);
+  return rectCollisions.length > 0 ? rectCollisions : pointerCollisions;
+};
 
 export function AppShell() {
   const {
@@ -195,6 +206,7 @@ export function AppShell() {
   return (
     <DndContext
       sensors={sensors}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}

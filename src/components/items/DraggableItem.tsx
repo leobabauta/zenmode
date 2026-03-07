@@ -1,4 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { TaskItem } from './TaskItem';
 import { NoteItem } from './NoteItem';
@@ -34,6 +35,13 @@ export function DraggableItem({
 }: DraggableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
+  // Droppable zone for "drop task onto this task to make subtask"
+  const { setNodeRef: setDropRef, isOver: isDropOver } = useDroppable({ id: `subtask-${item.id}` });
+
+  const mergedRef = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    setDropRef(node);
+  };
 
   const sharedProps = {
     item, isDragging, isSelected, isFocused,
@@ -48,9 +56,9 @@ export function DraggableItem({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={mergedRef}
       style={{ transform: CSS.Transform.toString(transform), transition: transition ?? 'transform 250ms ease' }}
-      className={cn('touch-none', isDragging && 'z-10 relative')}
+      className={cn('touch-none', isDragging && 'z-10 relative', isDropOver && !isDragging && 'ring-2 ring-blue-500/50 bg-blue-500/10 rounded-lg')}
     >
       {item.type === 'task'
         ? <TaskItem {...sharedProps} dragHandleProps={dragHandleProps} />
