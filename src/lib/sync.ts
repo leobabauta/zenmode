@@ -82,75 +82,102 @@ export function rowToItem(row: ItemRow): PlannerItem {
 
 // --- Pull from Supabase ---
 
+let pullInProgress = false;
+
 export async function pullFromSupabase(): Promise<void> {
   if (!supabase) return;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (pullInProgress) return; // Prevent concurrent pulls
+  pullInProgress = true;
 
-  const { data: rows, error } = await supabase
-    .from('items')
-    .select('*')
-    .eq('user_id', user.id);
+  try {
+    // Flush any pending local changes FIRST so remote has our latest data.
+    // This prevents the pull from seeing stale remote state and overwriting
+    // changes the user just made.
+    await flushChanged();
+    await flushDeleted();
 
-  if (error) {
-    console.error('pullFromSupabase error:', error);
-    return;
-  }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  const remoteItems = (rows as ItemRow[]).map(rowToItem);
-  const localItems = usePlannerStore.getState().items;
-  const merged: Record<string, PlannerItem> = { ...localItems };
-  const localNewer: PlannerItem[] = [];
+    const { data: rows, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('user_id', user.id);
 
-  for (const remote of remoteItems) {
-    const local = localItems[remote.id];
-    if (!local) {
-      // Remote-only: take it
-      merged[remote.id] = remote;
-    } else if (new Date(remote.updatedAt) > new Date(local.updatedAt)) {
-      // Remote is newer
-      merged[remote.id] = remote;
-    } else if (new Date(local.updatedAt) > new Date(remote.updatedAt)) {
-      // Local is newer — push back later
-      localNewer.push(local);
+    if (error) {
+      console.error('pullFromSupabase error:', error);
+      return;
     }
-    // If equal timestamps, keep local (already in merged)
-  }
 
-  // Record all remote IDs so we know what exists on the server.
-  const remoteIds = new Set(remoteItems.map((r) => r.id));
-  for (const id of remoteIds) knownRemoteIds.add(id);
+    const remoteItems = (rows as ItemRow[]).map(rowToItem);
 
-  // Handle local items that don't exist remotely.
-  // Only delete if we previously saw the item on the remote (it was deleted on another device).
-  // If we never saw it remotely, it's a new/unpushed item — keep and push it.
-  for (const id of Object.keys(localItems)) {
-    if (!remoteIds.has(id)) {
-      if (knownRemoteIds.has(id)) {
-        // Was on remote before but now gone — deleted on another device
-        delete merged[id];
-        knownRemoteIds.delete(id);
-      } else {
-        // Never seen on remote — new local item, keep and push
-        localNewer.push(localItems[id]);
+    // Re-read local items AFTER the network call completes.
+    // This ensures we merge against the freshest local state, not a stale
+    // snapshot from before the fetch (which would overwrite any changes
+    // the user made during the network round-trip).
+    const localItems = usePlannerStore.getState().items;
+    const merged: Record<string, PlannerItem> = { ...localItems };
+    const localNewer: PlannerItem[] = [];
+
+    // Items with pending local changes should never be overwritten by remote
+    const pendingLocalIds = new Set(changedIds);
+
+    for (const remote of remoteItems) {
+      const local = localItems[remote.id];
+      if (!local) {
+        // Remote-only: take it
+        merged[remote.id] = remote;
+      } else if (pendingLocalIds.has(remote.id)) {
+        // Item was modified locally during the pull — always keep local
+        localNewer.push(local);
+      } else if (new Date(remote.updatedAt) > new Date(local.updatedAt)) {
+        // Remote is newer
+        merged[remote.id] = remote;
+      } else if (new Date(local.updatedAt) > new Date(remote.updatedAt)) {
+        // Local is newer — push back later
+        localNewer.push(local);
+      }
+      // If equal timestamps, keep local (already in merged)
+    }
+
+    // Record all remote IDs so we know what exists on the server.
+    const remoteIds = new Set(remoteItems.map((r) => r.id));
+    for (const id of remoteIds) knownRemoteIds.add(id);
+
+    // Handle local items that don't exist remotely.
+    for (const id of Object.keys(localItems)) {
+      if (!remoteIds.has(id)) {
+        if (pendingLocalIds.has(id)) {
+          // Item was just created/modified locally — keep it
+          localNewer.push(localItems[id]);
+        } else if (knownRemoteIds.has(id)) {
+          // Was on remote before but now gone — deleted on another device
+          delete merged[id];
+          knownRemoteIds.delete(id);
+        } else {
+          // Never seen on remote — new local item, keep and push
+          localNewer.push(localItems[id]);
+        }
       }
     }
-  }
 
-  // Apply merged items to store
-  usePlannerStore.setState({ items: merged });
+    // Apply merged items to store
+    usePlannerStore.setState({ items: merged });
 
-  // Push local-newer items to Supabase
-  if (localNewer.length > 0) {
-    const rows = localNewer.map((item) => itemToRow(item, user.id));
-    const { error: upsertError } = await supabase
-      .from('items')
-      .upsert(rows, { onConflict: 'id' });
-    if (upsertError) {
-      console.error('push local-newer error:', upsertError);
-    } else {
-      for (const item of localNewer) knownRemoteIds.add(item.id);
+    // Push local-newer items to Supabase
+    if (localNewer.length > 0) {
+      const rows = localNewer.map((item) => itemToRow(item, user.id));
+      const { error: upsertError } = await supabase
+        .from('items')
+        .upsert(rows, { onConflict: 'id' });
+      if (upsertError) {
+        console.error('push local-newer error:', upsertError);
+      } else {
+        for (const item of localNewer) knownRemoteIds.add(item.id);
+      }
     }
+  } finally {
+    pullInProgress = false;
   }
 }
 

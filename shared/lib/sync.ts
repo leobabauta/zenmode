@@ -100,64 +100,89 @@ export function rowToItem(row: ItemRow): PlannerItem {
 
 // --- Pull from Supabase ---
 
+let pullInProgress = false;
+
 export async function pullFromSupabase(): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) return;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (pullInProgress) return;
+  pullInProgress = true;
 
-  const { data: rows, error } = await supabase
-    .from('items')
-    .select('*')
-    .eq('user_id', user.id);
+  try {
+    // Flush any pending local changes FIRST so remote has our latest
+    await flushChanged();
+    await flushDeleted();
 
-  if (error) {
-    console.error('pullFromSupabase error:', error);
-    return;
-  }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  const remoteItems = (rows as ItemRow[]).map(rowToItem);
-  const localItems = _getItems();
-  const merged: Record<string, PlannerItem> = { ...localItems };
-  const localNewer: PlannerItem[] = [];
+    const { data: rows, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('user_id', user.id);
 
-  for (const remote of remoteItems) {
-    const local = localItems[remote.id];
-    if (!local) {
-      merged[remote.id] = remote;
-    } else if (new Date(remote.updatedAt) > new Date(local.updatedAt)) {
-      merged[remote.id] = remote;
-    } else if (new Date(local.updatedAt) > new Date(remote.updatedAt)) {
-      localNewer.push(local);
+    if (error) {
+      console.error('pullFromSupabase error:', error);
+      return;
     }
-  }
 
-  const remoteIds = new Set(remoteItems.map((r) => r.id));
-  for (const id of remoteIds) knownRemoteIds.add(id);
+    const remoteItems = (rows as ItemRow[]).map(rowToItem);
 
-  for (const id of Object.keys(localItems)) {
-    if (!remoteIds.has(id)) {
-      if (knownRemoteIds.has(id)) {
-        delete merged[id];
-        knownRemoteIds.delete(id);
-      } else {
-        localNewer.push(localItems[id]);
+    // Re-read local items AFTER the network call to get the freshest state.
+    // This prevents overwriting changes the user made during the fetch.
+    const localItems = _getItems();
+    const merged: Record<string, PlannerItem> = { ...localItems };
+    const localNewer: PlannerItem[] = [];
+
+    // Track which local items were modified during the pull (have pending changes)
+    const pendingLocalIds = new Set(changedIds);
+
+    for (const remote of remoteItems) {
+      const local = localItems[remote.id];
+      if (!local) {
+        merged[remote.id] = remote;
+      } else if (pendingLocalIds.has(remote.id)) {
+        // Item was modified locally during the pull — keep local version
+        localNewer.push(local);
+      } else if (new Date(remote.updatedAt) > new Date(local.updatedAt)) {
+        merged[remote.id] = remote;
+      } else if (new Date(local.updatedAt) > new Date(remote.updatedAt)) {
+        localNewer.push(local);
       }
     }
-  }
 
-  _setItems(merged);
+    const remoteIds = new Set(remoteItems.map((r) => r.id));
+    for (const id of remoteIds) knownRemoteIds.add(id);
 
-  if (localNewer.length > 0) {
-    const rows = localNewer.map((item) => itemToRow(item, user.id));
-    const { error: upsertError } = await supabase
-      .from('items')
-      .upsert(rows, { onConflict: 'id' });
-    if (upsertError) {
-      console.error('push local-newer error:', upsertError);
-    } else {
-      for (const item of localNewer) knownRemoteIds.add(item.id);
+    for (const id of Object.keys(localItems)) {
+      if (!remoteIds.has(id)) {
+        if (pendingLocalIds.has(id)) {
+          // Item was just created/modified locally — keep it
+          localNewer.push(localItems[id]);
+        } else if (knownRemoteIds.has(id)) {
+          delete merged[id];
+          knownRemoteIds.delete(id);
+        } else {
+          localNewer.push(localItems[id]);
+        }
+      }
     }
+
+    _setItems(merged);
+
+    if (localNewer.length > 0) {
+      const rows = localNewer.map((item) => itemToRow(item, user.id));
+      const { error: upsertError } = await supabase
+        .from('items')
+        .upsert(rows, { onConflict: 'id' });
+      if (upsertError) {
+        console.error('push local-newer error:', upsertError);
+      } else {
+        for (const item of localNewer) knownRemoteIds.add(item.id);
+      }
+    }
+  } finally {
+    pullInProgress = false;
   }
 }
 
