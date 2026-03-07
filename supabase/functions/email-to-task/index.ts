@@ -122,7 +122,10 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Sender email: "${senderEmail}"`);
-    console.log(`Known users: ${userData.users.map((u) => u.email).join(', ')}`);
+    console.log(`Subject: "${subject}"`);
+    console.log(`Plain body: "${plainBody}"`);
+    console.log(`HTML body present: ${!!payload.html}`);
+    console.log(`Payload keys: ${Object.keys(payload).join(', ')}`);
 
     const user = userData.users.find((u) => u.email?.toLowerCase() === senderEmail);
     if (!user) {
