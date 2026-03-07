@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { usePlannerStore } from '../../store/usePlannerStore';
+import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { consumePendingEditX, getInputCursorX, getOffsetFromX } from '../../lib/editNavigation';
 import { IconButton } from '../ui/IconButton';
 import { HashtagText } from '../ui/HashtagText';
@@ -156,6 +156,23 @@ export function NoteItem({
 
   const isManipulating = isFocused && !isEditing;
   const isEmpty = item.text === '';
+  const isReviewNote = item.text.includes('#dailyreview');
+
+  // For review notes, get completed priority task counts for that day
+  const allItems = usePlannerStore((s) => s.items);
+  const priorityStars = useMemo(() => {
+    if (!isReviewNote || !item.dayKey) return null;
+    const dayItems = selectItemsForDay(allItems, item.dayKey);
+    let high = 0;
+    let medium = 0;
+    for (const di of dayItems) {
+      if (di.type !== 'task' || !di.completed) continue;
+      if (di.isPriority) high++;
+      else if (di.isMediumPriority) medium++;
+    }
+    if (high === 0 && medium === 0) return null;
+    return { high, medium };
+  }, [isReviewNote, item.dayKey, allItems]);
 
   return (
     <div
@@ -167,7 +184,9 @@ export function NoteItem({
         'transition-colors duration-100',
         isSelected && !isEditing
           ? 'bg-[var(--color-accent-tint)] ring-1 ring-[var(--color-accent)]/20'
-          : 'hover:bg-[var(--color-surface)]',
+          : isReviewNote
+            ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30'
+            : 'hover:bg-[var(--color-surface)]',
         isDragging && 'opacity-50',
       )}
     >
@@ -191,87 +210,107 @@ export function NoteItem({
         </svg>
       </button>
 
-      <div className="flex-1 min-w-0 cursor-text" onClick={handleContentClick}>
-        {isEditing ? (
-          <textarea
-            ref={inputRef}
-            value={editText}
-            rows={Math.min(Math.max(editText.split('\n').length, 1), 10)}
-            onChange={(e) => {
-              const val = e.target.value;
-              // "[] " at start converts note to task
-              if (val.startsWith('[] ')) {
-                const rest = val.slice(3);
-                updateItem(item.id, { type: 'task', text: rest || item.text });
-                setEditText(rest || item.text);
-                setIsEditing(false);
-                return;
-              }
-              setEditText(val);
-            }}
-            onBlur={commitEdit}
-            onKeyDown={(e) => {
-              if ((e.key === 'Backspace' || e.key === 'Delete') && editText === '' && (inputRef.current?.selectionStart ?? 0) === 0) {
-                e.preventDefault();
-                // Delete blank note and focus previous item
-                deleteItem(item.id);
-                onDeleteAndFocusPrev?.();
-                return;
-              }
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                const cursorPos = inputRef.current?.selectionStart ?? editText.length;
-                const before = editText.slice(0, cursorPos);
-                const after = editText.slice(cursorPos);
-                if (!before.trim()) {
-                  // Cursor at beginning: clear current item, move text to new line
-                  updateItem(item.id, { text: '' });
-                  setEditText('');
-                } else {
-                  const trimmedBefore = before.trim();
-                  if (trimmedBefore !== item.text) updateItem(item.id, { text: trimmedBefore });
-                  setEditText(trimmedBefore);
+      <div className="flex-1 min-w-0">
+        <div className="cursor-text" onClick={handleContentClick}>
+          {isEditing ? (
+            <textarea
+              ref={inputRef}
+              value={editText}
+              rows={Math.min(Math.max(editText.split('\n').length, 1), 10)}
+              onChange={(e) => {
+                const val = e.target.value;
+                // "[] " at start converts note to task
+                if (val.startsWith('[] ')) {
+                  const rest = val.slice(3);
+                  updateItem(item.id, { type: 'task', text: rest || item.text });
+                  setEditText(rest || item.text);
+                  setIsEditing(false);
+                  return;
                 }
-                setIsEditing(false);
-                onInsertAfter?.(after);
-                return;
-              }
-              if (e.key === 'Escape') { setEditText(item.text); setIsEditing(false); return; }
-              if (e.key === 'ArrowUp' && !e.shiftKey) {
-                const el = inputRef.current!;
-                const pos = el.selectionStart ?? 0;
-                const textBefore = editText.slice(0, pos);
-                if (!textBefore.includes('\n')) {
+                setEditText(val);
+              }}
+              onBlur={commitEdit}
+              onKeyDown={(e) => {
+                if ((e.key === 'Backspace' || e.key === 'Delete') && editText === '' && (inputRef.current?.selectionStart ?? 0) === 0) {
                   e.preventDefault();
-                  const x = getInputCursorX(el);
-                  commitEdit();
-                  onSelectPrev?.(x);
+                  // Delete blank note and focus previous item
+                  deleteItem(item.id);
+                  onDeleteAndFocusPrev?.();
+                  return;
                 }
-                return;
-              }
-              if (e.key === 'ArrowDown' && !e.shiftKey) {
-                const el = inputRef.current!;
-                const pos = el.selectionStart ?? 0;
-                const textAfter = editText.slice(pos);
-                if (!textAfter.includes('\n')) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  const x = getInputCursorX(el);
-                  commitEdit();
-                  onSelectNext?.(x);
+                  const cursorPos = inputRef.current?.selectionStart ?? editText.length;
+                  const before = editText.slice(0, cursorPos);
+                  const after = editText.slice(cursorPos);
+                  if (!before.trim()) {
+                    // Cursor at beginning: clear current item, move text to new line
+                    updateItem(item.id, { text: '' });
+                    setEditText('');
+                  } else {
+                    const trimmedBefore = before.trim();
+                    if (trimmedBefore !== item.text) updateItem(item.id, { text: trimmedBefore });
+                    setEditText(trimmedBefore);
+                  }
+                  setIsEditing(false);
+                  onInsertAfter?.(after);
+                  return;
                 }
-                return;
-              }
-            }}
-            className="w-full bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none resize-none"
-          />
-        ) : isEmpty ? (
-          <span className="text-sm">&nbsp;</span>
-        ) : (
-          <HashtagText
-            text={item.text}
-            onHashtagClick={setHashtagView}
-            className="text-sm break-words text-[var(--color-text-primary)] whitespace-pre-line"
-          />
+                if (e.key === 'Escape') { setEditText(item.text); setIsEditing(false); return; }
+                if (e.key === 'ArrowUp' && !e.shiftKey) {
+                  const el = inputRef.current!;
+                  const pos = el.selectionStart ?? 0;
+                  const textBefore = editText.slice(0, pos);
+                  if (!textBefore.includes('\n')) {
+                    e.preventDefault();
+                    const x = getInputCursorX(el);
+                    commitEdit();
+                    onSelectPrev?.(x);
+                  }
+                  return;
+                }
+                if (e.key === 'ArrowDown' && !e.shiftKey) {
+                  const el = inputRef.current!;
+                  const pos = el.selectionStart ?? 0;
+                  const textAfter = editText.slice(pos);
+                  if (!textAfter.includes('\n')) {
+                    e.preventDefault();
+                    const x = getInputCursorX(el);
+                    commitEdit();
+                    onSelectNext?.(x);
+                  }
+                  return;
+                }
+              }}
+              className="w-full bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none resize-none"
+            />
+          ) : isEmpty ? (
+            <span className="text-sm">&nbsp;</span>
+          ) : (
+            <HashtagText
+              text={item.text}
+              onHashtagClick={setHashtagView}
+              className="text-sm break-words text-[var(--color-text-primary)] whitespace-pre-line"
+            />
+          )}
+        </div>
+        {priorityStars && !isEditing && (
+          <div className="flex items-center gap-1 mt-1.5 pt-1.5 border-t border-amber-200/40 dark:border-amber-800/20">
+            {Array.from({ length: priorityStars.high }).map((_, i) => (
+              <span key={`h-${i}`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-400">
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+              </span>
+            ))}
+            {Array.from({ length: priorityStars.medium }).map((_, i) => (
+              <span key={`m-${i}`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-400">
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+              </span>
+            ))}
+          </div>
         )}
       </div>
 

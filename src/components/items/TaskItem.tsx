@@ -366,20 +366,41 @@ export function TaskItem({
         </svg>
       </IconButton>
 
-      {item.isPriority && (
-        <span className="inline-flex items-center justify-center w-3.5 h-3.5 mt-0.5 flex-shrink-0 rounded-full bg-amber-400 ring-1 ring-amber-400/30">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (item.isPriority) {
+            // yellow → none
+            updateItem(item.id, { isPriority: false, isMediumPriority: false });
+          } else if (item.isMediumPriority) {
+            // blue → yellow
+            updateItem(item.id, { isPriority: true, isMediumPriority: false });
+          } else {
+            // none → blue
+            updateItem(item.id, { isPriority: false, isMediumPriority: true });
+          }
+        }}
+        className={cn(
+          'inline-flex items-center justify-center w-4 h-4 mt-0.5 flex-shrink-0 rounded-full transition-all',
+          item.isPriority
+            ? 'bg-amber-400 ring-1 ring-amber-400/30'
+            : item.isMediumPriority
+              ? 'bg-blue-400 ring-1 ring-blue-400/30'
+              : 'opacity-0 group-hover:opacity-100 border border-[var(--color-border)] hover:border-blue-300',
+        )}
+        title={item.isPriority ? 'High priority (click to remove)' : item.isMediumPriority ? 'Medium priority (click for high)' : 'Set priority'}
+      >
+        {(item.isPriority || item.isMediumPriority) ? (
           <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 24 24">
             <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
           </svg>
-        </span>
-      )}
-      {item.isMediumPriority && !item.isPriority && (
-        <span className="inline-flex items-center justify-center w-3.5 h-3.5 mt-0.5 flex-shrink-0 rounded-full bg-slate-400 ring-1 ring-slate-400/30">
-          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+        ) : (
+          <svg className="w-2.5 h-2.5 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
           </svg>
-        </span>
-      )}
+        )}
+      </button>
 
       <IconButton
         label="Delete task"
