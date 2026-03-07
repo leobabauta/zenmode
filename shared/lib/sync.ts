@@ -121,7 +121,7 @@ export async function pullFromSupabase(): Promise<void> {
 
     const { data: rows, error } = await supabase
       .from('items')
-      .select('*')
+      .select('id, user_id, type, text, completed, day_key, is_later, order, created_at, updated_at, recurrence, parent_id, consecutive_moves, is_priority, is_medium_priority, is_practice, list_id, completed_at, timer_sessions, is_archived, notes')
       .eq('user_id', user.id);
 
     if (error) {
