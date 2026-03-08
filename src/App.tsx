@@ -6,7 +6,7 @@ import { usePlannerStore } from './store/usePlannerStore';
 import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
-import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow } from './lib/sync';
+import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
 import { LoginPage } from './components/auth/LoginPage';
 import { ToastProvider } from './components/ui/Toast';
 
@@ -118,7 +118,10 @@ export default function App() {
           hasSynced.current = true;
           pullFromSupabase()
             .then(() => pullPreferences())
-            .then(() => runStartupTasks());
+            .then(() => {
+              runStartupTasks();
+              subscribeToRealtime(user.id);
+            });
         }
       } else if (!supabase) {
         // No Supabase: run startup tasks immediately on local data
@@ -144,7 +147,10 @@ export default function App() {
     hasSynced.current = true;
     pullFromSupabase()
       .then(() => pullPreferences())
-      .then(() => runStartupTasks());
+      .then(() => {
+        runStartupTasks();
+        subscribeToRealtime(user.id);
+      });
   }, [user]);
 
   // Flush all pending changes on page close

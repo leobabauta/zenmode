@@ -389,3 +389,27 @@ async function flushPreferences(): Promise<void> {
     .upsert(row, { onConflict: 'user_id' });
   if (error) console.error('pushPreferences error:', error);
 }
+
+// --- Realtime subscription ---
+
+let realtimeSetUp = false;
+let realtimeTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function subscribeToRealtime(userId: string): void {
+  if (!supabase || realtimeSetUp) return;
+  realtimeSetUp = true;
+
+  const debouncedPull = () => {
+    if (realtimeTimer) clearTimeout(realtimeTimer);
+    realtimeTimer = setTimeout(() => {
+      pullFromSupabase();
+      pullPreferences();
+    }, 500);
+  };
+
+  supabase
+    .channel('sync')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: `user_id=eq.${userId}` }, debouncedPull)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'user_preferences', filter: `user_id=eq.${userId}` }, debouncedPull)
+    .subscribe();
+}
