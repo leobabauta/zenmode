@@ -74,8 +74,11 @@ export function WeeklyPlanningView() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-lg mx-auto">
+        <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] mb-8 mt-16">
+          Weekly Planning
+        </h1>
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
