@@ -664,7 +664,7 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       setView: (view) => {
-        set((state) => { state.view = view; state.activeHashtag = null; });
+        set((state) => { state.view = view; state.activeHashtag = null; state.showSettings = false; });
       },
 
       setShowRitualPrompt: (show) => {

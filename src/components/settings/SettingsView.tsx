@@ -205,8 +205,18 @@ export function SettingsView() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-2xl mx-auto px-6 py-8">
-          {/* Sign out button */}
-          <div className="flex justify-end mb-4">
+          {/* Top bar: close + sign out */}
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setShowSettings(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+              title="Close settings"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          <div className="flex items-center gap-2">
             {!showLogoutConfirm ? (
               <button
                 onClick={() => setShowLogoutConfirm(true)}
@@ -231,6 +241,7 @@ export function SettingsView() {
                 </button>
               </div>
             )}
+          </div>
           </div>
 
           {/* Title */}
