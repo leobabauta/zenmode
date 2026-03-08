@@ -8,9 +8,14 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const signInRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
 
   const scrollToSignIn = () => {
     signInRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToFeatures = () => {
+    featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,12 +64,12 @@ export function LoginPage() {
           <img
             src={import.meta.env.BASE_URL + 'zenmode-logo.svg'}
             alt=""
-            className="w-9 h-9"
+            className="w-10 h-10"
           />
-          <span className="text-lg font-bold text-stone-900 tracking-tight">zenmode</span>
+          <span className="text-xl font-bold text-stone-900 tracking-tight">zenmode</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="/manifesto.html" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">Manifesto</a>
+          <a href="/manifesto.html" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">Manifesto</a>
           <button
             onClick={scrollToSignIn}
             className="rounded-full bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
@@ -89,12 +94,12 @@ export function LoginPage() {
           >
             Get started
           </button>
-          <a
-            href="/changelog.html"
+          <button
+            onClick={scrollToFeatures}
             className="rounded-full border border-stone-300 px-7 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors"
           >
             Learn more
-          </a>
+          </button>
         </div>
       </section>
 
@@ -108,7 +113,7 @@ export function LoginPage() {
       </section>
 
       {/* Features */}
-      <section className="mx-auto max-w-4xl px-4 py-20">
+      <section ref={featuresRef} className="mx-auto max-w-4xl px-4 py-20">
         <div className="grid gap-8 sm:grid-cols-2">
           {[
             {
@@ -120,12 +125,12 @@ export function LoginPage() {
               desc: 'See your week at a glance. Drag tasks between days to plan ahead effortlessly.',
             },
             {
-              title: 'Focus Timer',
-              desc: 'Built-in Pomodoro timer to help you stay in flow and work with calm focus.',
+              title: 'Capture Quickly',
+              desc: 'Jot down ideas and tasks in seconds. Your inbox catches everything so nothing slips through the cracks.',
             },
             {
-              title: 'Inbox & Later',
-              desc: 'Capture ideas quickly without breaking focus. Park tasks for the future when the time is right.',
+              title: 'Focus Timer',
+              desc: 'Built-in Pomodoro timer to help you stay in flow and work with calm focus.',
             },
           ].map((f) => (
             <div key={f.title} className="rounded-2xl bg-white border border-stone-200 p-6">
@@ -209,16 +214,16 @@ export function LoginPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 py-6 text-center flex items-center justify-center gap-4">
+      <footer className="border-t border-stone-200 py-8 text-center flex items-center justify-center gap-6">
         <a
           href="/privacy.html"
-          className="text-xs text-stone-400 hover:text-stone-600"
+          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
           Privacy Policy
         </a>
         <a
           href="/changelog.html"
-          className="text-xs text-stone-400 hover:text-stone-600"
+          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
           Changelog & Roadmap
         </a>
