@@ -322,7 +322,7 @@ export function Sidebar() {
       <button
         onClick={() => { setCommandPaletteAddTask(true); setShowCommandPalette(true); }}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 mx-2 mt-4 rounded-md',
+          'flex items-center gap-2 px-3 py-2 mx-2 mt-6 rounded-md',
           'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
           'transition-colors duration-100 text-sm',
         )}

@@ -52,6 +52,7 @@ export function TaskItem({
   const [isEditing, setIsEditing] = useState(false);
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [editText, setEditText] = useState(item.text);
+  const [pendingComplete, setPendingComplete] = useState(false);
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -221,6 +222,7 @@ export function TaskItem({
       <div className="mt-0.5">
         <Checkbox
           checked={item.completed}
+          onPendingChange={setPendingComplete}
           onChange={(checked) => {
             updateItem(item.id, { completed: checked });
             // Auto-archive inbox/later items on completion
@@ -320,7 +322,7 @@ export function TaskItem({
             onHashtagClick={setHashtagView}
             className={cn(
               'text-sm break-words',
-              item.completed ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
+              (item.completed || pendingComplete) ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
             )}
           />
         )}

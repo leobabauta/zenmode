@@ -9,8 +9,8 @@ export function ArchiveView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8 mt-12">
-          <h1 className="text-5xl font-extrabold text-[var(--color-text-primary)]">
+        <div className="mb-8 mt-16">
+          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
             Archive
           </h1>
           <span className="text-xs text-[var(--color-text-muted)]">

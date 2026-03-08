@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
+  onPendingChange?: (pending: boolean) => void;
   className?: string;
 }
 
@@ -18,7 +19,7 @@ interface Particle {
 
 const CONFETTI_COLORS = ['#f43f5e', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#f97316'];
 
-export function Checkbox({ checked, onChange, className }: CheckboxProps) {
+export function Checkbox({ checked, onChange, onPendingChange, className }: CheckboxProps) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const nextId = useRef(0);
@@ -52,9 +53,11 @@ export function Checkbox({ checked, onChange, className }: CheckboxProps) {
     if (willCheck) {
       // Show confetti first, then mark completed after animation
       setPendingCheck(true);
+      onPendingChange?.(true);
       setTimeout(spawnConfetti, 80);
       setTimeout(() => {
         setPendingCheck(false);
+        onPendingChange?.(false);
         onChange(true);
       }, 1500);
     } else {

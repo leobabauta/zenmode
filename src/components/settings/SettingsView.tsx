@@ -245,7 +245,7 @@ export function SettingsView() {
           </div>
 
           {/* Title */}
-          <h1 className="text-5xl font-extrabold text-[var(--color-text-primary)] mb-6">Settings</h1>
+          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] mb-6">Settings</h1>
 
           {/* Tabs */}
           <div className="flex gap-2 mb-8">

@@ -49,7 +49,7 @@ export function DraggableItem({
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition: transition ?? 'transform 250ms ease' }}
+      style={{ transform: CSS.Transform.toString(transform), transition: transition ?? 'transform 1200ms ease' }}
       className={cn('touch-none', isDragging && 'z-10 relative')}
     >
       {item.type === 'task'
