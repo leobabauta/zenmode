@@ -51,104 +51,102 @@ export function LoginPage() {
     }
   };
 
-  const features = [
-    {
-      title: 'Daily Ritual',
-      description: 'Start each morning with intention — set your priorities and choose a practice for the day.',
-      icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Timeline View',
-      description: 'See your week at a glance. Drag tasks between days to plan ahead effortlessly.',
-      icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Focus Timer',
-      description: 'Built-in Pomodoro timer to help you stay in flow and work with calm focus.',
-      icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-        </svg>
-      ),
-    },
-    {
-      title: 'Inbox & Later',
-      description: 'Capture ideas quickly without breaking focus. Park tasks for the future when the time is right.',
-      icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-17.5 0V6.75a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v6.75m-17.5 0v4.5a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25v-4.5" />
-        </svg>
-      ),
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
+    <div className="min-h-screen bg-[#fafafa]">
+      {/* Nav */}
+      <nav className="flex items-center justify-between px-8 py-5 max-w-6xl mx-auto">
+        <div className="flex items-center gap-2">
+          <img
+            src={import.meta.env.BASE_URL + 'zenmode-logo.svg'}
+            alt=""
+            className="w-7 h-7"
+          />
+          <span className="text-sm font-bold text-stone-900 tracking-tight">zenmode</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="/changelog.html" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Changelog</a>
+          <button
+            onClick={scrollToSignIn}
+            className="rounded-full bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
+          >
+            Sign in
+          </button>
+        </div>
+      </nav>
+
       {/* Hero */}
-      <section className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100 sm:text-5xl">
-          zenmode
+      <section className="flex flex-col items-center justify-center px-4 pt-24 pb-32 text-center">
+        <h1 className="text-6xl sm:text-7xl md:text-8xl font-bold tracking-tight text-stone-900 leading-[1.05] max-w-4xl">
+          Focus is everything.
         </h1>
-        <p className="mt-4 max-w-md text-lg text-stone-500 dark:text-stone-400">
-          A calm, intentional space to plan your day, focus on what matters, and let go of the rest.
+        <p className="mt-8 max-w-xl text-lg sm:text-xl text-stone-500 leading-relaxed">
+          Work can be chaotic, and your task list can be overwhelming &mdash; so reclaim your attention and create pristine focus.
         </p>
-        <button
-          onClick={scrollToSignIn}
-          className="mt-8 rounded-lg bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-        >
-          Get started
-        </button>
+        <div className="mt-10 flex items-center gap-4">
+          <button
+            onClick={scrollToSignIn}
+            className="rounded-full bg-stone-900 px-7 py-3 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
+          >
+            Get started
+          </button>
+          <a
+            href="/changelog.html"
+            className="rounded-full border border-stone-300 px-7 py-3 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors"
+          >
+            Learn more
+          </a>
+        </div>
       </section>
 
       {/* Features */}
-      <section className="mx-auto max-w-3xl px-4 py-16">
-        <div className="grid gap-10 sm:grid-cols-2">
-          {features.map((feature) => (
-            <div key={feature.title} className="flex gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400">
-                {feature.icon}
-              </div>
-              <div>
-                <h3 className="font-medium text-stone-900 dark:text-stone-100">
-                  {feature.title}
-                </h3>
-                <p className="mt-1 text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-                  {feature.description}
-                </p>
-              </div>
+      <section className="mx-auto max-w-4xl px-4 py-20">
+        <div className="grid gap-8 sm:grid-cols-2">
+          {[
+            {
+              title: 'Daily Ritual',
+              desc: 'Start each morning with intention — set your priorities and choose a practice for the day.',
+            },
+            {
+              title: 'Timeline View',
+              desc: 'See your week at a glance. Drag tasks between days to plan ahead effortlessly.',
+            },
+            {
+              title: 'Focus Timer',
+              desc: 'Built-in Pomodoro timer to help you stay in flow and work with calm focus.',
+            },
+            {
+              title: 'Inbox & Later',
+              desc: 'Capture ideas quickly without breaking focus. Park tasks for the future when the time is right.',
+            },
+          ].map((f) => (
+            <div key={f.title} className="rounded-2xl bg-white border border-stone-200 p-6">
+              <h3 className="text-base font-bold text-stone-900">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Sign in */}
-      <section ref={signInRef} className="mx-auto max-w-sm px-4 py-16">
+      <section ref={signInRef} className="mx-auto max-w-sm px-4 py-20">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
-            Sign in
+          <h2 className="text-2xl font-bold text-stone-900">
+            Get started
           </h2>
-          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-            Sync your tasks across devices
+          <p className="mt-2 text-sm text-stone-500">
+            Sign in to sync your tasks across devices
           </p>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-8">
           {sent ? (
-            <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 text-center">
-              <p className="text-stone-700 dark:text-stone-300">
+            <div className="rounded-2xl border border-stone-200 bg-white p-6 text-center">
+              <p className="text-stone-700">
                 Check your email for a magic link to sign in.
               </p>
               <button
                 onClick={() => setSent(false)}
-                className="mt-4 text-sm text-stone-500 hover:text-stone-700 dark:hover:text-stone-300"
+                className="mt-4 text-sm text-stone-500 hover:text-stone-700"
               >
                 Try a different email
               </button>
@@ -158,7 +156,7 @@ export function LoginPage() {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => handleOAuth('google')}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 px-4 py-2.5 text-sm font-medium text-stone-900 dark:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-700"
+                  className="flex w-full items-center justify-center gap-3 rounded-full border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-900 hover:bg-stone-50 transition-colors"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -171,9 +169,9 @@ export function LoginPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
-                <span className="text-xs text-stone-400 dark:text-stone-500">or</span>
-                <div className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
+                <div className="h-px flex-1 bg-stone-200" />
+                <span className="text-xs text-stone-400">or</span>
+                <div className="h-px flex-1 bg-stone-200" />
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3">
@@ -183,15 +181,15 @@ export function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 px-4 py-2.5 text-stone-900 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
+                  className="w-full rounded-full border border-stone-300 bg-white px-5 py-2.5 text-stone-900 placeholder-stone-400 focus:border-stone-500 focus:outline-none focus:ring-1 focus:ring-stone-500"
                 />
                 {error && (
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                  <p className="text-sm text-red-600">{error}</p>
                 )}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-lg bg-stone-900 dark:bg-stone-100 px-4 py-2.5 text-sm font-medium text-white dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-stone-200 disabled:opacity-50"
+                  className="w-full rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Sending...' : 'Send magic link'}
                 </button>
@@ -202,16 +200,16 @@ export function LoginPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 dark:border-stone-800 py-6 text-center flex items-center justify-center gap-4">
+      <footer className="border-t border-stone-200 py-6 text-center flex items-center justify-center gap-4">
         <a
           href="/privacy.html"
-          className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
+          className="text-xs text-stone-400 hover:text-stone-600"
         >
           Privacy Policy
         </a>
         <a
           href="/changelog.html"
-          className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
+          className="text-xs text-stone-400 hover:text-stone-600"
         >
           Changelog & Roadmap
         </a>
