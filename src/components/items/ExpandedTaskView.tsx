@@ -219,11 +219,11 @@ export function ExpandedTaskView() {
         />
       )}
 
-      {/* Modal / Full-screen view */}
+      {/* Modal / Task Focus view */}
       <div className={cn(
         'bg-[var(--color-bg)] flex flex-col overflow-hidden',
         expandedTaskFullScreen
-          ? 'fixed inset-x-0 bottom-0 top-[41px] w-full h-auto z-30'
+          ? 'flex-1 max-w-3xl mx-auto w-full my-8 rounded-xl border border-[var(--color-border)]'
           : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] rounded-xl border border-[var(--color-border)] shadow-2xl z-50'
       )}>
         {/* Header */}
@@ -255,20 +255,16 @@ export function ExpandedTaskView() {
             >
               Focus Timer
             </button>
-            <IconButton
-              label={expandedTaskFullScreen ? 'Exit full screen' : 'Full screen'}
-              onClick={() => setExpandedTaskFullScreen(!expandedTaskFullScreen)}
-            >
-              {expandedTaskFullScreen ? (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 21H3m0 0v-6m0 6l7-7M15 3h6m0 0v6m0-6l-7 7" />
-                </svg>
-              ) : (
+            {!expandedTaskFullScreen && (
+              <IconButton
+                label="Task Focus mode"
+                onClick={() => setExpandedTaskFullScreen(true)}
+              >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 3h6m0 0v6m0-6l-7 7M9 21H3m0 0v-6m0 6l7-7" />
                 </svg>
-              )}
-            </IconButton>
+              </IconButton>
+            )}
             <IconButton
               label="Close"
               onClick={closeAndSave}

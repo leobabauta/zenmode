@@ -58,6 +58,7 @@ export function AppShell() {
   const setView = usePlannerStore((s) => s.setView);
   const toggleSidebar = usePlannerStore((s) => s.toggleSidebar);
   const expandedTaskId = usePlannerStore((s) => s.expandedTaskId);
+  const expandedTaskFullScreen = usePlannerStore((s) => s.expandedTaskFullScreen);
   const showMoveModal = usePlannerStore((s) => s.showMoveModal);
   const showCommandPalette = usePlannerStore((s) => s.showCommandPalette);
   const showSettings = usePlannerStore((s) => s.showSettings);
@@ -231,7 +232,9 @@ export function AppShell() {
           clearSelection();
         }}
       >
-        {view === 'onboarding' ? (
+        {expandedTaskId && expandedTaskFullScreen ? (
+          <ExpandedTaskView />
+        ) : view === 'onboarding' ? (
           <OnboardingView />
         ) : view === 'ritual' ? (
           <DailyRitualView />
@@ -306,8 +309,8 @@ export function AppShell() {
       {/* Quick capture bar — visible in all views */}
       <QuickCaptureBar />
 
-      {/* Expanded task modal */}
-      {expandedTaskId && <ExpandedTaskView />}
+      {/* Expanded task modal (non-fullscreen only; fullscreen renders inline above) */}
+      {expandedTaskId && !expandedTaskFullScreen && <ExpandedTaskView />}
 
       {/* Move-to-date modal */}
       {showMoveModal && <MoveModal />}
