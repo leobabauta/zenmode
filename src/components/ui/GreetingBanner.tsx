@@ -45,7 +45,7 @@ export function GreetingBanner() {
   return (
     <div className="mb-4">
       <h1
-        className="text-2xl font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+        className="text-3xl font-extrabold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
         onClick={() => setView('today')}
       >
         {greeting}{firstName ? `, ${firstName}` : ''}

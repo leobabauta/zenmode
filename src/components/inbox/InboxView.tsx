@@ -11,10 +11,10 @@ export function InboxView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">
-        <div className="flex flex-col items-center mb-4">
-          <span className="text-lg font-bold uppercase tracking-wider text-blue-400">
+        <div className="mb-6">
+          <h1 className="text-3xl font-extrabold text-[var(--color-text-primary)]">
             Inbox
-          </span>
+          </h1>
           <span className="text-xs text-[var(--color-text-muted)]">
             {inboxItems.length} {inboxItems.length === 1 ? 'item' : 'items'}
           </span>
