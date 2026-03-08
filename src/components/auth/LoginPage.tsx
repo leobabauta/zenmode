@@ -126,7 +126,7 @@ export function LoginPage() {
           {/* Timeline View */}
           <div>
             <img
-              src={import.meta.env.BASE_URL + 'feature-timeline.png'}
+              src={import.meta.env.BASE_URL + 'feature-capture.png'}
               alt="Timeline view"
               className="w-full rounded-xl mb-3"
             />
@@ -139,7 +139,7 @@ export function LoginPage() {
           {/* Capture Quickly */}
           <div>
             <img
-              src={import.meta.env.BASE_URL + 'feature-capture.png'}
+              src={import.meta.env.BASE_URL + 'feature-timeline.png'}
               alt="Quick capture"
               className="w-full rounded-xl mb-3"
             />
@@ -151,11 +151,14 @@ export function LoginPage() {
 
           {/* Focus Timer */}
           <div>
-            <img
-              src={import.meta.env.BASE_URL + 'feature-timer.png'}
-              alt="Focus timer"
-              className="w-full rounded-xl mb-3"
-            />
+            <div className="rounded-xl overflow-hidden mb-3">
+              <img
+                src={import.meta.env.BASE_URL + 'feature-timer.png'}
+                alt="Focus timer"
+                className="w-full"
+                style={{ marginBottom: '-12%' }}
+              />
+            </div>
             <div className="rounded-2xl bg-white border border-stone-200 p-6">
               <h3 className="text-base font-bold text-stone-900">Focus Timer</h3>
               <p className="mt-2 text-sm leading-relaxed text-stone-500">Built-in Pomodoro timer to help you stay in flow and work with calm focus.</p>
