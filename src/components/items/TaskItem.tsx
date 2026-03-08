@@ -36,13 +36,14 @@ export function TaskItem({
   onShiftSelectPrev, onShiftSelectNext, onMoveUp, onMoveDown,
   onInsertAfter, onToggleCollapse, isCollapsed, dragHandleProps,
 }: TaskItemProps) {
-  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, setExpandedTask, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
+  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, setExpandedTask, setExpandedTaskFullScreen, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
     promptDeleteItem: s.promptDeleteItem,
     setRecurrence: s.setRecurrence,
     sendToInbox: s.sendToInbox,
     sendToLater: s.sendToLater,
     setExpandedTask: s.setExpandedTask,
+    setExpandedTaskFullScreen: s.setExpandedTaskFullScreen,
     setShowMoveModal: s.setShowMoveModal,
     setHashtagView: s.setHashtagView,
     unarchiveItem: s.unarchiveItem,
@@ -358,7 +359,7 @@ export function TaskItem({
 
       <IconButton
         label="Task focus mode"
-        onClick={() => setExpandedTask(item.id)}
+        onClick={() => { setExpandedTaskFullScreen(true); setExpandedTask(item.id); }}
         className={cn(
           'flex-shrink-0',
           hasChildren || item.notes

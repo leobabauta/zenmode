@@ -223,7 +223,7 @@ export function ExpandedTaskView() {
       <div className={cn(
         'bg-[var(--color-bg)] flex flex-col overflow-hidden',
         expandedTaskFullScreen
-          ? 'flex-1 max-w-3xl mx-auto w-full my-8 rounded-xl border border-[var(--color-border)]'
+          ? 'w-[50%] h-[80%] mx-auto mt-[5%] rounded-xl border border-[var(--color-border)]'
           : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] rounded-xl border border-[var(--color-border)] shadow-2xl z-50'
       )}>
         {/* Header */}
