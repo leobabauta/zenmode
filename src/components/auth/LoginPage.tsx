@@ -98,6 +98,17 @@ export function LoginPage() {
         </div>
       </section>
 
+      {/* Screenshot */}
+      <section className="mx-auto max-w-5xl px-4 pb-16">
+        <div className="mx-auto w-3/4">
+          <img
+            src={import.meta.env.BASE_URL + 'screenshot-hero.png'}
+            alt="zenmode app screenshot"
+            className="w-full rounded-xl shadow-2xl border border-stone-200"
+          />
+        </div>
+      </section>
+
       {/* Features */}
       <section className="mx-auto max-w-4xl px-4 py-20">
         <div className="grid gap-8 sm:grid-cols-2">
