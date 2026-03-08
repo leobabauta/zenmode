@@ -114,6 +114,13 @@ export function AppShell() {
         return;
       }
 
+      // Shift+O → replay onboarding (for testing)
+      if (e.key === 'O' && e.shiftKey) {
+        e.preventDefault();
+        usePlannerStore.getState().setView('onboarding');
+        return;
+      }
+
       if (e.shiftKey || e.metaKey || e.ctrlKey) return;
 
       if (e.key === 'i') {
