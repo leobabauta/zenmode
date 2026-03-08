@@ -6,24 +6,6 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/** Extract list items from email body text. Returns null if no list found. */
-function parseListItems(body: string): string[] | null {
-  const lines = body.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const listLines: string[] = [];
-
-  for (const line of lines) {
-    // Match: - item, * item, • item, 1. item, 1) item, [] item, [ ] item
-    const match = line.match(/^(?:[-*•]|\d+[.)]\s*|\[[\sx]?\]\s*)(.+)/i);
-    if (match) {
-      const text = match[1].trim();
-      if (text) listLines.push(text);
-    }
-  }
-
-  // Only treat as a list if we found at least 2 list items
-  return listLines.length >= 2 ? listLines : null;
-}
-
 /** Strip common email signature patterns and quoted replies */
 function cleanBody(body: string): string {
   // Remove everything after common signature markers
@@ -136,28 +118,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Determine tasks to create
-    const tasks: string[] = [];
+    // Create a single task from subject (or first line of body)
     const cleanedBody = cleanBody(plainBody);
-    const listItems = parseListItems(cleanedBody);
-
-    if (listItems) {
-      // Body contains a list — each item becomes a task
-      // Prepend subject as context if it's meaningful
-      const prefix = subject ? `${subject}: ` : '';
-      for (const item of listItems) {
-        tasks.push(prefix ? `${prefix}${item}` : item);
-      }
-    } else if (subject) {
-      // Single task from subject line
-      tasks.push(subject);
-    } else if (cleanedBody) {
-      // No subject — use first line of body
-      const firstLine = cleanedBody.split(/\r?\n/)[0].trim();
-      if (firstLine) tasks.push(firstLine);
+    let taskText = subject;
+    if (!taskText && cleanedBody) {
+      taskText = cleanedBody.split(/\r?\n/)[0].trim();
     }
 
-    if (tasks.length === 0) {
+    if (!taskText) {
       return new Response(JSON.stringify({ error: 'No task text found' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -175,40 +143,39 @@ Deno.serve(async (req) => {
       .order('order', { ascending: false })
       .limit(1);
 
-    let nextOrder = (existingItems?.[0]?.order ?? -1) + 1;
+    const nextOrder = (existingItems?.[0]?.order ?? -1) + 1;
     const now = new Date().toISOString();
 
-    // Create item rows
-    const rows = tasks.map((text) => ({
+    const row = {
       id: nanoid(),
       user_id: user.id,
       type: 'task',
-      text,
+      text: taskText,
       completed: false,
       day_key: null,
       is_later: false,
-      order: nextOrder++,
+      order: nextOrder,
       created_at: now,
       updated_at: now,
       notes: cleanedBody || null,
-    }));
+    };
 
-    const { error: insertError } = await supabase.from('items').insert(rows);
+    const { error: insertError } = await supabase.from('items').insert([row]);
 
     if (insertError) {
       console.error('Insert error:', insertError);
-      return new Response(JSON.stringify({ error: 'Failed to create tasks' }), {
+      return new Response(JSON.stringify({ error: 'Failed to create task' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Created ${rows.length} task(s) for ${senderEmail} from email "${subject}"`);
+    console.log(`Created task for ${senderEmail} from email "${subject}"`);
 
     return new Response(JSON.stringify({
       success: true,
-      tasks_created: rows.length,
-      task_texts: tasks,
+      tasks_created: 1,
+      task_text: taskText,
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
