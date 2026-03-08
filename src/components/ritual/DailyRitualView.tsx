@@ -204,7 +204,7 @@ export function DailyRitualView() {
         <div className="relative mt-16 mb-8">
           <button
             onClick={() => setView('today')}
-            className="absolute -left-20 top-2 w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+            className="absolute -left-40 top-2 w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
             title="Exit ritual"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
