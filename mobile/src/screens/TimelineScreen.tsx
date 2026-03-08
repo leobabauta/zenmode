@@ -1,28 +1,63 @@
 import { View, Text, TouchableOpacity, SectionList, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlannerStore, selectItemsForDay } from '../store/usePlannerStore';
-import { toDayKey, formatDayLabel } from '../../shared/lib/dates';
+import { toDayKey, formatDayLabel } from '../../../shared/lib/dates';
 import { addDays, isToday, isTomorrow } from 'date-fns';
-import type { PlannerItem } from '../../shared/types';
+import type { PlannerItem } from '../../../shared/types';
+import { SwipeableRow } from '../components/SwipeableRow';
+import { useToast } from '../components/Toast';
+import { useColors, type Colors } from '../lib/colors';
 
-function TaskRow({ item }: { item: PlannerItem }) {
+function TaskRow({ item, colors }: { item: PlannerItem; colors: Colors }) {
   const updateItem = usePlannerStore((s) => s.updateItem);
+  const deleteItem = usePlannerStore((s) => s.deleteItem);
+  const moveItem = usePlannerStore((s) => s.moveItem);
+  const addItem = usePlannerStore((s) => s.addItem);
+  const { show } = useToast();
+
+  const handleDelete = () => {
+    const snapshot = { ...item };
+    deleteItem(item.id);
+    show('Item deleted', () => {
+      addItem({
+        type: snapshot.type,
+        text: snapshot.text,
+        dayKey: snapshot.dayKey ?? null,
+        isLater: snapshot.isLater,
+        isPriority: snapshot.isPriority,
+        isMediumPriority: snapshot.isMediumPriority,
+        isPractice: snapshot.isPractice,
+      });
+    });
+  };
+
+  const handleSnooze = () => {
+    const tomorrowKey = toDayKey(addDays(new Date(), 1));
+    const prevDayKey = item.dayKey;
+    const prevIsLater = item.isLater;
+    moveItem(item.id, tomorrowKey, false);
+    show('Snoozed until tomorrow', () => {
+      moveItem(item.id, prevDayKey, prevIsLater);
+    });
+  };
 
   return (
-    <TouchableOpacity
-      style={styles.taskRow}
-      onPress={() => updateItem(item.id, { completed: !item.completed })}
-      activeOpacity={0.6}
-    >
-      <View style={[styles.checkbox, item.completed && styles.checkboxDone]}>
-        {item.completed && <Text style={styles.checkmark}>✓</Text>}
-      </View>
-      <Text style={[styles.taskText, item.completed && styles.taskTextDone]} numberOfLines={2}>
-        {item.text}
-      </Text>
-      {item.isPriority && <View style={[styles.priorityDot, { backgroundColor: '#ef4444' }]} />}
-      {item.isMediumPriority && <View style={[styles.priorityDot, { backgroundColor: '#f59e0b' }]} />}
-    </TouchableOpacity>
+    <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze}>
+      <TouchableOpacity
+        style={[styles.taskRow, { borderBottomColor: colors.border, backgroundColor: colors.bg }]}
+        onPress={() => updateItem(item.id, { completed: !item.completed })}
+        activeOpacity={0.6}
+      >
+        <View style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}>
+          {item.completed && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={2}>
+          {item.text}
+        </Text>
+        {item.isPriority && <View style={[styles.priorityDot, { backgroundColor: '#ef4444' }]} />}
+        {item.isMediumPriority && <View style={[styles.priorityDot, { backgroundColor: '#f59e0b' }]} />}
+      </TouchableOpacity>
+    </SwipeableRow>
   );
 }
 
@@ -35,6 +70,7 @@ function getDayLabel(date: Date): string {
 export function TimelineScreen() {
   const items = usePlannerStore((s) => s.items);
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   const today = new Date();
   const sections: { title: string; data: PlannerItem[] }[] = [];
@@ -55,22 +91,22 @@ export function TimelineScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>Timeline</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Timeline</Text>
 
       <SectionList
         sections={sections}
         keyExtractor={(item) => item.id}
         renderSectionHeader={({ section }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderText}>{section.title.toUpperCase()}</Text>
+          <View style={[styles.sectionHeader, { backgroundColor: colors.bg }]}>
+            <Text style={[styles.sectionHeaderText, { color: colors.textSecondary }]}>{section.title.toUpperCase()}</Text>
           </View>
         )}
-        renderItem={({ item }) => <TaskRow item={item} />}
+        renderItem={({ item }) => <TaskRow item={item} colors={colors} />}
         contentContainerStyle={styles.list}
         stickySectionHeadersEnabled={false}
         ListEmptyComponent={
-          <Text style={styles.empty}>No tasks in the next 14 days.</Text>
+          <Text style={[styles.empty, { color: colors.textMuted }]}>No tasks in the next 14 days.</Text>
         }
       />
     </View>
@@ -78,23 +114,21 @@ export function TimelineScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafaf9' },
-  title: { fontSize: 28, fontWeight: '700', color: '#1c1917', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16 },
-  list: { paddingHorizontal: 20, paddingBottom: 100 },
-  empty: { fontSize: 14, color: '#a8a29e', textAlign: 'center', marginTop: 40 },
-  sectionHeader: { paddingTop: 20, paddingBottom: 8 },
-  sectionHeaderText: { fontSize: 12, fontWeight: '600', color: '#78716c', letterSpacing: 0.5 },
+  container: { flex: 1 },
+  title: { fontSize: 28, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16 },
+  list: { paddingBottom: 100 },
+  empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
+  sectionHeader: { paddingTop: 20, paddingBottom: 8, paddingHorizontal: 20 },
+  sectionHeaderText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
   taskRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e7e5e4',
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: '#d6d3d1',
+    width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  checkboxDone: { backgroundColor: '#a8a29e', borderColor: '#a8a29e' },
   checkmark: { fontSize: 13, color: '#fff', fontWeight: '600' },
-  taskText: { flex: 1, fontSize: 15, color: '#1c1917', lineHeight: 21 },
-  taskTextDone: { color: '#a8a29e', textDecorationLine: 'line-through' },
+  taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
   priorityDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 8 },
 });

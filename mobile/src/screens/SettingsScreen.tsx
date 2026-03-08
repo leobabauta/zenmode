@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { getSupabase } from '../../shared/lib/supabase';
-import { useAuthStore } from '../../shared/store/useAuthStore';
+import { getSupabase } from '../../../shared/lib/supabase';
+import { useAuthStore } from '../../../shared/store/useAuthStore';
 import { usePlannerStore } from '../store/usePlannerStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColors } from '../lib/colors';
 
 export function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
@@ -13,6 +13,7 @@ export function SettingsScreen() {
   const toggleTheme = usePlannerStore((s) => s.toggleTheme);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   const handleLogout = () => {
     Alert.alert('Log out', 'Are you sure you want to log out?', [
@@ -56,36 +57,36 @@ export function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={[styles.backText, { color: colors.textSecondary }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
         <View style={{ width: 60 }} />
       </View>
 
       {user && (
-        <Text style={styles.email}>{user.email}</Text>
+        <Text style={[styles.email, { color: colors.textSecondary }]}>{user.email}</Text>
       )}
 
-      <View style={styles.section}>
+      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity style={styles.row} onPress={toggleTheme}>
-          <Text style={styles.rowLabel}>Appearance</Text>
-          <Text style={styles.rowValue}>{theme === 'dark' ? 'Dark' : 'Light'}</Text>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Appearance</Text>
+          <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{theme === 'dark' ? 'Dark' : 'Light'}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
+      <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity style={styles.row} onPress={handleLogout}>
-          <Text style={styles.rowLabel}>Log out</Text>
+          <Text style={[styles.rowLabel, { color: colors.text }]}>Log out</Text>
         </TouchableOpacity>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         <TouchableOpacity style={styles.row} onPress={handleDeleteAccount}>
-          <Text style={[styles.rowLabel, { color: '#dc2626' }]}>Delete account</Text>
+          <Text style={[styles.rowLabel, { color: colors.danger }]}>Delete account</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -93,24 +94,24 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafaf9' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 12,
   },
   backButton: { width: 60 },
-  backText: { fontSize: 15, color: '#78716c' },
-  title: { fontSize: 17, fontWeight: '600', color: '#1c1917' },
-  email: { fontSize: 14, color: '#78716c', paddingHorizontal: 20, marginBottom: 24 },
+  backText: { fontSize: 15 },
+  title: { fontSize: 17, fontWeight: '600' },
+  email: { fontSize: 14, paddingHorizontal: 20, marginBottom: 24 },
   section: {
-    marginHorizontal: 20, marginBottom: 24, backgroundColor: '#fff',
-    borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: '#e7e5e4',
+    marginHorizontal: 20, marginBottom: 24,
+    borderRadius: 12, borderWidth: StyleSheet.hairlineWidth,
   },
   row: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
   },
-  rowLabel: { fontSize: 16, color: '#1c1917' },
-  rowValue: { fontSize: 14, color: '#78716c' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#e7e5e4', marginLeft: 16 },
+  rowLabel: { fontSize: 16 },
+  rowValue: { fontSize: 14 },
+  divider: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
 });

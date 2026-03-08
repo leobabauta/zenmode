@@ -2,7 +2,12 @@ import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlannerStore, selectLaterItems } from '../store/usePlannerStore';
-import type { PlannerItem } from '../../shared/types';
+import { toDayKey } from '../../../shared/lib/dates';
+import { addDays } from 'date-fns';
+import type { PlannerItem } from '../../../shared/types';
+import { SwipeableRow } from '../components/SwipeableRow';
+import { useToast } from '../components/Toast';
+import { useColors, type Colors } from '../lib/colors';
 
 type SubView =
   | { kind: 'later' }
@@ -10,22 +15,54 @@ type SubView =
   | { kind: 'customList'; listId: string; listName: string }
   | { kind: 'label'; tag: string };
 
-function TaskRow({ item }: { item: PlannerItem }) {
+function TaskRow({ item, colors }: { item: PlannerItem; colors: Colors }) {
   const updateItem = usePlannerStore((s) => s.updateItem);
+  const deleteItem = usePlannerStore((s) => s.deleteItem);
+  const moveItem = usePlannerStore((s) => s.moveItem);
+  const addItem = usePlannerStore((s) => s.addItem);
+  const { show } = useToast();
+
+  const handleDelete = () => {
+    const snapshot = { ...item };
+    deleteItem(item.id);
+    show('Item deleted', () => {
+      addItem({
+        type: snapshot.type,
+        text: snapshot.text,
+        dayKey: snapshot.dayKey ?? null,
+        isLater: snapshot.isLater,
+        isPriority: snapshot.isPriority,
+        isMediumPriority: snapshot.isMediumPriority,
+        isPractice: snapshot.isPractice,
+      });
+    });
+  };
+
+  const handleSnooze = () => {
+    const tomorrowKey = toDayKey(addDays(new Date(), 1));
+    const prevDayKey = item.dayKey;
+    const prevIsLater = item.isLater;
+    moveItem(item.id, tomorrowKey, false);
+    show('Moved to tomorrow', () => {
+      moveItem(item.id, prevDayKey, prevIsLater);
+    });
+  };
 
   return (
-    <TouchableOpacity
-      style={styles.taskRow}
-      onPress={() => updateItem(item.id, { completed: !item.completed })}
-      activeOpacity={0.6}
-    >
-      <View style={[styles.checkbox, item.completed && styles.checkboxDone]}>
-        {item.completed && <Text style={styles.checkmark}>{'✓'}</Text>}
-      </View>
-      <Text style={[styles.taskText, item.completed && styles.taskTextDone]} numberOfLines={2}>
-        {item.text}
-      </Text>
-    </TouchableOpacity>
+    <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze}>
+      <TouchableOpacity
+        style={[styles.taskRow, { borderBottomColor: colors.border }]}
+        onPress={() => updateItem(item.id, { completed: !item.completed })}
+        activeOpacity={0.6}
+      >
+        <View style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}>
+          {item.completed && <Text style={styles.checkmark}>{'✓'}</Text>}
+        </View>
+        <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={2}>
+          {item.text}
+        </Text>
+      </TouchableOpacity>
+    </SwipeableRow>
   );
 }
 
@@ -95,22 +132,23 @@ export function ListsScreen() {
   const labels = useAllLabels();
   const filteredItems = useFilteredItems(subView);
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   if (subView) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => setSubView(null)} activeOpacity={0.6}>
-          <Text style={styles.backText}>{'< Lists'}</Text>
+          <Text style={[styles.backText, { color: colors.textSecondary }]}>{'< Lists'}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{subViewTitle(subView)}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{subViewTitle(subView)}</Text>
 
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TaskRow item={item} />}
+          renderItem={({ item }) => <TaskRow item={item} colors={colors} />}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <Text style={styles.empty}>No items.</Text>
+            <Text style={[styles.empty, { color: colors.textMuted }]}>No items.</Text>
           }
         />
       </View>
@@ -118,8 +156,8 @@ export function ListsScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>Lists</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Lists</Text>
 
       <FlatList
         data={[]}
@@ -130,21 +168,21 @@ export function ListsScreen() {
           <>
             {/* Built-in lists */}
             <TouchableOpacity
-              style={styles.menuRow}
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
               onPress={() => setSubView({ kind: 'later' })}
               activeOpacity={0.6}
             >
-              <Text style={styles.menuText}>Later</Text>
-              <Text style={styles.chevron}>{'>'}</Text>
+              <Text style={[styles.menuText, { color: colors.text }]}>Later</Text>
+              <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.menuRow}
+              style={[styles.menuRow, { borderBottomColor: colors.border }]}
               onPress={() => setSubView({ kind: 'archive' })}
               activeOpacity={0.6}
             >
-              <Text style={styles.menuText}>Archive</Text>
-              <Text style={styles.chevron}>{'>'}</Text>
+              <Text style={[styles.menuText, { color: colors.text }]}>Archive</Text>
+              <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
             </TouchableOpacity>
 
             {/* Custom lists */}
@@ -154,28 +192,28 @@ export function ListsScreen() {
               .map((cl) => (
                 <TouchableOpacity
                   key={cl.id}
-                  style={styles.menuRow}
+                  style={[styles.menuRow, { borderBottomColor: colors.border }]}
                   onPress={() => setSubView({ kind: 'customList', listId: cl.id, listName: cl.name })}
                   activeOpacity={0.6}
                 >
-                  <Text style={styles.menuText}>{cl.name}</Text>
-                  <Text style={styles.chevron}>{'>'}</Text>
+                  <Text style={[styles.menuText, { color: colors.text }]}>{cl.name}</Text>
+                  <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
                 </TouchableOpacity>
               ))}
 
             {/* Labels section */}
             {labels.length > 0 && (
               <>
-                <Text style={styles.sectionHeader}>Labels</Text>
+                <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>Labels</Text>
                 {labels.map((tag) => (
                   <TouchableOpacity
                     key={tag}
-                    style={styles.menuRow}
+                    style={[styles.menuRow, { borderBottomColor: colors.border }]}
                     onPress={() => setSubView({ kind: 'label', tag })}
                     activeOpacity={0.6}
                   >
-                    <Text style={styles.menuText}>{tag}</Text>
-                    <Text style={styles.chevron}>{'>'}</Text>
+                    <Text style={[styles.menuText, { color: colors.text }]}>{tag}</Text>
+                    <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
                   </TouchableOpacity>
                 ))}
               </>
@@ -188,65 +226,32 @@ export function ListsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafaf9' },
+  container: { flex: 1 },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1c1917',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    marginBottom: 16,
+    fontSize: 28, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16,
   },
   list: { paddingHorizontal: 20, paddingBottom: 80 },
-  empty: { fontSize: 14, color: '#a8a29e', textAlign: 'center', marginTop: 40 },
-
-  // Back button
+  empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
   backButton: { paddingHorizontal: 20, paddingTop: 12 },
-  backText: { fontSize: 16, color: '#78716c' },
-
-  // Menu rows
+  backText: { fontSize: 16 },
   menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e7e5e4',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  menuText: { fontSize: 16, color: '#1c1917' },
-  chevron: { fontSize: 16, color: '#78716c' },
-
-  // Section header
+  menuText: { fontSize: 16 },
+  chevron: { fontSize: 16 },
   sectionHeader: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#78716c',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 24,
-    marginBottom: 8,
+    fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5,
+    marginTop: 24, marginBottom: 8,
   },
-
-  // Task rows
   taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e7e5e4',
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#d6d3d1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  checkboxDone: { backgroundColor: '#a8a29e', borderColor: '#a8a29e' },
   checkmark: { fontSize: 13, color: '#fff', fontWeight: '600' },
-  taskText: { flex: 1, fontSize: 15, color: '#1c1917', lineHeight: 21 },
-  taskTextDone: { color: '#a8a29e', textDecorationLine: 'line-through' },
+  taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
 });

@@ -1,10 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useColors } from '../lib/colors';
 
 type TimerState = 'idle' | 'running' | 'paused';
 
@@ -16,6 +12,7 @@ export function FocusTimerScreen() {
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [completed, setCompleted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const colors = useColors();
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -89,8 +86,8 @@ export function FocusTimerScreen() {
   const primaryLabel = timerState === 'idle' ? 'Start' : timerState === 'running' ? 'Pause' : 'Resume';
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Focus</Text>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Focus</Text>
 
       {timerState === 'idle' && !completed && (
         <View style={styles.presetsRow}>
@@ -99,14 +96,16 @@ export function FocusTimerScreen() {
               key={mins}
               style={[
                 styles.presetPill,
-                durationMinutes === mins && styles.presetPillActive,
+                { backgroundColor: colors.pill },
+                durationMinutes === mins && { backgroundColor: colors.accent },
               ]}
               onPress={() => selectDuration(mins)}
             >
               <Text
                 style={[
                   styles.presetText,
-                  durationMinutes === mins && styles.presetTextActive,
+                  { color: colors.text },
+                  durationMinutes === mins && { color: colors.accentText },
                 ]}
               >
                 {mins} min
@@ -116,28 +115,28 @@ export function FocusTimerScreen() {
         </View>
       )}
 
-      <View style={styles.timerCircle}>
+      <View style={[styles.timerCircle, { borderColor: colors.accent }]}>
         {completed ? (
-          <Text style={styles.completedText}>Time's up!</Text>
+          <Text style={[styles.completedText, { color: colors.text }]}>Time's up!</Text>
         ) : (
-          <Text style={styles.timerText}>{formatTime(remainingSeconds)}</Text>
+          <Text style={[styles.timerText, { color: colors.text }]}>{formatTime(remainingSeconds)}</Text>
         )}
       </View>
 
       <View style={styles.buttonsRow}>
-        <TouchableOpacity style={styles.primaryButton} onPress={handlePrimaryPress}>
-          <Text style={styles.primaryButtonText}>{primaryLabel}</Text>
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.accent }]} onPress={handlePrimaryPress}>
+          <Text style={[styles.primaryButtonText, { color: colors.accentText }]}>{primaryLabel}</Text>
         </TouchableOpacity>
 
         {timerState !== 'idle' && (
-          <TouchableOpacity style={styles.secondaryButton} onPress={resetTimer}>
-            <Text style={styles.secondaryButtonText}>Reset</Text>
+          <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.accent }]} onPress={resetTimer}>
+            <Text style={[styles.secondaryButtonText, { color: colors.accent }]}>Reset</Text>
           </TouchableOpacity>
         )}
 
         {completed && (
-          <TouchableOpacity style={styles.secondaryButton} onPress={resetTimer}>
-            <Text style={styles.secondaryButtonText}>Reset</Text>
+          <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.accent }]} onPress={resetTimer}>
+            <Text style={[styles.secondaryButtonText, { color: colors.accent }]}>Reset</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -147,86 +146,21 @@ export function FocusTimerScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fafaf9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1c1917',
-    marginBottom: 32,
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 32,
-  },
-  presetPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f5f5f4',
-  },
-  presetPillActive: {
-    backgroundColor: '#1c1917',
-  },
-  presetText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1c1917',
-  },
-  presetTextActive: {
-    color: '#fff',
-  },
+  title: { fontSize: 28, fontWeight: '700', marginBottom: 32 },
+  presetsRow: { flexDirection: 'row', gap: 10, marginBottom: 32 },
+  presetPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  presetText: { fontSize: 14, fontWeight: '500' },
   timerCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 4,
-    borderColor: '#1c1917',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
+    width: 200, height: 200, borderRadius: 100, borderWidth: 4,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 40,
   },
-  timerText: {
-    fontSize: 40,
-    fontWeight: '300',
-    color: '#1c1917',
-  },
-  completedText: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#1c1917',
-  },
-  buttonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#1c1917',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 28,
-  },
-  primaryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    borderWidth: 1.5,
-    borderColor: '#1c1917',
-    paddingHorizontal: 24,
-    paddingVertical: 13,
-    borderRadius: 28,
-  },
-  secondaryButtonText: {
-    color: '#1c1917',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  timerText: { fontSize: 40, fontWeight: '300' },
+  completedText: { fontSize: 22, fontWeight: '600' },
+  buttonsRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+  primaryButton: { paddingHorizontal: 32, paddingVertical: 14, borderRadius: 28 },
+  primaryButtonText: { fontSize: 16, fontWeight: '600' },
+  secondaryButton: { borderWidth: 1.5, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 28 },
+  secondaryButtonText: { fontSize: 16, fontWeight: '600' },
 });
