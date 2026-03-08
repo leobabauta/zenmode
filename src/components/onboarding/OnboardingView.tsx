@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 
 const TOTAL_STEPS = 5;
@@ -14,6 +14,30 @@ export function OnboardingView() {
 
   const skip = finish;
 
+  const goNext = useCallback(() => {
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+  }, []);
+
+  const goBack = useCallback(() => {
+    setStep((s) => Math.max(s - 1, 1));
+  }, []);
+
+  // Arrow key navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (step === TOTAL_STEPS) finish();
+        else goNext();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        goBack();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [step, goNext, goBack]);
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-lg mx-auto">
@@ -28,7 +52,7 @@ export function OnboardingView() {
             </svg>
           </button>
           <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
-            Welcome to Zenmode
+            Welcome to zenmode
           </h1>
         </div>
 
@@ -61,7 +85,7 @@ export function OnboardingView() {
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-sm font-bold">H</span>
                 <div>
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Press H for Timeline</p>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Press H for Timeline (Home)</p>
                   <p className="text-xs text-[var(--color-text-muted)]">Jump to the Timeline view anytime</p>
                 </div>
               </div>
@@ -77,6 +101,13 @@ export function OnboardingView() {
                 <div>
                   <p className="text-sm font-medium text-[var(--color-text-primary)]">Drag to reorder</p>
                   <p className="text-xs text-[var(--color-text-muted)]">Drag tasks to rearrange them within a day, or to a different day</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-sm font-bold">S</span>
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Press S to hide the sidebar</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">Collapse the sidebar for a distraction-free view of your tasks</p>
                 </div>
               </div>
             </div>
@@ -148,7 +179,7 @@ export function OnboardingView() {
               Quick Add & Command Palette
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
-              Adding tasks is fast and flexible. Type naturally and let Zenmode organize things for you.
+              Adding tasks is fast and flexible. Type naturally and let zenmode organize things for you.
             </p>
 
             <div className="rounded-xl border border-[var(--color-border)] p-5 space-y-4 mb-6">
@@ -198,7 +229,7 @@ export function OnboardingView() {
               Keyboard-First Design
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
-              Zenmode is built for speed. Nearly everything can be done from the keyboard — no reaching for the mouse.
+              zenmode is built for speed. Nearly everything can be done from the keyboard — no reaching for the mouse.
             </p>
 
             <div className="rounded-xl border border-[var(--color-border)] p-5 mb-6">
@@ -254,7 +285,7 @@ export function OnboardingView() {
               Daily Rituals
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
-              Zenmode includes gentle daily rituals to help you start and end each day with intention.
+              zenmode includes gentle daily rituals to help you start and end each day with intention.
             </p>
 
             <div className="rounded-xl border border-[var(--color-border)] p-5 space-y-4 mb-6">
