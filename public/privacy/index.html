@@ -114,13 +114,17 @@
       justify-content: center;
       gap: 1.5rem;
     }
-    footer a {
-      font-size: 0.875rem;
+    footer a, footer span {
+      font-size: 1rem;
       color: #78716c;
       text-decoration: none;
       transition: color 0.15s;
     }
     footer a:hover { color: #1c1917; }
+    footer .active {
+      font-weight: 600;
+      color: #1c1917;
+    }
   </style>
 </head>
 <body>
@@ -172,7 +176,7 @@
   <footer>
     <a href="/about">About</a>
     <a href="/manifesto">Manifesto</a>
-    <a href="/privacy">Privacy Policy</a>
+    <span class="active">Privacy Policy</span>
     <a href="/changelog">Changelog & Roadmap</a>
   </footer>
 </body>

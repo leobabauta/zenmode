@@ -243,25 +243,25 @@ export function LoginPage() {
       <footer className="border-t border-stone-200 py-8 text-center flex items-center justify-center gap-6">
         <a
           href="/about"
-          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+          className="text-base text-stone-500 hover:text-stone-700 transition-colors"
         >
           About
         </a>
         <a
           href="/manifesto"
-          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+          className="text-base text-stone-500 hover:text-stone-700 transition-colors"
         >
           Manifesto
         </a>
         <a
           href="/privacy"
-          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+          className="text-base text-stone-500 hover:text-stone-700 transition-colors"
         >
           Privacy Policy
         </a>
         <a
           href="/changelog"
-          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+          className="text-base text-stone-500 hover:text-stone-700 transition-colors"
         >
           Changelog & Roadmap
         </a>
