@@ -69,7 +69,7 @@ export function LoginPage() {
           <span className="text-xl font-bold text-stone-900 tracking-tight">zenmode</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="/manifesto.html" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">Manifesto</a>
+          <a href="/manifesto" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">Manifesto</a>
           <button
             onClick={scrollToSignIn}
             className="rounded-full bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
@@ -242,25 +242,25 @@ export function LoginPage() {
       {/* Footer */}
       <footer className="border-t border-stone-200 py-8 text-center flex items-center justify-center gap-6">
         <a
-          href="/about.html"
+          href="/about"
           className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
           About
         </a>
         <a
-          href="/manifesto.html"
+          href="/manifesto"
           className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
           Manifesto
         </a>
         <a
-          href="/privacy.html"
+          href="/privacy"
           className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
           Privacy Policy
         </a>
         <a
-          href="/changelog.html"
+          href="/changelog"
           className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
           Changelog & Roadmap
