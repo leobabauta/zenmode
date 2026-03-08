@@ -5,7 +5,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { usePlannerStore, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
-import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
 
 const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'archive'];
 
@@ -202,7 +201,6 @@ export function Sidebar() {
   const [newListName, setNewListName] = useState('');
   const [listsCollapsed, setListsCollapsed] = useState(false);
   const [labelsCollapsed, setLabelsCollapsed] = useState(false);
-  const showShortcuts = usePlannerStore((s) => s.showShortcuts);
   const setShowShortcuts = usePlannerStore((s) => s.setShowShortcuts);
   const newListInputRef = useRef<HTMLInputElement>(null);
 
@@ -537,7 +535,6 @@ export function Sidebar() {
           <span className="font-medium">Settings</span>
         </button>
       </div>
-      {showShortcuts && <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />}
     </aside>
   );
 }

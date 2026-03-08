@@ -17,6 +17,7 @@ import { ExpandedTaskView } from '../items/ExpandedTaskView';
 import { MoveModal } from '../ui/MoveModal';
 import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
+import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
 import { DeleteRecurrenceModal } from '../ui/DeleteRecurrenceModal';
 import { QuickCaptureBar } from '../forms/QuickCaptureBar';
 import { RitualPrompt } from '../ritual/RitualPrompt';
@@ -67,6 +68,8 @@ export function AppShell() {
   const setShowCommandPalette = usePlannerStore((s) => s.setShowCommandPalette);
   const commandPaletteAddTask = usePlannerStore((s) => s.commandPaletteAddTask);
   const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
+  const showShortcuts = usePlannerStore((s) => s.showShortcuts);
+  const setShowShortcuts = usePlannerStore((s) => s.setShowShortcuts);
   const [showFullConfetti, setShowFullConfetti] = useState(false);
   const dismissConfetti = useCallback(() => setShowFullConfetti(false), []);
 
@@ -308,6 +311,9 @@ export function AppShell() {
       )}
 
       {/* Settings is now rendered inline as a view */}
+
+      {/* Keyboard shortcuts modal */}
+      {showShortcuts && <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />}
 
       {/* Delete recurrence confirmation modal */}
       <DeleteRecurrenceModal />
