@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlannerStore, selectInboxItems } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
@@ -12,7 +13,7 @@ import { SwipeableRow } from '../components/SwipeableRow';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 
-function TaskRow({ item, colors }: { item: PlannerItem; colors: Colors }) {
+function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: Colors; drag: () => void; isActive: boolean }) {
   const updateItem = usePlannerStore((s) => s.updateItem);
   const deleteItem = usePlannerStore((s) => s.deleteItem);
   const moveItem = usePlannerStore((s) => s.moveItem);
@@ -55,43 +56,51 @@ function TaskRow({ item, colors }: { item: PlannerItem; colors: Colors }) {
   };
 
   return (
-    <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze}>
-      <View style={[styles.taskRow, { borderBottomColor: colors.border, backgroundColor: colors.bg }]}>
-        {item.type === 'task' && (
-          <TouchableOpacity
-            onPress={() => updateItem(item.id, { completed: !item.completed })}
-            style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}
-          >
-            {item.completed && <Text style={styles.checkmark}>✓</Text>}
-          </TouchableOpacity>
-        )}
-        {editing ? (
-          <TextInput
-            style={[styles.editInput, { color: colors.text }]}
-            value={editText}
-            onChangeText={setEditText}
-            onBlur={commitEdit}
-            onSubmitEditing={commitEdit}
-            autoFocus
-          />
-        ) : (
-          <TouchableOpacity
-            style={{ flex: 1 }}
-            onPress={() => { setEditText(item.text); setEditing(true); }}
-          >
-            <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={3}>
-              {item.text}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </SwipeableRow>
+    <ScaleDecorator>
+      <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze} enabled={!isActive}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onLongPress={drag}
+          disabled={isActive}
+          style={[styles.taskRow, { borderBottomColor: colors.border, backgroundColor: isActive ? colors.surface : colors.bg }]}
+        >
+          {item.type === 'task' && (
+            <TouchableOpacity
+              onPress={() => updateItem(item.id, { completed: !item.completed })}
+              style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}
+            >
+              {item.completed && <Text style={styles.checkmark}>✓</Text>}
+            </TouchableOpacity>
+          )}
+          {editing ? (
+            <TextInput
+              style={[styles.editInput, { color: colors.text }]}
+              value={editText}
+              onChangeText={setEditText}
+              onBlur={commitEdit}
+              onSubmitEditing={commitEdit}
+              autoFocus
+            />
+          ) : (
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => { setEditText(item.text); setEditing(true); }}
+            >
+              <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={3}>
+                {item.text}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      </SwipeableRow>
+    </ScaleDecorator>
   );
 }
 
 export function InboxScreen() {
   const items = usePlannerStore((s) => s.items);
   const addItem = usePlannerStore((s) => s.addItem);
+  const reorderItems = usePlannerStore((s) => s.reorderItems);
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const inboxItems = selectInboxItems(items);
@@ -104,8 +113,12 @@ export function InboxScreen() {
     setAddText('');
   };
 
-  const renderItem = useCallback(({ item }: { item: PlannerItem }) => (
-    <TaskRow item={item} colors={colors} />
+  const handleDragEnd = useCallback(({ data }: { data: PlannerItem[] }) => {
+    reorderItems(data.map((i) => i.id));
+  }, [reorderItems]);
+
+  const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<PlannerItem>) => (
+    <TaskRow item={item} colors={colors} drag={drag} isActive={isActive} />
   ), [colors]);
 
   return (
@@ -117,10 +130,11 @@ export function InboxScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
       </View>
 
-      <FlatList
+      <DraggableFlatList
         data={inboxItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        onDragEnd={handleDragEnd}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={[styles.empty, { color: colors.textMuted }]}>Inbox is empty.</Text>

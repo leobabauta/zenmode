@@ -6,9 +6,10 @@ interface SwipeableRowProps {
   children: React.ReactNode;
   onDelete: () => void;
   onSnooze: () => void;
+  enabled?: boolean;
 }
 
-export function SwipeableRow({ children, onDelete, onSnooze }: SwipeableRowProps) {
+export function SwipeableRow({ children, onDelete, onSnooze, enabled = true }: SwipeableRowProps) {
   const swipeableRef = useRef<Swipeable>(null);
 
   const renderLeftActions = (
@@ -62,6 +63,7 @@ export function SwipeableRow({ children, onDelete, onSnooze }: SwipeableRowProps
   return (
     <Swipeable
       ref={swipeableRef}
+      enabled={enabled}
       renderLeftActions={renderLeftActions}
       renderRightActions={renderRightActions}
       leftThreshold={80}

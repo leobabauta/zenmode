@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlannerStore, selectLaterItems } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
@@ -15,7 +16,7 @@ type SubView =
   | { kind: 'customList'; listId: string; listName: string }
   | { kind: 'label'; tag: string };
 
-function TaskRow({ item, colors }: { item: PlannerItem; colors: Colors }) {
+function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: Colors; drag: () => void; isActive: boolean }) {
   const updateItem = usePlannerStore((s) => s.updateItem);
   const deleteItem = usePlannerStore((s) => s.deleteItem);
   const moveItem = usePlannerStore((s) => s.moveItem);
@@ -49,20 +50,24 @@ function TaskRow({ item, colors }: { item: PlannerItem; colors: Colors }) {
   };
 
   return (
-    <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze}>
-      <TouchableOpacity
-        style={[styles.taskRow, { borderBottomColor: colors.border }]}
-        onPress={() => updateItem(item.id, { completed: !item.completed })}
-        activeOpacity={0.6}
-      >
-        <View style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}>
-          {item.completed && <Text style={styles.checkmark}>{'✓'}</Text>}
-        </View>
-        <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={2}>
-          {item.text}
-        </Text>
-      </TouchableOpacity>
-    </SwipeableRow>
+    <ScaleDecorator>
+      <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze} enabled={!isActive}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onLongPress={drag}
+          disabled={isActive}
+          style={[styles.taskRow, { borderBottomColor: colors.border, backgroundColor: isActive ? colors.surface : colors.bg }]}
+          onPress={() => updateItem(item.id, { completed: !item.completed })}
+        >
+          <View style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}>
+            {item.completed && <Text style={styles.checkmark}>{'✓'}</Text>}
+          </View>
+          <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={2}>
+            {item.text}
+          </Text>
+        </TouchableOpacity>
+      </SwipeableRow>
+    </ScaleDecorator>
   );
 }
 
@@ -129,10 +134,19 @@ function subViewTitle(subView: SubView): string {
 export function ListsScreen() {
   const [subView, setSubView] = useState<SubView | null>(null);
   const customLists = usePlannerStore((s) => s.customLists);
+  const reorderItems = usePlannerStore((s) => s.reorderItems);
   const labels = useAllLabels();
   const filteredItems = useFilteredItems(subView);
   const insets = useSafeAreaInsets();
   const colors = useColors();
+
+  const handleDragEnd = useCallback(({ data }: { data: PlannerItem[] }) => {
+    reorderItems(data.map((i) => i.id));
+  }, [reorderItems]);
+
+  const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<PlannerItem>) => (
+    <TaskRow item={item} colors={colors} drag={drag} isActive={isActive} />
+  ), [colors]);
 
   if (subView) {
     return (
@@ -142,10 +156,11 @@ export function ListsScreen() {
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>{subViewTitle(subView)}</Text>
 
-        <FlatList
+        <DraggableFlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TaskRow item={item} colors={colors} />}
+          renderItem={renderItem}
+          onDragEnd={handleDragEnd}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: colors.textMuted }]}>No items.</Text>

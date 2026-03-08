@@ -40,6 +40,7 @@ interface PlannerState {
   updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice'>>) => void;
   deleteItem: (id: string) => void;
   moveItem: (id: string, dayKey: string | null, isLater?: boolean) => void;
+  reorderItems: (orderedIds: string[]) => void;
   toggleTheme: () => void;
 }
 
@@ -125,6 +126,18 @@ export const usePlannerStore = create<PlannerState>()(
           item.dayKey = dayKey;
           item.isLater = isLater;
           item.updatedAt = new Date().toISOString();
+        });
+      },
+
+      reorderItems: (orderedIds) => {
+        set((state) => {
+          const now = new Date().toISOString();
+          orderedIds.forEach((id, index) => {
+            if (state.items[id]) {
+              state.items[id].order = index;
+              state.items[id].updatedAt = now;
+            }
+          });
         });
       },
 
