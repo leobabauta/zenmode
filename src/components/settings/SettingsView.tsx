@@ -77,6 +77,7 @@ export function SettingsView() {
     return () => window.removeEventListener('keydown', handler);
   }, [setShowSettings]);
 
+
   const handleLogout = async () => {
     if (!supabase) return;
     await supabase.auth.signOut();
@@ -202,10 +203,8 @@ export function SettingsView() {
   const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowSettings(false)} />
-      <div className="fixed inset-x-0 bottom-0 top-[41px] z-50 bg-[var(--color-bg)] overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-2xl mx-auto px-6 py-8">
           {/* Sign out button */}
           <div className="flex justify-end mb-4">
             {!showLogoutConfirm ? (
@@ -259,7 +258,7 @@ export function SettingsView() {
           {tab === 'profile' && (
             <div className="space-y-6">
               {/* Personal info card */}
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h2 className="text-base font-bold text-[var(--color-text-primary)]">Personal info</h2>
@@ -278,14 +277,14 @@ export function SettingsView() {
 
                 <div className="mt-4">
                   <label className="text-sm text-[var(--color-text-secondary)] mb-1.5 block">Primary email</label>
-                  <div className="px-4 py-2.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)]">
+                  <div className="px-4 py-2.5 rounded-xl bg-[var(--color-input-settings)] text-sm text-[var(--color-text-muted)]">
                     {user?.email || ''}
                   </div>
                 </div>
               </div>
 
               {/* Export card */}
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 flex items-center justify-between">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6 flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-bold text-[var(--color-text-primary)]">Export account data</h2>
                   <p className="text-sm text-[var(--color-text-muted)] mt-0.5">Download a .md file with your account data</p>
@@ -300,7 +299,7 @@ export function SettingsView() {
 
               {/* Delete account card */}
               {supabase && user && (
-                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-base font-bold text-[var(--color-text-primary)]">Account deletion</h2>
@@ -349,7 +348,7 @@ export function SettingsView() {
           {tab === 'features' && (
             <div className="space-y-6">
               {/* Rituals card */}
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                 <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-4">Rituals</h2>
 
                 <RitualRow
@@ -398,7 +397,7 @@ export function SettingsView() {
 
               {/* Google Calendar card */}
               {hasGoogleClientId && (
-                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 flex items-center justify-between">
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6 flex items-center justify-between">
                   <div>
                     <h2 className="text-base font-bold text-[var(--color-text-primary)]">Google Calendar</h2>
                     <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
@@ -419,7 +418,7 @@ export function SettingsView() {
               )}
 
               {/* Changelog */}
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                 <a
                   href="/changelog.html"
                   className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -437,7 +436,7 @@ export function SettingsView() {
           {tab === 'data' && (
             <div className="space-y-6">
               {/* Export card */}
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">Export</h2>
                 <p className="text-sm text-[var(--color-text-muted)] mt-0.5 mb-4">Download all your tasks and notes as a Markdown file.</p>
                 <button
@@ -449,7 +448,7 @@ export function SettingsView() {
               </div>
 
               {/* Import card */}
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                 <h2 className="text-base font-bold text-[var(--color-text-primary)]">Import</h2>
                 <p className="text-sm text-[var(--color-text-muted)] mt-0.5 mb-4">Import tasks and notes from a Markdown file. Items are merged with existing data.</p>
                 <input ref={fileInputRef} type="file" accept=".md,.txt" onChange={handleFileSelect} className="hidden" />
@@ -492,7 +491,6 @@ export function SettingsView() {
           )}
         </div>
       </div>
-    </>
   );
 }
 
@@ -526,7 +524,7 @@ function NameFields({ user }: { user: { id: string; user_metadata?: { full_name?
           onChange={(e) => { setFirstName(e.target.value); setDirty(true); }}
           onBlur={save}
           onKeyDown={(e) => { if (e.key === 'Enter') save(); }}
-          className="w-full px-4 py-2.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+          className="w-full px-4 py-2.5 rounded-xl bg-[var(--color-input-settings)] text-sm text-[var(--color-text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
         />
       </div>
       <div>
@@ -536,7 +534,7 @@ function NameFields({ user }: { user: { id: string; user_metadata?: { full_name?
           onChange={(e) => { setLastName(e.target.value); setDirty(true); }}
           onBlur={save}
           onKeyDown={(e) => { if (e.key === 'Enter') save(); }}
-          className="w-full px-4 py-2.5 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-sm text-[var(--color-text-primary)] outline-none focus:border-[var(--color-accent)]"
+          className="w-full px-4 py-2.5 rounded-xl bg-[var(--color-input-settings)] text-sm text-[var(--color-text-primary)] outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
         />
       </div>
     </div>

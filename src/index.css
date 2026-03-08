@@ -14,6 +14,8 @@
   --color-accent-tint:   #F0F0FF;
   --color-note-accent:   #D97706;
   --color-today:         #F5F5FF;
+  --color-surface-settings: #F0F0F5;
+  --color-input-settings:   #E8E8EE;
 }
 
 /* ── Design tokens (dark) ───────────────────────────────── */
@@ -28,6 +30,8 @@
   --color-accent-tint:   #1E1E3A;
   --color-note-accent:   #F59E0B;
   --color-today:         #1E1E35;
+  --color-surface-settings: #272748;
+  --color-input-settings:   #1E1E3A;
 }
 
 /* ── Base resets ────────────────────────────────────────── */

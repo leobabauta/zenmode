@@ -233,7 +233,7 @@ export function AppShell() {
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden relative">
               {/* Floating top-right controls */}
-              <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+              <div className={`absolute top-3 right-3 z-10 flex items-center gap-1 ${showSettings ? 'hidden' : ''}`}>
                 {view === 'timeline' ? (
                   <button
                     onClick={() => setView('today')}
@@ -256,7 +256,9 @@ export function AppShell() {
                 <ThemeToggle />
               </div>
 
-              {view === 'today' ? (
+              {showSettings ? (
+                <SettingsView />
+              ) : view === 'today' ? (
                 <TodayView />
               ) : view === 'inbox' ? (
                 <InboxView />
@@ -305,8 +307,7 @@ export function AppShell() {
         />
       )}
 
-      {/* Settings modal */}
-      {showSettings && <SettingsView />}
+      {/* Settings is now rendered inline as a view */}
 
       {/* Delete recurrence confirmation modal */}
       <DeleteRecurrenceModal />
