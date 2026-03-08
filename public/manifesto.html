@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manifesto - zenmode</title>
+  <title>Our Manifesto - zenmode</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -15,37 +15,129 @@
       color: #1c1917;
       line-height: 1.7;
     }
-    .container {
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #1c1917;
+    }
+    .nav-logo img { width: 2.5rem; height: 2.5rem; }
+    .nav-logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #1d4ed8; }
+    .nav-links .btn-signin {
+      display: inline-block;
+      background: #1c1917;
+      color: #fff;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-links .btn-signin:hover { background: #292524; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #1c1917;
+      margin-bottom: 1.5rem;
+    }
+    .hero .subtitle {
+      font-size: 1.15rem;
+      color: #78716c;
+      max-width: 36rem;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Content */
+    .content {
       max-width: 640px;
       margin: 0 auto;
-      padding: 80px 24px;
+      padding: 2rem 1.5rem 5rem;
     }
-    h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 2rem;
-    }
-    p {
+    .content p {
       font-size: 1.1rem;
       color: #57534e;
       margin-bottom: 1.5rem;
     }
-    a.back {
-      display: inline-block;
-      margin-bottom: 3rem;
+
+    /* Footer */
+    footer {
+      border-top: 1px solid #e7e5e4;
+      padding: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    footer a {
       font-size: 0.875rem;
       color: #78716c;
       text-decoration: none;
+      transition: color 0.15s;
     }
-    a.back:hover { color: #1c1917; }
+    footer a:hover { color: #1c1917; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <a class="back" href="/">&larr; Back to zenmode</a>
-    <h1>Manifesto</h1>
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/zenmode-logo.svg" alt="" />
+      <span>zenmode</span>
+    </a>
+    <div class="nav-links">
+      <a href="/manifesto.html">Manifesto</a>
+      <a href="/" class="btn-signin">Sign in</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Our Manifesto</h1>
+    <p class="subtitle">
+      The screens and algorithms have come for our attention &mdash; it's time to reclaim focus.
+    </p>
+  </section>
+
+  <!-- Content -->
+  <section class="content">
     <p>Coming soon.</p>
-  </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a href="/privacy.html">Privacy Policy</a>
+    <a href="/changelog.html">Changelog & Roadmap</a>
+  </footer>
 </body>
 </html>
