@@ -50,7 +50,7 @@ export function CustomListView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8 mt-6">
+        <div className="mb-8 mt-12">
           {editing ? (
             <input
               ref={editRef}
