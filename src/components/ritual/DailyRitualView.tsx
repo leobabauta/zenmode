@@ -97,6 +97,7 @@ interface CalendarEvent {
 export function DailyRitualView() {
   const [step, setStep] = useState(1);
   const [practice, setPractice] = useState('');
+  const setView = usePlannerStore((s) => s.setView);
   const addItem = usePlannerStore((s) => s.addItem);
   const updateItem = usePlannerStore((s) => s.updateItem);
   const completeRitual = usePlannerStore((s) => s.completeRitual);
@@ -200,9 +201,17 @@ export function DailyRitualView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] mb-8 mt-16">
-          Daily Planning Ritual
-        </h1>
+        <div className="flex items-start justify-between mt-16 mb-8">
+          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
+            Daily Planning Ritual
+          </h1>
+          <button
+            onClick={() => setView('today')}
+            className="mt-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors flex-shrink-0"
+          >
+            Exit
+          </button>
+        </div>
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {Array.from({ length: displayTotal }, (_, i) => i + 1).map((s) => (

@@ -6,6 +6,7 @@ import type { WeeklyReview } from '../../types';
 export function WeeklyReviewView() {
   const weekKey = getWeekKey(new Date());
   const weeklyPlan = usePlannerStore((s) => s.weeklyPlans[weekKey]);
+  const setView = usePlannerStore((s) => s.setView);
   const saveWeeklyReview = usePlannerStore((s) => s.saveWeeklyReview);
   const completeWeeklyReview = usePlannerStore((s) => s.completeWeeklyReview);
   const addItem = usePlannerStore((s) => s.addItem);
@@ -40,9 +41,17 @@ export function WeeklyReviewView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-lg mx-auto">
-        <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] mb-8 mt-16">
-          Weekly Review
-        </h1>
+        <div className="flex items-start justify-between mt-16 mb-8">
+          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
+            Weekly Review
+          </h1>
+          <button
+            onClick={() => setView('today')}
+            className="mt-2 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors flex-shrink-0"
+          >
+            Exit
+          </button>
+        </div>
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
