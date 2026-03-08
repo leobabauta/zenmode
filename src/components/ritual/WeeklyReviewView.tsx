@@ -41,17 +41,17 @@ export function WeeklyReviewView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-lg mx-auto">
-        <div className="flex items-start justify-between mt-16 mb-8">
+        <div className="relative mt-16 mb-8">
           <button
             onClick={() => setView('today')}
-            className="-ml-20 w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors flex-shrink-0 mt-2"
+            className="absolute -left-20 top-2 w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
             title="Exit ritual"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] flex-1">
+          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
             Weekly Review
           </h1>
         </div>
