@@ -181,39 +181,42 @@ export function TaskItem({
         isDragging && 'opacity-50',
       )}
     >
-      <button
-        type="button"
-        {...dragHandleProps}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (e.shiftKey) onExtendSelection?.();
-          else onSelect?.();
-        }}
-        className="opacity-0 group-hover:opacity-100 flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mt-0.5"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="5.5" cy="3.5" r="1.5" />
-          <circle cx="10.5" cy="3.5" r="1.5" />
-          <circle cx="5.5" cy="8" r="1.5" />
-          <circle cx="10.5" cy="8" r="1.5" />
-          <circle cx="5.5" cy="12.5" r="1.5" />
-          <circle cx="10.5" cy="12.5" r="1.5" />
-        </svg>
-      </button>
-
       {hasChildren && onToggleCollapse ? (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
-          className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors mt-0.5"
+          {...dragHandleProps}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (e.shiftKey) onExtendSelection?.();
+            else onToggleCollapse();
+          }}
+          className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors mt-0.5 cursor-grab active:cursor-grabbing"
         >
           <svg className={cn('w-3 h-3 transition-transform', isCollapsed && '-rotate-90')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-      ) : hasChildren ? (
-        <div className="w-4 flex-shrink-0" />
-      ) : null}
+      ) : (
+        <button
+          type="button"
+          {...dragHandleProps}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (e.shiftKey) onExtendSelection?.();
+            else onSelect?.();
+          }}
+          className="opacity-0 group-hover:opacity-100 flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mt-0.5"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="5.5" cy="3.5" r="1.5" />
+            <circle cx="10.5" cy="3.5" r="1.5" />
+            <circle cx="5.5" cy="8" r="1.5" />
+            <circle cx="10.5" cy="8" r="1.5" />
+            <circle cx="5.5" cy="12.5" r="1.5" />
+            <circle cx="10.5" cy="12.5" r="1.5" />
+          </svg>
+        </button>
+      )}
 
       <div className="mt-0.5">
         <Checkbox
