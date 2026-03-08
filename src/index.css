@@ -18,16 +18,16 @@
 
 /* ── Design tokens (dark) ───────────────────────────────── */
 .dark {
-  --color-bg:            #111111;
-  --color-surface:       #1A1A1A;
-  --color-border:        #262626;
+  --color-bg:            #1A1A2E;
+  --color-surface:       #232340;
+  --color-border:        #2E2E4A;
   --color-text-primary:  #F0EFEE;
   --color-text-secondary:#9CA3AF;
-  --color-text-muted:    #525252;
+  --color-text-muted:    #5C5C7A;
   --color-accent:        #7C7CE8;
-  --color-accent-tint:   #1A1A30;
+  --color-accent-tint:   #1E1E3A;
   --color-note-accent:   #F59E0B;
-  --color-today:         #161625;
+  --color-today:         #1E1E35;
 }
 
 /* ── Base resets ────────────────────────────────────────── */

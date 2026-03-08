@@ -11,8 +11,8 @@ export function InboxView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-extrabold text-[var(--color-text-primary)]">
+        <div className="mb-8 mt-6">
+          <h1 className="text-5xl font-extrabold text-[var(--color-text-primary)]">
             Inbox
           </h1>
           <span className="text-xs text-[var(--color-text-muted)]">

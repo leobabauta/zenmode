@@ -56,7 +56,7 @@ export function Checkbox({ checked, onChange, className }: CheckboxProps) {
       setTimeout(() => {
         setPendingCheck(false);
         onChange(true);
-      }, 1000);
+      }, 1500);
     } else {
       onChange(false);
     }

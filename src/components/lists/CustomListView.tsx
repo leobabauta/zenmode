@@ -50,7 +50,7 @@ export function CustomListView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-8 mt-6">
           {editing ? (
             <input
               ref={editRef}
@@ -61,10 +61,10 @@ export function CustomListView() {
                 if (e.key === 'Escape') setEditing(false);
               }}
               onBlur={submitEdit}
-              className="text-3xl font-extrabold bg-transparent outline-none text-[var(--color-text-primary)] border-b border-[var(--color-border)] px-1"
+              className="text-5xl font-extrabold bg-transparent outline-none text-[var(--color-text-primary)] border-b border-[var(--color-border)] px-1"
             />
           ) : (
-            <span className="text-3xl font-extrabold text-[var(--color-text-primary)]">
+            <span className="text-5xl font-extrabold text-[var(--color-text-primary)]">
               {list.name}
             </span>
           )}

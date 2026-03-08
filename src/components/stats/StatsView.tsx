@@ -49,7 +49,7 @@ export function StatsView() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto space-y-8">
-        <h1 className="text-3xl font-extrabold text-[var(--color-text-primary)]">Stats</h1>
+        <h1 className="text-5xl font-extrabold text-[var(--color-text-primary)] mt-6">Stats</h1>
 
         {/* 1. Daily Averages */}
         <section>

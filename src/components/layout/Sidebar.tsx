@@ -287,7 +287,7 @@ export function Sidebar() {
   return (
     <aside className="flex-shrink-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] h-full overflow-hidden w-56">
       {/* Top row: Logo + branding + collapse */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-border)] flex-shrink-0">
+      <div className="flex items-center justify-between px-3 pt-6 pb-4 border-b border-[var(--color-border)] flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <img
             src={import.meta.env.BASE_URL + 'zenmode-logo.svg'}

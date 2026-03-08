@@ -43,9 +43,9 @@ export function GreetingBanner() {
   const dateLabel = formatDayLabel(today);
 
   return (
-    <div className="mb-4">
+    <div className="mb-8 mt-6">
       <h1
-        className="text-3xl font-extrabold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+        className="text-5xl font-extrabold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
         onClick={() => setView('today')}
       >
         {greeting}{firstName ? `, ${firstName}` : ''}
