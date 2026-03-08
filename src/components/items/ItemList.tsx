@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useShallow } from 'zustand/react/shallow';
 import { DraggableItem } from './DraggableItem';
@@ -59,41 +59,7 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
     });
   };
 
-  // Track recently completed items so they stay in place during confetti
-  const [recentlyCompleted, setRecentlyCompleted] = useState<Set<string>>(new Set());
-  const prevItemsRef = useRef(items);
-
-  useEffect(() => {
-    const prevById = new Map(prevItemsRef.current.map((i) => [i.id, i]));
-    const newlyCompleted: string[] = [];
-    for (const item of items) {
-      const prev = prevById.get(item.id);
-      if (prev && !prev.completed && item.completed) {
-        newlyCompleted.push(item.id);
-      }
-    }
-    if (newlyCompleted.length > 0) {
-      setRecentlyCompleted((prev) => {
-        const next = new Set(prev);
-        for (const id of newlyCompleted) next.add(id);
-        return next;
-      });
-      setTimeout(() => {
-        setRecentlyCompleted((prev) => {
-          const next = new Set(prev);
-          for (const id of newlyCompleted) next.delete(id);
-          return next;
-        });
-      }, 1200);
-    }
-    prevItemsRef.current = items;
-  }, [items]);
-
-  // Split items: incomplete + recently completed stay on top, rest at bottom
-  const incompleteItems = items.filter((i) => !i.completed || recentlyCompleted.has(i.id));
-  const completedItems = items.filter((i) => i.completed && !recentlyCompleted.has(i.id));
-
-  const ids = incompleteItems.map((i) => i.id);
+  const ids = items.map((i) => i.id);
   const dayKey = items[0]?.dayKey ?? null;
 
   // Compute the selected range from anchor↔focus within this container only.
@@ -171,46 +137,23 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
   );
 
   return (
-    <div className="flex flex-col gap-0.5">
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <div className="flex flex-col gap-0.5">
-          {incompleteItems.map((item, index) => {
-            const children = selectChildItems(allItems, item.id);
-            const isCollapsed = collapsedIds.has(item.id);
-            return (
-              <div key={item.id}>
-                {renderItem(item, index)}
-                {children.length > 0 && !isCollapsed && (
-                  <div className="flex flex-col gap-0.5">
-                    {children.map((child) => renderItem(child, index, true))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </SortableContext>
-      {completedItems.length > 0 && (
-        <div className="flex flex-col gap-0.5 mt-2 pt-2 border-t border-[var(--color-border)]">
-          <span className="text-xs text-[var(--color-text-muted)] mb-1">
-            Completed ({completedItems.length})
-          </span>
-          {completedItems.map((item, index) => {
-            const children = selectChildItems(allItems, item.id);
-            const isCollapsed = collapsedIds.has(item.id);
-            return (
-              <div key={item.id} className="opacity-60">
-                {renderItem(item, incompleteItems.length + index)}
-                {children.length > 0 && !isCollapsed && (
-                  <div className="flex flex-col gap-0.5">
-                    {children.map((child) => renderItem(child, incompleteItems.length + index, true))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+      <div className="flex flex-col gap-0.5">
+        {items.map((item, index) => {
+          const children = selectChildItems(allItems, item.id);
+          const isCollapsed = collapsedIds.has(item.id);
+          return (
+            <div key={item.id}>
+              {renderItem(item, index)}
+              {children.length > 0 && !isCollapsed && (
+                <div className="flex flex-col gap-0.5">
+                  {children.map((child) => renderItem(child, index, true))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </SortableContext>
   );
 }
