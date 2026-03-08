@@ -68,9 +68,9 @@ export function CustomListView() {
               {list.name}
             </span>
           )}
-          <span className="text-xs text-[var(--color-text-muted)]">
+          <div className="text-xs text-[var(--color-text-muted)] mt-1">
             {listItems.length} {listItems.length === 1 ? 'item' : 'items'}
-          </span>
+          </div>
 
           {/* 3-dot menu */}
           <div className="relative mt-1" ref={menuRef}>
@@ -113,7 +113,7 @@ export function CustomListView() {
           </div>
         </div>
 
-        <div className="rounded-xl p-3 min-h-[80px]">
+        <div className="min-h-[80px]">
           <div className="min-h-[8px]">
             <ItemList items={listItems} />
           </div>

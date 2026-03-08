@@ -20,7 +20,7 @@ export function LaterView() {
           </span>
         </div>
 
-        <div className="rounded-xl p-3 min-h-[80px]">
+        <div className="min-h-[80px]">
           <div className="min-h-[8px]">
             <ItemList items={laterItems} />
           </div>

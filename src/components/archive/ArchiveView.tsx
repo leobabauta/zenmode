@@ -18,7 +18,7 @@ export function ArchiveView() {
           </span>
         </div>
 
-        <div className="rounded-xl p-3 min-h-[80px]">
+        <div className="min-h-[80px]">
           {archivedItems.length === 0 ? (
             <p className="text-center text-sm text-[var(--color-text-muted)] py-8">
               No archived items
