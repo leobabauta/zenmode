@@ -176,7 +176,7 @@ export function OnboardingView() {
         {step === 3 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-2 text-[var(--color-text-primary)]">
-              Quick Add & Command Palette
+              Quick Add & Command-K Palette
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
               Adding tasks is fast and flexible. Type naturally and let zenmode organize things for you.
@@ -193,7 +193,7 @@ export function OnboardingView() {
               <div className="flex items-start gap-3">
                 <kbd className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-[10px] font-bold">⌘K</kbd>
                 <div>
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Command palette</p>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)]">Command-K palette</p>
                   <p className="text-xs text-[var(--color-text-muted)]">Search tasks, jump to views, and take actions — all from one place</p>
                 </div>
               </div>
@@ -243,7 +243,7 @@ export function OnboardingView() {
                   ['X', 'Complete task'],
                   ['M', 'Move task'],
                   ['E', 'Edit task'],
-                  ['⌘K', 'Command palette'],
+                  ['⌘K', 'Command-K palette'],
                   ['S', 'Toggle sidebar'],
                   ['↑↓', 'Navigate tasks'],
                   ['?', 'All shortcuts'],
