@@ -115,8 +115,13 @@ export function LoginPage() {
       {/* Features */}
       <section ref={featuresRef} className="mx-auto max-w-4xl px-4 py-20">
         <div className="grid gap-8 sm:grid-cols-2">
-          {/* Daily Ritual — no screenshot */}
+          {/* Daily Ritual */}
           <div>
+            <img
+              src={import.meta.env.BASE_URL + 'feature-ritual.png'}
+              alt="Daily Planning Ritual"
+              className="w-full rounded-xl mb-3"
+            />
             <div className="rounded-2xl bg-white border border-stone-200 p-6">
               <h3 className="text-base font-bold text-stone-900">Daily Ritual</h3>
               <p className="mt-2 text-sm leading-relaxed text-stone-500">Start each morning with intention — set your priorities and choose a practice for the day.</p>
