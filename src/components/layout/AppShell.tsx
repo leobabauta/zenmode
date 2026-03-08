@@ -132,7 +132,7 @@ export function AppShell() {
         usePlannerStore.getState().setView('timeline');
         return;
       }
-      if (e.key === 's') {
+      if (e.key === 'g') {
         e.preventDefault();
         usePlannerStore.getState().setView('stats');
         return;
@@ -150,13 +150,13 @@ export function AppShell() {
   // Views that show the sidebar
   const sidebarViews = ['timeline', 'today', 'inbox', 'later', 'hashtag', 'list', 'stats', 'weekPlan', 'weekReviewPage', 'archive'];
 
-  // Global "f" key → toggle sidebar (focus mode) in views that have sidebar
+  // Global "s" key → toggle sidebar in views that have sidebar
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!sidebarViews.includes(view)) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === 'f' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      if (e.key === 's' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         toggleSidebar();
       }

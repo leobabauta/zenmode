@@ -263,7 +263,7 @@ export function Sidebar() {
       <div className="flex-shrink-0 flex flex-col items-center pt-2 px-1">
         <button
           onClick={toggleSidebar}
-          title="Show sidebar (F)"
+          title="Show sidebar (S)"
           className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -305,7 +305,7 @@ export function Sidebar() {
         </div>
         <button
           onClick={toggleSidebar}
-          title="Hide sidebar (F)"
+          title="Hide sidebar (S)"
           className={cn(
             'p-1 rounded-md text-[var(--color-text-muted)]',
             'hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors',

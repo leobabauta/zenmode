@@ -4,7 +4,8 @@ import { toDayKey } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 
 type PaletteItem =
-  | { kind: 'nav'; id: string; label: string; icon: string }
+  | { kind: 'command'; id: string; label: string; shortcut?: string }
+  | { kind: 'nav'; id: string; label: string; icon: string; shortcut?: string }
   | { kind: 'hashtag'; id: string; tag: string }
   | { kind: 'task'; id: string; text: string };
 
@@ -13,11 +14,23 @@ interface Section {
   items: PaletteItem[];
 }
 
+const COMMAND_ITEMS: PaletteItem[] = [
+  { kind: 'command', id: 'cmd-new-task', label: 'New task', shortcut: 'N' },
+  { kind: 'command', id: 'cmd-delete', label: 'Delete task', shortcut: 'dd' },
+  { kind: 'command', id: 'cmd-move', label: 'Move task to day', shortcut: 'M' },
+  { kind: 'command', id: 'cmd-inbox', label: 'Send to Inbox', shortcut: '⇧I' },
+  { kind: 'command', id: 'cmd-later', label: 'Send to Later', shortcut: '⇧E' },
+  { kind: 'command', id: 'cmd-toggle-sidebar', label: 'Toggle sidebar', shortcut: 'S' },
+];
+
 const NAV_ITEMS: PaletteItem[] = [
-  { kind: 'nav', id: 'nav-today', label: 'Today', icon: '📅' },
-  { kind: 'nav', id: 'nav-timeline', label: 'Home', icon: '🏠' },
-  { kind: 'nav', id: 'nav-inbox', label: 'Inbox', icon: '📥' },
-  { kind: 'nav', id: 'nav-later', label: 'Later', icon: '📦' },
+  { kind: 'nav', id: 'nav-today', label: 'Today', icon: '📅', shortcut: 'T' },
+  { kind: 'nav', id: 'nav-timeline', label: 'Home', icon: '🏠', shortcut: 'H' },
+  { kind: 'nav', id: 'nav-inbox', label: 'Inbox', icon: '📥', shortcut: 'I' },
+  { kind: 'nav', id: 'nav-later', label: 'Later', icon: '📦', shortcut: 'L' },
+  { kind: 'nav', id: 'nav-archive', label: 'Archive', icon: '🗄️', shortcut: 'A' },
+  { kind: 'nav', id: 'nav-stats', label: 'Stats', icon: '📊' },
+  { kind: 'nav', id: 'nav-settings', label: 'Settings', icon: '⚙️' },
 ];
 
 interface CommandPaletteProps {
@@ -53,7 +66,10 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     const q = query.trim().toLowerCase();
 
     if (!q) {
-      const result: Section[] = [{ title: 'Navigation', items: [...NAV_ITEMS] }];
+      const result: Section[] = [
+        { title: 'Commands', items: [...COMMAND_ITEMS] },
+        { title: 'Navigation', items: [...NAV_ITEMS] },
+      ];
       if (allHashtags.length > 0) {
         result.push({
           title: 'Labels',
@@ -64,6 +80,12 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     }
 
     const result: Section[] = [];
+
+    // Filter commands
+    const matchedCommands = COMMAND_ITEMS.filter((c) => c.kind === 'command' && c.label.toLowerCase().includes(q));
+    if (matchedCommands.length > 0) {
+      result.push({ title: 'Commands', items: matchedCommands });
+    }
 
     // Filter nav items
     const matchedNav = NAV_ITEMS.filter((n) => n.kind === 'nav' && n.label.toLowerCase().includes(q));
@@ -118,6 +140,18 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     const store = usePlannerStore.getState();
 
     switch (item.kind) {
+      case 'command':
+        if (item.id === 'cmd-new-task') {
+          onClose();
+          store.setShowCommandPalette(true);
+          store.setCommandPaletteAddTask(true);
+          return;
+        }
+        if (item.id === 'cmd-toggle-sidebar') {
+          store.toggleSidebar();
+        }
+        // Other commands are contextual (need selected task) — just close
+        break;
       case 'nav':
         if (item.id === 'nav-today') {
           store.setView('today');
@@ -127,6 +161,12 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
           store.setView('inbox');
         } else if (item.id === 'nav-later') {
           store.setView('later');
+        } else if (item.id === 'nav-archive') {
+          store.setView('archive');
+        } else if (item.id === 'nav-stats') {
+          store.setView('stats');
+        } else if (item.id === 'nav-settings') {
+          store.setShowSettings(true);
         }
         break;
       case 'hashtag':
@@ -198,22 +238,27 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
       <div className="fixed left-1/2 top-[20%] -translate-x-1/2 w-[500px] z-50 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]">
         {/* Search/add input */}
         <div className="px-4 pt-4 pb-3 flex items-center gap-3">
+          <svg className="w-4 h-4 text-[var(--color-text-muted)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAddTask ? 'Add a task...' : 'Search tasks, labels, or navigate...'}
-            className="flex-1 px-3 py-2 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:ring-1 focus:ring-[var(--color-accent)]/30"
+            placeholder={isAddTask ? 'Add a task...' : 'Type a command...'}
+            className="flex-1 text-sm bg-transparent text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none"
           />
           <kbd className="text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-0.5 text-[var(--color-text-muted)] shrink-0">
             {isAddTask ? 'N' : '⌘K'}
           </kbd>
         </div>
 
+        <div className="border-t border-[var(--color-border)]" />
+
         {/* Add task hint */}
         {isAddTask && (
-          <div className="px-4 pb-3 text-[11px] text-[var(--color-text-muted)]">
+          <div className="px-4 py-3 text-[11px] text-[var(--color-text-muted)]">
             <span className="font-medium">Enter</span> to add to Inbox · <span className="font-medium">Shift+Enter</span> to add to Today
           </div>
         )}
@@ -235,6 +280,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
                     itemCounter++;
                     const idx = itemCounter;
                     const isHighlighted = idx === highlightIndex;
+                    const shortcut = item.kind === 'command' || item.kind === 'nav' ? item.shortcut : undefined;
 
                     return (
                       <button
@@ -249,25 +295,19 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
                         )}
                       >
                         {item.kind === 'nav' && (
-                          <>
-                            <span className="w-5 text-center">{item.icon}</span>
-                            <span className={cn(
-                              'font-medium',
-                              isHighlighted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]',
-                            )}>{item.label}</span>
-                          </>
+                          <span className="w-5 text-center">{item.icon}</span>
                         )}
-                        {item.kind === 'hashtag' && (
-                          <span className={cn(
-                            'font-medium',
-                            isHighlighted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]',
-                          )}>{item.tag}</span>
-                        )}
-                        {item.kind === 'task' && (
-                          <span className={cn(
-                            'truncate',
-                            isHighlighted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]',
-                          )}>{item.text}</span>
+                        <span className={cn(
+                          'flex-1 truncate',
+                          item.kind === 'nav' || item.kind === 'command' ? 'font-medium' : '',
+                          isHighlighted ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]',
+                        )}>
+                          {item.kind === 'hashtag' ? item.tag : item.kind === 'task' ? item.text : item.label}
+                        </span>
+                        {shortcut && (
+                          <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-0.5 text-[var(--color-text-muted)] font-mono flex-shrink-0">
+                            {shortcut}
+                          </kbd>
                         )}
                       </button>
                     );
@@ -275,6 +315,24 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* Footer hints */}
+        {!isAddTask && (
+          <div className="border-t border-[var(--color-border)] px-4 py-2 flex items-center gap-4 text-[10px] text-[var(--color-text-muted)]">
+            <span className="flex items-center gap-1">
+              <kbd className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5">↑↓</kbd>
+              Navigate
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5">↵</kbd>
+              Select
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1 py-0.5">esc</kbd>
+              Close
+            </span>
           </div>
         )}
       </div>

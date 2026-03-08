@@ -13,8 +13,8 @@ const SECTIONS = [
       { keys: 'I', desc: 'Inbox' },
       { keys: 'L', desc: 'Later' },
       { keys: 'A', desc: 'Archive' },
-      { keys: 'S', desc: 'Stats' },
-      { keys: 'F', desc: 'Toggle sidebar' },
+      { keys: 'G', desc: 'Stats' },
+      { keys: 'S', desc: 'Toggle sidebar' },
     ],
   },
   {
