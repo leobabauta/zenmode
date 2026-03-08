@@ -158,6 +158,8 @@ export function TaskItem({
         else onSelectNext?.();
         break;
       case 'm': e.preventDefault(); setShowMoveModal(true); break;
+      case 'f': e.preventDefault(); setExpandedTaskFullScreen(true); setExpandedTask(item.id); break;
+      case 'r': e.preventDefault(); setShowRecurrence((v) => !v); break;
       case 'Enter':
         e.preventDefault();
         cursorPosRef.current = item.text.length;
@@ -332,6 +334,7 @@ export function TaskItem({
       <div className="relative flex-shrink-0">
         <IconButton
           label="Set recurrence"
+          title="Set recurrence (R)"
           onClick={() => setShowRecurrence((v) => !v)}
           className={cn(
             'flex-shrink-0 opacity-0 group-hover:opacity-100',
@@ -359,6 +362,7 @@ export function TaskItem({
 
       <IconButton
         label="Task focus mode"
+        title="Task focus mode (F)"
         onClick={() => { setExpandedTaskFullScreen(true); setExpandedTask(item.id); }}
         className={cn(
           'flex-shrink-0',
