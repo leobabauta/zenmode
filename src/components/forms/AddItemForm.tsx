@@ -65,7 +65,7 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
       <button
         onClick={open}
         className={cn(
-          'w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm -ml-3',
+          'w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm -ml-9',
           'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]',
           'hover:bg-[var(--color-surface)] transition-colors duration-100',
           className
@@ -85,7 +85,7 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
   }
 
   return (
-    <div className={cn('flex items-center gap-2 px-3 py-2 -ml-3', className)}>
+    <div className={cn('flex items-center gap-2 px-3 py-2 -ml-9', className)}>
       {/* Invisible spacer matching drag handle width */}
       <span className="w-4 flex-shrink-0" />
 

@@ -180,7 +180,7 @@ export function NoteItem({
       tabIndex={isManipulating ? 0 : -1}
       onKeyDown={handleContainerKeyDown}
       className={cn(
-        'group flex items-start gap-2 px-3 py-2.5 rounded-lg outline-none -ml-3',
+        'group flex items-start gap-2 px-3 py-2.5 rounded-lg outline-none -ml-9',
         'transition-colors duration-100',
         isSelected && !isEditing
           ? 'bg-[var(--color-accent-tint)] ring-1 ring-[var(--color-accent)]/20'
