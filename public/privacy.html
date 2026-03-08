@@ -1,38 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy - zenmode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 2rem 1rem; color: #1c1917; line-height: 1.6; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.1rem; margin-top: 1.5rem; }
-    p { margin: 0.75rem 0; }
-    .date { color: #78716c; font-size: 0.875rem; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fafafa;
+      color: #1c1917;
+      line-height: 1.7;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #1c1917;
+    }
+    .nav-logo img { width: 2.5rem; height: 2.5rem; }
+    .nav-logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #1d4ed8; }
+    .nav-links .btn-signin {
+      display: inline-block;
+      background: #1c1917;
+      color: #fff;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-links .btn-signin:hover { background: #292524; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #1c1917;
+      margin-bottom: 1.5rem;
+    }
+    .hero .intro {
+      font-size: 1.1rem;
+      color: #57534e;
+      max-width: 40rem;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* Content */
+    .content {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+    }
+    .content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1c1917;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .content h2:first-child {
+      margin-top: 0;
+    }
+    .content p {
+      font-size: 1rem;
+      color: #57534e;
+      margin-bottom: 1rem;
+    }
+    .content .date {
+      font-size: 0.875rem;
+      color: #a8a29e;
+      margin-bottom: 2rem;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid #e7e5e4;
+      padding: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    footer a {
+      font-size: 0.875rem;
+      color: #78716c;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer a:hover { color: #1c1917; }
   </style>
 </head>
 <body>
-  <h1>Privacy Policy</h1>
-  <p class="date">Effective date: March 6, 2026</p>
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/zenmode-logo.svg" alt="" />
+      <span>zenmode</span>
+    </a>
+    <div class="nav-links">
+      <a href="/manifesto.html">Manifesto</a>
+      <a href="/" class="btn-signin">Sign in</a>
+    </div>
+  </nav>
 
-  <h2>What we collect</h2>
-  <p>zenmode collects your email address when you sign in. If you use Google sign-in, we receive your name and email from Google. We store the tasks, notes, and preferences you create in the app.</p>
-  <p>If you choose to connect your Google Calendar, we access your calendar events (title, time, and date) to display them within the app. This access is read-only, optional, and only occurs when you explicitly connect your calendar. We do not store your calendar data on our servers — it is fetched on demand and displayed only to you.</p>
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Privacy Policy</h1>
+    <p class="intro">
+      With the following privacy policy we would like to inform you which types of your personal data (hereinafter also abbreviated as &ldquo;data&rdquo;) we process, for which purposes, and in which scope. This privacy statement applies to all processing of personal data carried out by us, both in the context of providing our services and in particular on our websites, in mobile applications, and within external online presences, such as our social media profiles (hereinafter collectively referred to as &ldquo;online services&rdquo;).
+    </p>
+  </section>
 
-  <h2>How we use your data</h2>
-  <p>Your data is used solely to provide the zenmode service — syncing your tasks and preferences across devices. We do not sell, share, or use your data for advertising.</p>
+  <!-- Content -->
+  <section class="content">
+    <p class="date">Effective date: March 6, 2026</p>
 
-  <h2>Where your data is stored</h2>
-  <p>Your data is stored securely in Supabase, which uses Amazon Web Services (AWS) infrastructure. Data is protected by row-level security so only you can access your own data.</p>
+    <h2>What we collect</h2>
+    <p>zenmode collects your email address when you sign in. If you use Google sign-in, we receive your name and email from Google. We store the tasks, notes, and preferences you create in the app.</p>
+    <p>If you choose to connect your Google Calendar, we access your calendar events (title, time, and date) to display them within the app. This access is read-only, optional, and only occurs when you explicitly connect your calendar. We do not store your calendar data on our servers &mdash; it is fetched on demand and displayed only to you.</p>
 
-  <h2>Third-party services</h2>
-  <p>We use Supabase for authentication and data storage, Google for optional sign-in, and the Google Calendar API for optional calendar integration. These services have their own privacy policies.</p>
+    <h2>How we use your data</h2>
+    <p>Your data is used solely to provide the zenmode service &mdash; syncing your tasks and preferences across devices. We do not sell, share, or use your data for advertising.</p>
 
-  <h2>Data deletion</h2>
-  <p>You can delete your account and all associated data at any time from the Settings page within the app. Deletion is immediate and permanent. You may also contact us if you need assistance.</p>
+    <h2>Where your data is stored</h2>
+    <p>Your data is stored securely in Supabase, which uses Amazon Web Services (AWS) infrastructure. Data is protected by row-level security so only you can access your own data.</p>
 
-  <h2>Contact</h2>
-  <p>For privacy questions, contact: l@zenhabits.net</p>
+    <h2>Third-party services</h2>
+    <p>We use Supabase for authentication and data storage, Google for optional sign-in, and the Google Calendar API for optional calendar integration. These services have their own privacy policies.</p>
+
+    <h2>Data deletion</h2>
+    <p>You can delete your account and all associated data at any time from the Settings page within the app. Deletion is immediate and permanent. You may also contact us if you need assistance.</p>
+
+    <h2>Contact</h2>
+    <p>For privacy questions, contact: l@zenhabits.net</p>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a href="/manifesto.html">Manifesto</a>
+    <a href="/changelog.html">Changelog & Roadmap</a>
+  </footer>
 </body>
 </html>

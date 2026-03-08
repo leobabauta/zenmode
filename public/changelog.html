@@ -1,160 +1,359 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Changelog & Roadmap - zenmode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 0 auto; padding: 2rem 1rem; color: #1c1917; line-height: 1.6; }
-    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.2rem; margin-top: 2rem; margin-bottom: 0.5rem; }
-    h3 { font-size: 1rem; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #44403c; }
-    p { margin: 0.75rem 0; }
-    .subtitle { color: #78716c; font-size: 0.875rem; margin-bottom: 2rem; }
-    ul { padding-left: 1.25rem; margin: 0.5rem 0; }
-    li { margin: 0.35rem 0; font-size: 0.9375rem; }
-    .version { display: inline-block; background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 6px; padding: 0.125rem 0.5rem; font-size: 0.8125rem; font-weight: 600; color: #57534e; }
-    .roadmap-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; font-size: 0.9375rem; }
-    .roadmap-dot { width: 8px; height: 8px; border-radius: 50%; background: #d6d3d1; flex-shrink: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fafafa;
+      color: #1c1917;
+      line-height: 1.7;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #1c1917;
+    }
+    .nav-logo img { width: 2.5rem; height: 2.5rem; }
+    .nav-logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #1d4ed8; }
+    .nav-links .btn-signin {
+      display: inline-block;
+      background: #1c1917;
+      color: #fff;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-links .btn-signin:hover { background: #292524; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #1c1917;
+      margin-bottom: 1.5rem;
+    }
+    .hero .subtitle {
+      font-size: 1.15rem;
+      color: #78716c;
+      max-width: 36rem;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Content */
+    .content {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+    }
+    .content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1c1917;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #44403c;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    .content p {
+      font-size: 1rem;
+      color: #57534e;
+      margin-bottom: 1rem;
+    }
+    .content ul {
+      padding-left: 1.25rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .content li {
+      margin: 0.4rem 0;
+      font-size: 0.9375rem;
+      color: #57534e;
+    }
+    .version {
+      display: inline-block;
+      background: #f5f5f4;
+      border: 1px solid #e7e5e4;
+      border-radius: 6px;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #57534e;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #e7e5e4;
+      margin: 2.5rem 0;
+    }
+
+    /* Roadmap */
+    .roadmap-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0;
+      font-size: 0.9375rem;
+      color: #57534e;
+    }
+    .roadmap-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d6d3d1;
+      flex-shrink: 0;
+    }
     .roadmap-dot.in-progress { background: #3b82f6; }
     .roadmap-dot.up-next { background: #a78bfa; }
-    .roadmap-status { font-size: 0.75rem; color: #78716c; margin-left: 0.25rem; }
-    .divider { border: none; border-top: 1px solid #e7e5e4; margin: 2rem 0; }
+    .roadmap-status {
+      font-size: 0.75rem;
+      color: #a8a29e;
+      margin-left: 0.25rem;
+    }
 
     /* Feedback form */
     .form-group { margin-bottom: 1rem; }
-    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; color: #44403c; }
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      color: #44403c;
+    }
     select, input, textarea {
-      width: 100%; padding: 0.5rem 0.75rem; font-size: 0.9375rem; border: 1px solid #d6d3d1; border-radius: 8px;
-      font-family: inherit; background: #fff; color: #1c1917; box-sizing: border-box;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9375rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 8px;
+      font-family: inherit;
+      background: #fff;
+      color: #1c1917;
+      box-sizing: border-box;
     }
     textarea { min-height: 100px; resize: vertical; }
-    select:focus, input:focus, textarea:focus { outline: none; border-color: #a8a29e; box-shadow: 0 0 0 2px rgba(168,162,158,0.2); }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #a8a29e;
+      box-shadow: 0 0 0 2px rgba(168,162,158,0.2);
+    }
     .submit-btn {
-      display: inline-block; padding: 0.5rem 1.25rem; font-size: 0.9375rem; font-weight: 500;
-      background: #1c1917; color: #fff; border: none; border-radius: 8px; cursor: pointer;
+      display: inline-block;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      background: #1c1917;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
     }
     .submit-btn:hover { background: #292524; }
-    .success-msg { color: #16a34a; font-size: 0.875rem; display: none; margin-top: 0.5rem; }
+    .success-msg {
+      color: #16a34a;
+      font-size: 0.875rem;
+      display: none;
+      margin-top: 0.5rem;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid #e7e5e4;
+      padding: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    footer a {
+      font-size: 0.875rem;
+      color: #78716c;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer a:hover { color: #1c1917; }
   </style>
 </head>
 <body>
-  <h1>Changelog & Roadmap</h1>
-  <p class="subtitle">What's new in zenmode and what's coming next.</p>
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/zenmode-logo.svg" alt="" />
+      <span>zenmode</span>
+    </a>
+    <div class="nav-links">
+      <a href="/manifesto.html">Manifesto</a>
+      <a href="/" class="btn-signin">Sign in</a>
+    </div>
+  </nav>
 
-  <!-- Changelog -->
-  <h2>Changelog</h2>
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Changelog & Roadmap</h1>
+    <p class="subtitle">
+      What's new in zenmode and what's coming next.
+    </p>
+  </section>
 
-  <h3><span class="version">v0.6</span> &mdash; Current Release</h3>
-  <ul>
-    <li><strong>Email-to-Task</strong> &mdash; Forward emails to create tasks in your Inbox automatically</li>
-    <li><strong>Subtasks</strong> &mdash; Option+drag a task onto another to nest it as a subtask, with collapsible display</li>
-    <li><strong>Clickable Priority Stars</strong> &mdash; Click to cycle between no priority, medium (blue), and high (yellow)</li>
-    <li><strong>Drag to Sidebar</strong> &mdash; Drag tasks to Inbox, Later, Archive, custom lists, or labels in the sidebar</li>
-    <li><strong>Daily Review Notes</strong> &mdash; Review notes now have a golden highlight and show completed priority stars</li>
-    <li><strong>Move Modal Improvements</strong> &mdash; Type a custom list name to highlight and select it</li>
-    <li><strong>Label View Add Items</strong> &mdash; New items created in a label view automatically get the hashtag</li>
-    <li><strong>Sidebar Reordering</strong> &mdash; Drag to reorder nav items and labels in the sidebar</li>
-    <li><strong>View Persistence</strong> &mdash; Your current view and sidebar state are remembered across page refreshes</li>
-    <li><strong>Command Palette</strong> &mdash; Quick access to navigation and task creation with Cmd+K</li>
-    <li><strong>Completion Confetti</strong> &mdash; Full-screen celebration when you complete all tasks for the day</li>
-  </ul>
+  <!-- Content -->
+  <section class="content">
+    <!-- Changelog -->
+    <h2>Changelog</h2>
 
-  <h3><span class="version">v0.5</span></h3>
-  <ul>
-    <li><strong>Daily Planning Ritual</strong> &mdash; A guided 3-step morning workflow to set intentions, choose a practice, and plan your day</li>
-    <li><strong>Daily Review Ritual</strong> &mdash; Evening reflection prompt to review your day</li>
-    <li><strong>Weekly Planning & Review Rituals</strong> &mdash; Configurable weekly rituals with day and time settings</li>
-    <li><strong>Focus Timer</strong> &mdash; Built-in Pomodoro timer with draggable dial, session tracking, and task completion</li>
-    <li><strong>Timeline View</strong> &mdash; See your week at a glance with drag-and-drop between days</li>
-    <li><strong>Inbox & Later</strong> &mdash; Quick capture without breaking focus, and park tasks for the future</li>
-    <li><strong>Custom Lists</strong> &mdash; Create your own lists to organize tasks however you like</li>
-    <li><strong>Labels</strong> &mdash; Use #hashtags to categorize tasks, with custom colors</li>
-    <li><strong>Stats</strong> &mdash; Track task completion rates and focus timer sessions over time</li>
-    <li><strong>Google Calendar Integration</strong> &mdash; Optionally connect your calendar to see today's events during planning</li>
-    <li><strong>Cross-Device Sync</strong> &mdash; Sign in and your tasks sync across all your devices</li>
-    <li><strong>Dark Mode</strong> &mdash; Toggle between light and dark themes</li>
-    <li><strong>Keyboard Shortcuts</strong> &mdash; Fast navigation and task management from the keyboard</li>
-    <li><strong>Drag-and-Drop Reordering</strong> &mdash; Reorder tasks, sidebar items, and move tasks between days</li>
-    <li><strong>Recurring Tasks</strong> &mdash; Set tasks to repeat on a schedule</li>
-    <li><strong>Task Priority</strong> &mdash; Mark tasks as high or medium priority</li>
-    <li><strong>Export & Import</strong> &mdash; Export all data as Markdown, import from Markdown files</li>
-    <li><strong>PWA Support</strong> &mdash; Install zenmode as an app on Android</li>
-    <li><strong>Mobile Layout</strong> &mdash; Dedicated mobile UI with bottom navigation and quick add</li>
-    <li><strong>Account Management</strong> &mdash; Log out and delete your account and data from Settings</li>
-    <li><strong>Auto-Move Incomplete Tasks</strong> &mdash; Unfinished tasks automatically carry forward to today</li>
-    <li><strong>Archive</strong> &mdash; Archive completed tasks to keep your lists clean</li>
-  </ul>
+    <h3><span class="version">v0.6</span> &mdash; Current Release</h3>
+    <ul>
+      <li><strong>Email-to-Task</strong> &mdash; Forward emails to create tasks in your Inbox automatically</li>
+      <li><strong>Subtasks</strong> &mdash; Option+drag a task onto another to nest it as a subtask, with collapsible display</li>
+      <li><strong>Clickable Priority Stars</strong> &mdash; Click to cycle between no priority, medium (blue), and high (yellow)</li>
+      <li><strong>Drag to Sidebar</strong> &mdash; Drag tasks to Inbox, Later, Archive, custom lists, or labels in the sidebar</li>
+      <li><strong>Daily Review Notes</strong> &mdash; Review notes now have a golden highlight and show completed priority stars</li>
+      <li><strong>Move Modal Improvements</strong> &mdash; Type a custom list name to highlight and select it</li>
+      <li><strong>Label View Add Items</strong> &mdash; New items created in a label view automatically get the hashtag</li>
+      <li><strong>Sidebar Reordering</strong> &mdash; Drag to reorder nav items and labels in the sidebar</li>
+      <li><strong>View Persistence</strong> &mdash; Your current view and sidebar state are remembered across page refreshes</li>
+      <li><strong>Command Palette</strong> &mdash; Quick access to navigation and task creation with Cmd+K</li>
+      <li><strong>Completion Confetti</strong> &mdash; Full-screen celebration when you complete all tasks for the day</li>
+    </ul>
 
-  <hr class="divider">
+    <h3><span class="version">v0.5</span></h3>
+    <ul>
+      <li><strong>Daily Planning Ritual</strong> &mdash; A guided 3-step morning workflow to set intentions, choose a practice, and plan your day</li>
+      <li><strong>Daily Review Ritual</strong> &mdash; Evening reflection prompt to review your day</li>
+      <li><strong>Weekly Planning & Review Rituals</strong> &mdash; Configurable weekly rituals with day and time settings</li>
+      <li><strong>Focus Timer</strong> &mdash; Built-in Pomodoro timer with draggable dial, session tracking, and task completion</li>
+      <li><strong>Timeline View</strong> &mdash; See your week at a glance with drag-and-drop between days</li>
+      <li><strong>Inbox & Later</strong> &mdash; Quick capture without breaking focus, and park tasks for the future</li>
+      <li><strong>Custom Lists</strong> &mdash; Create your own lists to organize tasks however you like</li>
+      <li><strong>Labels</strong> &mdash; Use #hashtags to categorize tasks, with custom colors</li>
+      <li><strong>Stats</strong> &mdash; Track task completion rates and focus timer sessions over time</li>
+      <li><strong>Google Calendar Integration</strong> &mdash; Optionally connect your calendar to see today's events during planning</li>
+      <li><strong>Cross-Device Sync</strong> &mdash; Sign in and your tasks sync across all your devices</li>
+      <li><strong>Dark Mode</strong> &mdash; Toggle between light and dark themes</li>
+      <li><strong>Keyboard Shortcuts</strong> &mdash; Fast navigation and task management from the keyboard</li>
+      <li><strong>Drag-and-Drop Reordering</strong> &mdash; Reorder tasks, sidebar items, and move tasks between days</li>
+      <li><strong>Recurring Tasks</strong> &mdash; Set tasks to repeat on a schedule</li>
+      <li><strong>Task Priority</strong> &mdash; Mark tasks as high or medium priority</li>
+      <li><strong>Export & Import</strong> &mdash; Export all data as Markdown, import from Markdown files</li>
+      <li><strong>PWA Support</strong> &mdash; Install zenmode as an app on Android</li>
+      <li><strong>Mobile Layout</strong> &mdash; Dedicated mobile UI with bottom navigation and quick add</li>
+      <li><strong>Account Management</strong> &mdash; Log out and delete your account and data from Settings</li>
+      <li><strong>Auto-Move Incomplete Tasks</strong> &mdash; Unfinished tasks automatically carry forward to today</li>
+      <li><strong>Archive</strong> &mdash; Archive completed tasks to keep your lists clean</li>
+    </ul>
 
-  <!-- Roadmap -->
-  <h2>Roadmap</h2>
-  <p style="font-size: 0.875rem; color: #78716c;">Planned features &mdash; no timeline, but these are on our list.</p>
+    <hr class="divider">
 
-  <div style="margin-top: 1rem;">
-    <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> Android app <span class="roadmap-status">(in progress)</span></div>
-    <div class="roadmap-item"><span class="roadmap-dot up-next"></span> iOS app <span class="roadmap-status">(up next)</span></div>
-    <div class="roadmap-item"><span class="roadmap-dot"></span> Desktop app</div>
-    <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add browser extension</div>
-    <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add desktop extension</div>
-    <div class="roadmap-item"><span class="roadmap-dot"></span> Show progress towards longer-term goals</div>
-  </div>
+    <!-- Roadmap -->
+    <h2>Roadmap</h2>
+    <p>Planned features &mdash; no timeline, but these are on our list.</p>
 
-  <hr class="divider">
-
-  <!-- Feedback form -->
-  <h2>Feedback</h2>
-  <p style="font-size: 0.875rem; color: #78716c;">Found a bug, have a feature idea, or just want to share your thoughts? We'd love to hear from you.</p>
-
-  <form id="feedbackForm" style="margin-top: 1rem;">
-    <div class="form-group">
-      <label for="feedbackType">Type</label>
-      <select id="feedbackType">
-        <option value="bug">Bug report</option>
-        <option value="feature">Feature request</option>
-        <option value="feedback">General feedback</option>
-      </select>
+    <div style="margin-top: 1rem;">
+      <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> Android app <span class="roadmap-status">(in progress)</span></div>
+      <div class="roadmap-item"><span class="roadmap-dot up-next"></span> iOS app <span class="roadmap-status">(up next)</span></div>
+      <div class="roadmap-item"><span class="roadmap-dot"></span> Desktop app</div>
+      <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add browser extension</div>
+      <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add desktop extension</div>
+      <div class="roadmap-item"><span class="roadmap-dot"></span> Show progress towards longer-term goals</div>
     </div>
 
-    <div class="form-group">
-      <label for="feedbackEmail">Email <span style="color: #a8a29e; font-weight: 400;">(optional)</span></label>
-      <input type="email" id="feedbackEmail" placeholder="you@example.com">
-    </div>
+    <hr class="divider">
 
-    <div class="form-group">
-      <label for="feedbackMessage">Message</label>
-      <textarea id="feedbackMessage" placeholder="Describe the bug, feature idea, or feedback..." required></textarea>
-    </div>
+    <!-- Feedback form -->
+    <h2>Feedback</h2>
+    <p>Found a bug, have a feature idea, or just want to share your thoughts? We'd love to hear from you.</p>
 
-    <button type="submit" class="submit-btn">Send feedback</button>
-    <p class="success-msg" id="successMsg">Thanks for your feedback!</p>
-  </form>
+    <form id="feedbackForm" style="margin-top: 1rem;">
+      <div class="form-group">
+        <label for="feedbackType">Type</label>
+        <select id="feedbackType">
+          <option value="bug">Bug report</option>
+          <option value="feature">Feature request</option>
+          <option value="feedback">General feedback</option>
+        </select>
+      </div>
 
-  <script>
-    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var type = document.getElementById('feedbackType').value;
-      var email = document.getElementById('feedbackEmail').value;
-      var message = document.getElementById('feedbackMessage').value;
-      if (!message.trim()) return;
+      <div class="form-group">
+        <label for="feedbackEmail">Email <span style="color: #a8a29e; font-weight: 400;">(optional)</span></label>
+        <input type="email" id="feedbackEmail" placeholder="you@example.com">
+      </div>
 
-      // Send via mailto as a simple solution
-      var subject = encodeURIComponent('[zenmode ' + type + '] Feedback');
-      var body = encodeURIComponent(
-        'Type: ' + type + '\n' +
-        'From: ' + (email || 'anonymous') + '\n\n' +
-        message
-      );
-      window.location.href = 'mailto:l@zenhabits.net?subject=' + subject + '&body=' + body;
+      <div class="form-group">
+        <label for="feedbackMessage">Message</label>
+        <textarea id="feedbackMessage" placeholder="Describe the bug, feature idea, or feedback..." required></textarea>
+      </div>
 
-      document.getElementById('successMsg').style.display = 'block';
-      document.getElementById('feedbackMessage').value = '';
-    });
-  </script>
+      <button type="submit" class="submit-btn">Send feedback</button>
+      <p class="success-msg" id="successMsg">Thanks for your feedback!</p>
+    </form>
 
-  <div style="margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e7e5e4;">
-    <a href="/" style="font-size: 0.8125rem; color: #78716c; text-decoration: none;">&larr; Back to zenmode</a>
-  </div>
+    <script>
+      document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var type = document.getElementById('feedbackType').value;
+        var email = document.getElementById('feedbackEmail').value;
+        var message = document.getElementById('feedbackMessage').value;
+        if (!message.trim()) return;
+
+        var subject = encodeURIComponent('[zenmode ' + type + '] Feedback');
+        var body = encodeURIComponent(
+          'Type: ' + type + '\n' +
+          'From: ' + (email || 'anonymous') + '\n\n' +
+          message
+        );
+        window.location.href = 'mailto:l@zenhabits.net?subject=' + subject + '&body=' + body;
+
+        document.getElementById('successMsg').style.display = 'block';
+        document.getElementById('feedbackMessage').value = '';
+      });
+    </script>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a href="/manifesto.html">Manifesto</a>
+    <a href="/privacy.html">Privacy Policy</a>
+  </footer>
 </body>
 </html>
