@@ -414,6 +414,7 @@ export function TaskItem({
 
       <IconButton
         label="Delete task"
+        title="Delete task (DD)"
         onClick={() => promptDeleteItem(item.id)}
         className="opacity-0 group-hover:opacity-100 flex-shrink-0"
       >
