@@ -86,6 +86,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
 // --- Pull from Supabase ---
 
 let pullInProgress = false;
+let itemsPullDone = false;
 
 export async function pullFromSupabase(): Promise<void> {
   if (!supabase) return;
@@ -179,6 +180,7 @@ export async function pullFromSupabase(): Promise<void> {
         for (const item of localNewer) knownRemoteIds.add(item.id);
       }
     }
+    itemsPullDone = true;
   } finally {
     pullInProgress = false;
   }
@@ -190,7 +192,7 @@ let changedIds = new Set<string>();
 let changeTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function markChanged(ids: string[]): void {
-  if (!supabase) return;
+  if (!supabase || !itemsPullDone) return;
   for (const id of ids) changedIds.add(id);
   if (changeTimer) clearTimeout(changeTimer);
   changeTimer = setTimeout(flushChanged, 500);
@@ -245,7 +247,7 @@ let deletedIds = new Set<string>();
 let deleteTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function markDeleted(ids: string[]): void {
-  if (!supabase) return;
+  if (!supabase || !itemsPullDone) return;
   for (const id of ids) deletedIds.add(id);
   if (deleteTimer) clearTimeout(deleteTimer);
   deleteTimer = setTimeout(flushDeleted, 500);
@@ -283,6 +285,8 @@ interface PrefsRow {
   active_list_id: string | null;
   updated_at: string;
 }
+
+let prefsPullDone = false;
 
 export async function pullPreferences(): Promise<void> {
   if (!supabase) return;
@@ -333,12 +337,13 @@ export async function pullPreferences(): Promise<void> {
       customLists: mergedLists,
     });
   }
+  prefsPullDone = true;
 }
 
 let prefsTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function pushPreferences(): void {
-  if (!supabase) return;
+  if (!supabase || !prefsPullDone) return;
   if (prefsTimer) clearTimeout(prefsTimer);
   prefsTimer = setTimeout(flushPreferences, 300);
 }
