@@ -98,6 +98,16 @@ export default function App() {
     const state = usePlannerStore.getState();
     state.autoMoveIncompleteItems();
 
+    // Show onboarding for new users (skip if they already have items — existing user)
+    if (!state.hasCompletedOnboarding) {
+      if (Object.keys(state.items).length > 0) {
+        usePlannerStore.setState({ hasCompletedOnboarding: true });
+      } else {
+        state.setView('onboarding');
+        return;
+      }
+    }
+
     // Check if rituals should be prompted
     checkPlanningRitual();
     checkReviewRitual();

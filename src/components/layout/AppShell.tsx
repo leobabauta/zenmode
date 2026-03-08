@@ -29,6 +29,7 @@ import { WeeklyReviewPrompt } from '../ritual/WeeklyReviewPrompt';
 import { WeeklyPlanningView } from '../ritual/WeeklyPlanningView';
 import { WeeklyReviewView } from '../ritual/WeeklyReviewView';
 import { WeekPlanPage } from '../ritual/WeekPlanPage';
+import { OnboardingView } from '../onboarding/OnboardingView';
 import { WeekReviewPage } from '../ritual/WeekReviewPage';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
@@ -223,7 +224,9 @@ export function AppShell() {
           clearSelection();
         }}
       >
-        {view === 'ritual' ? (
+        {view === 'onboarding' ? (
+          <OnboardingView />
+        ) : view === 'ritual' ? (
           <DailyRitualView />
         ) : view === 'review' ? (
           <DailyReviewView />
