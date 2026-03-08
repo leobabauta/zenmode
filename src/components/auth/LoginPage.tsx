@@ -59,12 +59,12 @@ export function LoginPage() {
           <img
             src={import.meta.env.BASE_URL + 'zenmode-logo.svg'}
             alt=""
-            className="w-7 h-7"
+            className="w-9 h-9"
           />
-          <span className="text-sm font-bold text-stone-900 tracking-tight">zenmode</span>
+          <span className="text-lg font-bold text-stone-900 tracking-tight">zenmode</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="/changelog.html" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Changelog</a>
+          <a href="/manifesto.html" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">Manifesto</a>
           <button
             onClick={scrollToSignIn}
             className="rounded-full bg-stone-900 px-5 py-2 text-sm font-medium text-white hover:bg-stone-800 transition-colors"
@@ -99,14 +99,12 @@ export function LoginPage() {
       </section>
 
       {/* Screenshot */}
-      <section className="mx-auto max-w-5xl px-4 pb-16">
-        <div className="mx-auto w-3/4">
-          <img
-            src={import.meta.env.BASE_URL + 'screenshot-hero.png'}
-            alt="zenmode app screenshot"
-            className="w-full rounded-xl shadow-2xl border border-stone-200"
-          />
-        </div>
+      <section className="mx-auto max-w-4xl px-4 pb-16">
+        <img
+          src={import.meta.env.BASE_URL + 'screenshot-hero.png'}
+          alt="zenmode app screenshot"
+          className="w-full rounded-xl shadow-2xl border border-stone-200"
+        />
       </section>
 
       {/* Features */}
