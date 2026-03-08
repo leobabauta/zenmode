@@ -242,6 +242,12 @@ export function LoginPage() {
       {/* Footer */}
       <footer className="border-t border-stone-200 py-8 text-center flex items-center justify-center gap-6">
         <a
+          href="/about.html"
+          className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+        >
+          About
+        </a>
+        <a
           href="/manifesto.html"
           className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
         >
