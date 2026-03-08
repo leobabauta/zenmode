@@ -44,13 +44,21 @@ export function Checkbox({ checked, onChange, className }: CheckboxProps) {
     setTimeout(() => setParticles([]), 1200);
   }, []);
 
+  const [pendingCheck, setPendingCheck] = useState(false);
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const willCheck = !checked;
-    onChange(willCheck);
     if (willCheck) {
-      // Tiny delay before confetti pops
+      // Show confetti first, then mark completed after animation
+      setPendingCheck(true);
       setTimeout(spawnConfetti, 80);
+      setTimeout(() => {
+        setPendingCheck(false);
+        onChange(true);
+      }, 1000);
+    } else {
+      onChange(false);
     }
   };
 
@@ -64,12 +72,12 @@ export function Checkbox({ checked, onChange, className }: CheckboxProps) {
         className={cn(
           'relative flex-shrink-0 w-5 h-5 transition-colors duration-150',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
-          !checked && 'text-[var(--color-text-muted)] hover:text-accent',
+          !checked && !pendingCheck && 'text-[var(--color-text-muted)] hover:text-accent',
           className
         )}
       >
         <svg viewBox="0 0 16 16" className="w-full h-full" fill="none">
-          {checked ? (
+          {checked || pendingCheck ? (
             <>
               <rect x="0" y="0" width="16" height="16" rx="3" fill="#22c55e" />
               <path
