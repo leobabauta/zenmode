@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        navigateFallbackDenylist: [/^\/about/, /^\/manifesto/, /^\/privacy/, /^\/changelog/],
+      },
       manifest: {
         name: 'zenmode',
         short_name: 'zenmode',
