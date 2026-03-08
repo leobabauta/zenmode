@@ -115,29 +115,52 @@ export function LoginPage() {
       {/* Features */}
       <section ref={featuresRef} className="mx-auto max-w-4xl px-4 py-20">
         <div className="grid gap-8 sm:grid-cols-2">
-          {[
-            {
-              title: 'Daily Ritual',
-              desc: 'Start each morning with intention — set your priorities and choose a practice for the day.',
-            },
-            {
-              title: 'Timeline View',
-              desc: 'See your week at a glance. Drag tasks between days to plan ahead effortlessly.',
-            },
-            {
-              title: 'Capture Quickly',
-              desc: 'Jot down ideas and tasks in seconds. Your inbox catches everything so nothing slips through the cracks.',
-            },
-            {
-              title: 'Focus Timer',
-              desc: 'Built-in Pomodoro timer to help you stay in flow and work with calm focus.',
-            },
-          ].map((f) => (
-            <div key={f.title} className="rounded-2xl bg-white border border-stone-200 p-6">
-              <h3 className="text-base font-bold text-stone-900">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-stone-500">{f.desc}</p>
+          {/* Daily Ritual — no screenshot */}
+          <div>
+            <div className="rounded-2xl bg-white border border-stone-200 p-6">
+              <h3 className="text-base font-bold text-stone-900">Daily Ritual</h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">Start each morning with intention — set your priorities and choose a practice for the day.</p>
             </div>
-          ))}
+          </div>
+
+          {/* Timeline View */}
+          <div>
+            <img
+              src={import.meta.env.BASE_URL + 'feature-timeline.png'}
+              alt="Timeline view"
+              className="w-full rounded-xl mb-3"
+            />
+            <div className="rounded-2xl bg-white border border-stone-200 p-6">
+              <h3 className="text-base font-bold text-stone-900">Timeline View</h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">See your week at a glance. Drag tasks between days to plan ahead effortlessly.</p>
+            </div>
+          </div>
+
+          {/* Capture Quickly */}
+          <div>
+            <img
+              src={import.meta.env.BASE_URL + 'feature-capture.png'}
+              alt="Quick capture"
+              className="w-full rounded-xl mb-3"
+            />
+            <div className="rounded-2xl bg-white border border-stone-200 p-6">
+              <h3 className="text-base font-bold text-stone-900">Capture Quickly</h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">Jot down ideas and tasks in seconds. Your inbox catches everything so nothing slips through the cracks.</p>
+            </div>
+          </div>
+
+          {/* Focus Timer */}
+          <div>
+            <img
+              src={import.meta.env.BASE_URL + 'feature-timer.png'}
+              alt="Focus timer"
+              className="w-full rounded-xl mb-3"
+            />
+            <div className="rounded-2xl bg-white border border-stone-200 p-6">
+              <h3 className="text-base font-bold text-stone-900">Focus Timer</h3>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">Built-in Pomodoro timer to help you stay in flow and work with calm focus.</p>
+            </div>
+          </div>
         </div>
       </section>
 
