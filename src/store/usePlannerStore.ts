@@ -57,6 +57,7 @@ interface PlannerState {
   showCommandPalette: boolean;
   commandPaletteAddTask: boolean;
   showSettings: boolean;
+  showHelp: boolean;
   showShortcuts: boolean;
   laterExpanded: boolean;
   labelColors: Record<string, string>;
@@ -127,6 +128,7 @@ interface PlannerState {
   setShowCommandPalette: (show: boolean) => void;
   setCommandPaletteAddTask: (v: boolean) => void;
   setShowSettings: (show: boolean) => void;
+  setShowHelp: (show: boolean) => void;
   setShowShortcuts: (show: boolean) => void;
   setGoogleCalendarConnected: (v: boolean) => void;
   setGoogleCalendarDismissed: (v: boolean) => void;
@@ -189,6 +191,7 @@ export const usePlannerStore = create<PlannerState>()(
       showCommandPalette: false,
       commandPaletteAddTask: false,
       showSettings: false,
+      showHelp: false,
       showShortcuts: false,
       laterExpanded: true,
       labelColors: {},
@@ -666,7 +669,7 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       setView: (view) => {
-        set((state) => { state.view = view; state.activeHashtag = null; state.showSettings = false; });
+        set((state) => { state.view = view; state.activeHashtag = null; state.showSettings = false; state.showHelp = false; });
       },
 
       setShowRitualPrompt: (show) => {
@@ -862,7 +865,10 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.commandPaletteAddTask = v; });
       },
       setShowSettings: (show) => {
-        set((state) => { state.showSettings = show; });
+        set((state) => { state.showSettings = show; state.showHelp = false; });
+      },
+      setShowHelp: (show) => {
+        set((state) => { state.showHelp = show; state.showSettings = false; });
       },
       setShowShortcuts: (show) => {
         set((state) => { state.showShortcuts = show; });

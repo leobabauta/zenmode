@@ -30,6 +30,7 @@ import { WeeklyPlanningView } from '../ritual/WeeklyPlanningView';
 import { WeeklyReviewView } from '../ritual/WeeklyReviewView';
 import { WeekPlanPage } from '../ritual/WeekPlanPage';
 import { OnboardingView } from '../onboarding/OnboardingView';
+import { HelpView } from '../help/HelpView';
 import { WeekReviewPage } from '../ritual/WeekReviewPage';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { usePlannerStore } from '../../store/usePlannerStore';
@@ -62,6 +63,7 @@ export function AppShell() {
   const showMoveModal = usePlannerStore((s) => s.showMoveModal);
   const showCommandPalette = usePlannerStore((s) => s.showCommandPalette);
   const showSettings = usePlannerStore((s) => s.showSettings);
+  const showHelp = usePlannerStore((s) => s.showHelp);
   const showRitualPrompt = usePlannerStore((s) => s.showRitualPrompt);
   const showReviewRitualPrompt = usePlannerStore((s) => s.showReviewRitualPrompt);
   const showWeeklyPlanningPrompt = usePlannerStore((s) => s.showWeeklyPlanningPrompt);
@@ -249,7 +251,7 @@ export function AppShell() {
             <Sidebar />
             <div className="flex-1 flex flex-col overflow-hidden relative">
               {/* Floating top-right controls */}
-              <div className={`absolute top-3 right-3 z-10 flex items-center gap-1 ${showSettings ? 'hidden' : ''}`}>
+              <div className={`absolute top-3 right-3 z-10 flex items-center gap-1 ${showSettings || showHelp ? 'hidden' : ''}`}>
                 {view === 'timeline' ? (
                   <button
                     onClick={() => setView('today')}
@@ -274,6 +276,8 @@ export function AppShell() {
 
               {showSettings ? (
                 <SettingsView />
+              ) : showHelp ? (
+                <HelpView />
               ) : view === 'today' ? (
                 <TodayView />
               ) : view === 'inbox' ? (
