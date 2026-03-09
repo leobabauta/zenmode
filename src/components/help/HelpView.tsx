@@ -208,7 +208,9 @@ export function HelpView() {
   const setShowHelp = usePlannerStore((s) => s.setShowHelp);
   // null = landing page, otherwise { section, item } for a specific doc
   const [selected, setSelected] = useState<{ section: number; item: number } | null>(null);
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(
+    new Set(sections.map((_, i) => i))
+  );
 
   const toggleSection = (idx: number) => {
     setExpandedSections((prev) => {
@@ -230,10 +232,10 @@ export function HelpView() {
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Left sidebar */}
-      <div className="w-56 flex-shrink-0 border-r border-[var(--color-border)] overflow-y-auto py-4 px-3">
+      <div className="w-64 flex-shrink-0 border-r border-[var(--color-border)] overflow-y-auto py-4 px-3">
         {/* Back / title */}
         <div className="flex items-center justify-between mb-4 px-1">
-          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Support</h2>
+          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Support</h2>
           <button
             onClick={() => setShowHelp(false)}
             className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
@@ -249,7 +251,7 @@ export function HelpView() {
         <button
           onClick={() => setSelected(null)}
           className={cn(
-            'w-full text-left px-2 py-1.5 rounded-md text-xs font-medium mb-2 transition-colors',
+            'w-full text-left px-2 py-1.5 rounded-md text-sm font-medium mb-2 transition-colors',
             selected === null
               ? 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]',
@@ -266,9 +268,9 @@ export function HelpView() {
               <div key={section.title}>
                 <button
                   onClick={() => toggleSection(si)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
                 >
-                  <SectionIcon icon={section.icon} className="flex-shrink-0 w-3.5 h-3.5" />
+                  <SectionIcon icon={section.icon} className="flex-shrink-0 w-4 h-4" />
                   <span className="flex-1 text-left truncate">{section.title}</span>
                   <svg
                     className={cn('w-3 h-3 flex-shrink-0 transition-transform', isExpanded && 'rotate-90')}
@@ -287,7 +289,7 @@ export function HelpView() {
                         key={item.q}
                         onClick={() => selectItem(si, ii)}
                         className={cn(
-                          'w-full text-left px-2 py-1 rounded text-[11px] leading-snug transition-colors',
+                          'w-full text-left px-2 py-1.5 rounded text-xs leading-snug transition-colors',
                           selected?.section === si && selected?.item === ii
                             ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
                             : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
