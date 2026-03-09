@@ -2,11 +2,14 @@ import { usePlannerStore, selectInboxItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { SortArchiveButtons } from '../ui/SortArchiveButtons';
+import { EmptyInbox } from '../ui/EmptyState';
 
 export function InboxView() {
   const items = usePlannerStore((s) => s.items);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const inboxItems = selectInboxItems(items);
+
+  const isEmpty = inboxItems.length === 0;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -15,21 +18,27 @@ export function InboxView() {
           <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
             Inbox
           </h1>
-          <span className="text-xs text-[var(--color-text-muted)]">
-            {inboxItems.length} {inboxItems.length === 1 ? 'item' : 'items'}
-          </span>
+          {!isEmpty && (
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {inboxItems.length} {inboxItems.length === 1 ? 'item' : 'items'}
+            </span>
+          )}
         </div>
 
-        <div className="min-h-[80px]">
-          <div className="min-h-[8px]">
-            <ItemList items={inboxItems} />
+        {isEmpty ? (
+          <EmptyInbox />
+        ) : (
+          <div className="min-h-[80px]">
+            <div className="min-h-[8px]">
+              <ItemList items={inboxItems} />
+            </div>
+            <AddItemForm dayKey={null} className="mt-1" />
+            <SortArchiveButtons
+              items={inboxItems}
+              onArchive={() => archiveCompleted({})}
+            />
           </div>
-          <AddItemForm dayKey={null} className="mt-1" />
-          <SortArchiveButtons
-            items={inboxItems}
-            onArchive={() => archiveCompleted({})}
-          />
-        </div>
+        )}
       </div>
     </div>
   );

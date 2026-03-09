@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { toDayKey, getWeekKey } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
@@ -5,6 +6,7 @@ import { AddItemForm } from '../forms/AddItemForm';
 import { PracticeBox } from '../ui/PracticeBox';
 import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 import { GreetingBanner } from '../ui/GreetingBanner';
+import { AllDoneToday } from '../ui/EmptyState';
 
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
@@ -14,6 +16,7 @@ export function TodayView() {
   const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
   const reviewRitualSnoozedUntil = usePlannerStore((s) => s.reviewRitualSnoozedUntil);
   const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
 
   const today = new Date();
   const dayKey = toDayKey(today);
@@ -28,6 +31,11 @@ export function TodayView() {
 
   const practiceItems = todayItems.filter((i) => i.isPractice);
   const nonPracticeItems = todayItems.filter((i) => !i.isPractice);
+
+  // Check if all tasks are completed (only count top-level tasks, not notes)
+  const topLevelTasks = todayItems.filter((i) => i.type === 'task' && !i.parentId);
+  const allTasksDone = topLevelTasks.length > 0 && topLevelTasks.every((t) => t.completed);
+  const showAllDone = allTasksDone && !showCompletedTasks;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -58,14 +66,20 @@ export function TodayView() {
               <span>Daily Review</span>
             </button>
           )}
-          {practiceItems.length > 0 && (
-            <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
+          {showAllDone ? (
+            <AllDoneToday onShowCompleted={() => setShowCompletedTasks(true)} />
+          ) : (
+            <>
+              {practiceItems.length > 0 && (
+                <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
+              )}
+              <div className="min-h-[8px]">
+                <ItemList items={nonPracticeItems} />
+              </div>
+              <AddItemForm dayKey={dayKey} className="mt-1" />
+              <SortArchiveButtons items={todayItems} />
+            </>
           )}
-          <div className="min-h-[8px]">
-            <ItemList items={nonPracticeItems} />
-          </div>
-          <AddItemForm dayKey={dayKey} className="mt-1" />
-          <SortArchiveButtons items={todayItems} />
         </div>
       </div>
     </div>
