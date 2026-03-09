@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
-import { toDayKey } from '../../lib/dates';
+import { toDayKey, getWeekKey } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 
 type PaletteItem =
-  | { kind: 'command'; id: string; label: string; shortcut?: string }
+  | { kind: 'command'; id: string; label: string; shortcut?: string; badge?: string }
   | { kind: 'nav'; id: string; label: string; icon: string; shortcut?: string }
   | { kind: 'hashtag'; id: string; tag: string }
   | { kind: 'task'; id: string; text: string };
@@ -21,6 +21,13 @@ const COMMAND_ITEMS: PaletteItem[] = [
   { kind: 'command', id: 'cmd-inbox', label: 'Send to Inbox', shortcut: '⇧I' },
   { kind: 'command', id: 'cmd-later', label: 'Send to Later', shortcut: '⇧E' },
   { kind: 'command', id: 'cmd-toggle-sidebar', label: 'Toggle sidebar', shortcut: 'S' },
+];
+
+const RITUAL_ITEMS: PaletteItem[] = [
+  { kind: 'command', id: 'ritual-daily-planning', label: 'Daily Planning Ritual' },
+  { kind: 'command', id: 'ritual-daily-review', label: 'Daily Review Ritual' },
+  { kind: 'command', id: 'ritual-weekly-planning', label: 'Weekly Planning Ritual' },
+  { kind: 'command', id: 'ritual-weekly-review', label: 'Weekly Review Ritual' },
 ];
 
 const NAV_ITEMS: PaletteItem[] = [
@@ -46,6 +53,27 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
   const listRef = useRef<HTMLDivElement>(null);
 
   const items = usePlannerStore((s) => s.items);
+  const lastRitualDate = usePlannerStore((s) => s.lastRitualDate);
+  const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
+  const lastWeeklyPlanningDate = usePlannerStore((s) => s.lastWeeklyPlanningDate);
+  const lastWeeklyReviewDate = usePlannerStore((s) => s.lastWeeklyReviewDate);
+
+  const todayKey = toDayKey(new Date());
+  const weekKey = getWeekKey(new Date());
+
+  // Check which rituals are already completed
+  const ritualDone = {
+    'ritual-daily-planning': lastRitualDate === todayKey,
+    'ritual-daily-review': lastReviewRitualDate === todayKey,
+    'ritual-weekly-planning': lastWeeklyPlanningDate === weekKey,
+    'ritual-weekly-review': lastWeeklyReviewDate === weekKey,
+  };
+
+  // Add "Done" badges to ritual items
+  const ritualItemsWithBadges: PaletteItem[] = RITUAL_ITEMS.map((item) => ({
+    ...item,
+    badge: (item.kind === 'command' && ritualDone[item.id as keyof typeof ritualDone]) ? 'Done' : undefined,
+  }));
 
   // Extract unique hashtags from all items
   const allHashtags = useMemo(() => {
@@ -68,6 +96,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     if (!q) {
       const result: Section[] = [
         { title: 'Commands', items: [...COMMAND_ITEMS] },
+        { title: 'Rituals', items: ritualItemsWithBadges },
         { title: 'Navigation', items: [...NAV_ITEMS] },
       ];
       if (allHashtags.length > 0) {
@@ -85,6 +114,12 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     const matchedCommands = COMMAND_ITEMS.filter((c) => c.kind === 'command' && c.label.toLowerCase().includes(q));
     if (matchedCommands.length > 0) {
       result.push({ title: 'Commands', items: matchedCommands });
+    }
+
+    // Filter ritual items
+    const matchedRituals = ritualItemsWithBadges.filter((r) => r.kind === 'command' && r.label.toLowerCase().includes(q));
+    if (matchedRituals.length > 0) {
+      result.push({ title: 'Rituals', items: matchedRituals });
     }
 
     // Filter nav items
@@ -112,7 +147,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     }
 
     return result;
-  }, [query, items, allHashtags, isAddTask]);
+  }, [query, items, allHashtags, isAddTask, ritualItemsWithBadges]);
 
   // Flat list for keyboard indexing
   const flatItems = useMemo(
@@ -150,6 +185,38 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
         if (item.id === 'cmd-toggle-sidebar') {
           store.toggleSidebar();
         }
+        // Ritual commands
+        if (item.id === 'ritual-daily-planning') {
+          if (ritualDone['ritual-daily-planning']) {
+            // Already done today — restart so they can view/edit
+            store.setView('ritual');
+          } else {
+            store.setView('ritual');
+          }
+        }
+        if (item.id === 'ritual-daily-review') {
+          if (ritualDone['ritual-daily-review']) {
+            store.setView('review');
+          } else {
+            store.setView('review');
+          }
+        }
+        if (item.id === 'ritual-weekly-planning') {
+          if (ritualDone['ritual-weekly-planning']) {
+            // Already done this week — show results page
+            store.setView('weekPlan');
+          } else {
+            store.setView('weeklyPlanning');
+          }
+        }
+        if (item.id === 'ritual-weekly-review') {
+          if (ritualDone['ritual-weekly-review']) {
+            // Already done this week — show results page
+            store.setView('weekReviewPage');
+          } else {
+            store.setView('weeklyReview');
+          }
+        }
         // Other commands are contextual (need selected task) — just close
         break;
       case 'nav':
@@ -178,7 +245,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     }
 
     onClose();
-  }, [onClose]);
+  }, [onClose, ritualDone]);
 
   const handleAddTask = useCallback((toToday: boolean) => {
     const text = query.trim();
@@ -281,6 +348,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
                     const idx = itemCounter;
                     const isHighlighted = idx === highlightIndex;
                     const shortcut = item.kind === 'command' || item.kind === 'nav' ? item.shortcut : undefined;
+                    const badge = item.kind === 'command' ? item.badge : undefined;
 
                     return (
                       <button
@@ -304,6 +372,11 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
                         )}>
                           {item.kind === 'hashtag' ? item.tag : item.kind === 'task' ? item.text : item.label}
                         </span>
+                        {badge && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 flex-shrink-0">
+                            {badge}
+                          </span>
+                        )}
                         {shortcut && (
                           <kbd className="ml-auto text-[10px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-0.5 text-[var(--color-text-muted)] font-mono flex-shrink-0">
                             {shortcut}
