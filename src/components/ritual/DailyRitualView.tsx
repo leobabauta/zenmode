@@ -161,19 +161,19 @@ export function DailyRitualView() {
     }
   };
 
-  const toggleCalEvent = (id: string) => {
-    setCalEvents((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, selected: !e.selected } : e))
-    );
+  const importCalEvent = (eventId: string) => {
+    const event = calEvents.find((e) => e.id === eventId);
+    if (event) {
+      addItem({ type: 'task', text: event.taskText, dayKey });
+      setCalEvents((prev) => prev.filter((e) => e.id !== eventId));
+    }
   };
 
-  const importCalEvents = () => {
+  const importAllCalEvents = () => {
     for (const event of calEvents) {
-      if (event.selected) {
-        addItem({ type: 'task', text: event.taskText, dayKey });
-      }
+      addItem({ type: 'task', text: event.taskText, dayKey });
     }
-    setStep(3);
+    setCalEvents([]);
   };
 
   const moveInboxToToday = (id: string) => {
@@ -201,21 +201,15 @@ export function DailyRitualView() {
       addItem({ type: 'task', text: trimmedPractice, dayKey, isPractice: true });
       setPractice('');
     }
-    setStep(7);
+    setStep(6);
   };
 
-  // Whether the calendar step is active (has client ID and not permanently dismissed)
-  const showCalendarStep = hasGoogleClientId && !googleCalendarDismissed;
-  // Inbox step always shows so users see inbox status even if empty
-  const showInboxStep = true;
-
-  // Calculate display step and total (calendar step may be hidden)
-  const displayStep = !showCalendarStep && step >= 3 ? step - 1 : step;
-  const displayTotal = showCalendarStep ? 7 : 6;
+  // Steps: 1=Get your day right, 2=Top priorities, 3=Medium priorities, 4=Organize, 5=Practice, 6=Summary
+  const displayTotal = 6;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
-      <div className="max-w-lg mx-auto">
+      <div className={cn('mx-auto', step === 1 ? 'max-w-3xl' : 'max-w-lg')}>
         <div className="relative mt-16 mb-8">
           <button
             onClick={() => setView('today')}
@@ -236,9 +230,9 @@ export function DailyRitualView() {
             <div
               key={s}
               className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                s === displayStep
+                s === step
                   ? 'bg-blue-500'
-                  : s < displayStep
+                  : s < step
                     ? 'bg-blue-300'
                     : 'bg-[var(--color-border)]'
               }`}
@@ -246,51 +240,164 @@ export function DailyRitualView() {
           ))}
         </div>
 
-        {/* Step 1: Triage Inbox */}
+        {/* Step 1: Get your day right — inbox + calendar + today + move targets */}
         {step === 1 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Triage your inbox
+              Let's get your day right
             </h2>
             <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
-              Move tasks to Today, Tomorrow, or Later — or leave them in the inbox.
+              Add or remove tasks to get your Today list as you'd like it.
             </p>
 
-            <div className="flex gap-6">
-              {/* Inbox items on the left */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
-                  Inbox ({inboxItems.length})
-                </h3>
-                <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[120px] max-h-[50vh] overflow-y-auto">
-                  {inboxItems.length === 0 ? (
-                    <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
-                      Inbox is empty!
-                    </p>
-                  ) : (
-                    inboxItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-surface)] transition-colors">
-                        <span className="flex-1 min-w-0 text-sm text-[var(--color-text-primary)] truncate">
-                          {item.text}
-                        </span>
-                        <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex gap-4 items-start">
+              {/* LEFT: Inbox + Calendar */}
+              <div className="w-[240px] flex-shrink-0 flex flex-col gap-4">
+                {/* Inbox */}
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
+                    Inbox {inboxItems.length > 0 && `(${inboxItems.length})`}
+                  </h3>
+                  <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px] max-h-[30vh] overflow-y-auto">
+                    {inboxItems.length === 0 ? (
+                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                        Inbox is empty
+                      </p>
+                    ) : (
+                      inboxItems.map((item) => (
+                        <div key={item.id} className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group">
+                          <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
+                            {item.text}
+                          </span>
                           <button
                             onClick={() => moveInboxToToday(item.id)}
-                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
-                            title="Move to Today"
+                            className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Add to Today"
                           >
-                            Today
+                            +Today
                           </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Calendar events */}
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
+                    Calendar
+                  </h3>
+                  <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px] max-h-[30vh] overflow-y-auto">
+                    {calLoading && (
+                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                        Loading events...
+                      </p>
+                    )}
+                    {calError && (
+                      <div className="text-center py-3">
+                        <p className="text-xs text-red-500 mb-1">{calError}</p>
+                        <button onClick={loadCalendarEvents} className="text-xs text-[var(--color-accent)] hover:underline">
+                          Try again
+                        </button>
+                      </div>
+                    )}
+                    {!calLoading && !calError && calEvents.length === 0 && !googleCalendarConnected && hasGoogleClientId && !googleCalendarDismissed && (
+                      <div className="flex flex-col items-center py-3 gap-2">
+                        <p className="text-xs text-[var(--color-text-muted)] text-center">
+                          Import calendar events as tasks
+                        </p>
+                        <button
+                          onClick={handleConnectCalendar}
+                          disabled={calConnecting}
+                          className="px-3 py-1 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-60"
+                        >
+                          {calConnecting ? 'Connecting...' : 'Connect Google Calendar'}
+                        </button>
+                        <button
+                          onClick={() => setGoogleCalendarDismissed(true)}
+                          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+                        >
+                          Don't show this
+                        </button>
+                      </div>
+                    )}
+                    {!calLoading && !calError && calEvents.length === 0 && googleCalendarConnected && (
+                      <div className="flex flex-col items-center py-3 gap-2">
+                        <button
+                          onClick={loadCalendarEvents}
+                          className="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-xs font-medium hover:bg-blue-500/20 transition-colors"
+                        >
+                          Load today's events
+                        </button>
+                      </div>
+                    )}
+                    {!calLoading && !calError && calEvents.length === 0 && (!hasGoogleClientId || googleCalendarDismissed) && (
+                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                        No calendar connected
+                      </p>
+                    )}
+                    {!calLoading && !calError && calEvents.length > 0 && (
+                      <>
+                        {calEvents.map((event) => (
+                          <div key={event.id} className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group">
+                            <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
+                              {event.taskText}
+                            </span>
+                            <button
+                              onClick={() => importCalEvent(event.id)}
+                              className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Add to Today"
+                            >
+                              +Today
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={importAllCalEvents}
+                          className="w-full mt-1 px-2 py-1 rounded text-[10px] font-medium text-blue-500 hover:bg-blue-500/10 transition-colors"
+                        >
+                          Add all to Today
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* MIDDLE: Today's tasks */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 px-1">
+                  Today ({todayItems.length})
+                </h3>
+                <div className="rounded-xl border border-blue-400/30 bg-blue-500/5 p-2 min-h-[200px] max-h-[60vh] overflow-y-auto">
+                  {todayItems.length === 0 ? (
+                    <p className="text-xs text-[var(--color-text-muted)] text-center py-6">
+                      No tasks for today yet
+                    </p>
+                  ) : (
+                    todayItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group">
+                        <Checkbox
+                          checked={item.completed}
+                          onChange={(checked) => updateItem(item.id, { completed: checked })}
+                        />
+                        <span className={cn(
+                          'flex-1 min-w-0 text-xs truncate',
+                          item.completed ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
+                        )}>
+                          {item.text}
+                        </span>
+                        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => moveInboxToTomorrow(item.id)}
-                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                            className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
                             title="Move to Tomorrow"
                           >
                             Tmrw
                           </button>
                           <button
                             onClick={() => sendToLater(item.id)}
-                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-colors"
+                            className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-colors"
                             title="Move to Later"
                           >
                             Later
@@ -299,35 +406,30 @@ export function DailyRitualView() {
                       </div>
                     ))
                   )}
+                  <AddItemForm dayKey={dayKey} className="mt-1" />
                 </div>
               </div>
 
-              {/* Drop targets on the right */}
-              <div className="flex flex-col gap-3 w-28 flex-shrink-0 pt-6">
-                <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-blue-400/40 bg-blue-500/5 text-center">
-                  <svg className="w-5 h-5 text-blue-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                  </svg>
-                  <span className="text-xs font-medium text-blue-400">Today</span>
-                </div>
-                <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
-                  <svg className="w-5 h-5 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              {/* RIGHT: Tomorrow & Later circles */}
+              <div className="flex flex-col gap-3 w-24 flex-shrink-0 pt-6">
+                <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+                  <svg className="w-4 h-4 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                   </svg>
-                  <span className="text-xs font-medium text-[var(--color-text-muted)]">Tomorrow</span>
+                  <span className="text-[10px] font-medium text-[var(--color-text-muted)]">Tomorrow</span>
                 </div>
-                <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
-                  <svg className="w-5 h-5 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+                  <svg className="w-4 h-4 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                   </svg>
-                  <span className="text-xs font-medium text-[var(--color-text-muted)]">Later</span>
+                  <span className="text-[10px] font-medium text-[var(--color-text-muted)]">Later</span>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end mt-6">
               <button
-                onClick={() => setStep(showCalendarStep ? 2 : 3)}
+                onClick={() => setStep(2)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -336,160 +438,8 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {/* Step 2: Google Calendar import */}
-        {step === 2 && showCalendarStep && (
-          <div>
-            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Import from Google Calendar?
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
-              Pull in today's calendar events so you can plan around them.
-            </p>
-
-            {/* Initial prompt — no events loaded yet and not currently loading */}
-            {!calLoading && !calError && calEvents.length === 0 && (
-              <div className="flex flex-col items-center py-8 gap-4">
-                <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-xs">
-                  {googleCalendarConnected
-                    ? 'Fetch your events for today so you can add them as tasks.'
-                    : 'Connect your Google Calendar to see today\'s events and add them as tasks.'}
-                </p>
-                {calError && (
-                  <p className="text-sm text-red-500">{calError}</p>
-                )}
-                <button
-                  onClick={googleCalendarConnected ? loadCalendarEvents : handleConnectCalendar}
-                  disabled={calConnecting}
-                  className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-60"
-                >
-                  {calConnecting
-                    ? 'Connecting...'
-                    : googleCalendarConnected
-                      ? 'Load today\'s events'
-                      : 'Connect to Google Calendar'}
-                </button>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setStep(3)}
-                    className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                  >
-                    Skip
-                  </button>
-                  <button
-                    onClick={() => { setGoogleCalendarDismissed(true); setStep(3); }}
-                    className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
-                  >
-                    Don't ask again
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {calLoading && (
-              <div className="flex items-center justify-center py-8">
-                <span className="text-sm text-[var(--color-text-muted)]">Loading events...</span>
-              </div>
-            )}
-
-            {calError && (
-              <div className="flex flex-col items-center py-8 gap-3">
-                <p className="text-sm text-red-500">{calError}</p>
-                <button
-                  onClick={loadCalendarEvents}
-                  className="text-sm text-[var(--color-accent)] hover:underline"
-                >
-                  Try again
-                </button>
-              </div>
-            )}
-
-            {!calLoading && !calError && calEvents.length > 0 && (
-              <div className="rounded-xl border border-[var(--color-border)] p-2 max-h-[50vh] overflow-y-auto space-y-1 mt-4">
-                {calEvents.map((event) => (
-                  <label
-                    key={event.id}
-                    className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-[var(--color-surface)] cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={event.selected}
-                      onChange={() => toggleCalEvent(event.id)}
-                      className="rounded"
-                    />
-                    <span className="text-sm text-[var(--color-text-primary)]">
-                      {event.taskText}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            <div className={cn('flex mt-6', (showInboxStep || calEvents.length > 0) ? 'justify-between' : 'justify-end')}>
-              {showInboxStep && (
-                <button
-                  onClick={() => setStep(1)}
-                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-                >
-                  Back
-                </button>
-              )}
-              {calEvents.length > 0 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setStep(3)}
-                    className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-                  >
-                    Skip
-                  </button>
-                  <button
-                    onClick={importCalEvents}
-                    disabled={calEvents.filter((e) => e.selected).length === 0}
-                    className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Import{calEvents.filter((e) => e.selected).length > 0 ? ` (${calEvents.filter((e) => e.selected).length})` : ''}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Organize tasks */}
-        {step === 3 && (
-          <div>
-            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Organize your tasks for today
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
-              Drag to reorder, add any tasks you missed.
-            </p>
-            <div className="rounded-xl p-3 min-h-[80px] border border-[var(--color-border)]">
-              <div className="min-h-[8px]">
-                <ItemList items={todayItems} />
-              </div>
-              <AddItemForm dayKey={dayKey} className="mt-1" />
-            </div>
-            <div className={cn('flex mt-6', (showCalendarStep || showInboxStep) ? 'justify-between' : 'justify-end')}>
-              {(showCalendarStep || showInboxStep) && (
-                <button
-                  onClick={() => setStep(showCalendarStep ? 2 : 1)}
-                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-                >
-                  Back
-                </button>
-              )}
-              <button
-                onClick={() => setStep(4)}
-                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Top priorities */}
-        {step === 4 && (
+        {/* Step 2: Top priorities */}
+        {step === 2 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Mark up to 3 top priorities
@@ -520,13 +470,13 @@ export function DailyRitualView() {
             </div>
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep(1)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
               </button>
               <button
-                onClick={() => setStep(5)}
+                onClick={() => setStep(3)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -535,8 +485,8 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {/* Step 5: Medium priorities */}
-        {step === 5 && (
+        {/* Step 3: Medium priorities */}
+        {step === 3 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Mark up to 3 medium priorities
@@ -569,13 +519,13 @@ export function DailyRitualView() {
             </div>
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(4)}
+                onClick={() => setStep(2)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
               </button>
               <button
-                onClick={() => setStep(6)}
+                onClick={() => setStep(4)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -584,8 +534,40 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {/* Step 6: Practice */}
-        {step === 6 && (
+        {/* Step 4: Organize tasks */}
+        {step === 4 && (
+          <div>
+            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
+              Organize your tasks for today
+            </h2>
+            <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
+              Drag to reorder, add any tasks you missed.
+            </p>
+            <div className="rounded-xl p-3 min-h-[80px] border border-[var(--color-border)]">
+              <div className="min-h-[8px]">
+                <ItemList items={todayItems} />
+              </div>
+              <AddItemForm dayKey={dayKey} className="mt-1" />
+            </div>
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={() => setStep(3)}
+                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => setStep(5)}
+                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Practice */}
+        {step === 5 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               What would you like to practice today?
@@ -604,7 +586,7 @@ export function DailyRitualView() {
             />
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(5)}
+                onClick={() => setStep(4)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
@@ -619,8 +601,8 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {/* Step 7: Summary */}
-        {step === 7 && (() => {
+        {/* Step 6: Summary */}
+        {step === 6 && (() => {
           const practiceItems = allTodayItems.filter((i) => i.isPractice);
           const priorityItems = todayItems.filter((i) => i.isPriority);
           const mediumPriorityItems = todayItems.filter((i) => i.isMediumPriority && !i.isPriority);
@@ -693,7 +675,7 @@ export function DailyRitualView() {
 
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => setStep(6)}
+                  onClick={() => setStep(5)}
                   className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
                 >
                   Back
