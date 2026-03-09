@@ -87,20 +87,16 @@ export function AppShell() {
     let total = 0;
     let done = 0;
     for (const item of Object.values(items)) {
-      if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== todayKey) continue;
+      if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== todayKey || item.isPractice) continue;
       total++;
       if (item.completed) done++;
     }
-
-    // DEBUG: remove after confirming feature works
-    console.log('[AppShell confetti]', { todayKey, total, done, wasCompleted: todayCompletedRef.current, isInitialLoad: initialLoadRef.current });
 
     if (total > 0 && done === total) {
       if (!todayCompletedRef.current) {
         todayCompletedRef.current = true;
         // Only fire confetti if this isn't the initial page load
         if (!initialLoadRef.current) {
-          console.log('[AppShell] FIRING CONFETTI!');
           setShowFullConfetti(true);
         }
       }
