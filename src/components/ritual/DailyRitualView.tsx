@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
@@ -151,11 +151,7 @@ export function DailyRitualView() {
     }
   }, []);
 
-  useEffect(() => {
-    if (step === 2 && hasGoogleClientId && !googleCalendarDismissed && googleCalendarConnected && calEvents.length === 0 && !calLoading && !calError) {
-      loadCalendarEvents();
-    }
-  }, [step, calEvents.length, calLoading, calError, loadCalendarEvents, googleCalendarConnected, googleCalendarDismissed]);
+  // Don't auto-fetch calendar events — wait for explicit user action to avoid surprise popups
 
   const handleConnectCalendar = async () => {
     setCalConnecting(true);
@@ -360,21 +356,31 @@ export function DailyRitualView() {
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Import from Google Calendar?
             </h2>
-            <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
-              Add today's calendar events as tasks.
+            <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
+              Pull in today's calendar events so you can plan around them.
             </p>
 
-            {!googleCalendarConnected && (
+            {/* Initial prompt — no events loaded yet and not currently loading */}
+            {!calLoading && !calError && calEvents.length === 0 && (
               <div className="flex flex-col items-center py-8 gap-4">
+                <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-xs">
+                  {googleCalendarConnected
+                    ? 'Fetch your events for today so you can add them as tasks.'
+                    : 'Connect your Google Calendar to see today\'s events and add them as tasks.'}
+                </p>
                 {calError && (
                   <p className="text-sm text-red-500">{calError}</p>
                 )}
                 <button
-                  onClick={handleConnectCalendar}
+                  onClick={googleCalendarConnected ? loadCalendarEvents : handleConnectCalendar}
                   disabled={calConnecting}
                   className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-60"
                 >
-                  {calConnecting ? 'Connecting...' : 'Connect to Google Calendar'}
+                  {calConnecting
+                    ? 'Connecting...'
+                    : googleCalendarConnected
+                      ? 'Load today\'s events'
+                      : 'Connect to Google Calendar'}
                 </button>
                 <div className="flex gap-3">
                   <button
@@ -393,15 +399,15 @@ export function DailyRitualView() {
               </div>
             )}
 
-            {googleCalendarConnected && calLoading && (
+            {calLoading && (
               <div className="flex items-center justify-center py-8">
                 <span className="text-sm text-[var(--color-text-muted)]">Loading events...</span>
               </div>
             )}
 
-            {googleCalendarConnected && calError && (
-              <div className="py-8">
-                <p className="text-sm text-red-500 mb-3">{calError}</p>
+            {calError && (
+              <div className="flex flex-col items-center py-8 gap-3">
+                <p className="text-sm text-red-500">{calError}</p>
                 <button
                   onClick={loadCalendarEvents}
                   className="text-sm text-[var(--color-accent)] hover:underline"
@@ -411,16 +417,8 @@ export function DailyRitualView() {
               </div>
             )}
 
-            {googleCalendarConnected && !calLoading && !calError && calEvents.length === 0 && (
-              <div className="flex items-center justify-center py-8">
-                <span className="text-sm text-[var(--color-text-muted)]">
-                  No events on your calendar today
-                </span>
-              </div>
-            )}
-
-            {googleCalendarConnected && !calLoading && !calError && calEvents.length > 0 && (
-              <div className="rounded-xl border border-[var(--color-border)] p-2 max-h-[50vh] overflow-y-auto space-y-1">
+            {!calLoading && !calError && calEvents.length > 0 && (
+              <div className="rounded-xl border border-[var(--color-border)] p-2 max-h-[50vh] overflow-y-auto space-y-1 mt-4">
                 {calEvents.map((event) => (
                   <label
                     key={event.id}
@@ -440,7 +438,7 @@ export function DailyRitualView() {
               </div>
             )}
 
-            <div className="flex justify-between mt-6">
+            <div className={cn('flex mt-6', (showInboxStep || calEvents.length > 0) ? 'justify-between' : 'justify-end')}>
               {showInboxStep && (
                 <button
                   onClick={() => setStep(1)}
@@ -449,7 +447,7 @@ export function DailyRitualView() {
                   Back
                 </button>
               )}
-              {googleCalendarConnected && (
+              {calEvents.length > 0 && (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setStep(3)}
