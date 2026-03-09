@@ -84,7 +84,7 @@ export function AppShell() {
     let total = 0;
     let done = 0;
     for (const item of Object.values(items)) {
-      if (item.type !== 'task' || item.parentId || item.dayKey !== todayKey) continue;
+      if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== todayKey) continue;
       total++;
       if (item.completed) done++;
     }
