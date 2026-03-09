@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
+import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
+import { addDays } from 'date-fns';
 import { fetchTodayEvents, formatEventAsTask, requestCalendarAccess } from '../../lib/googleCalendar';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
@@ -95,11 +96,20 @@ interface CalendarEvent {
 }
 
 export function DailyRitualView() {
-  const [step, setStep] = useState(1);
+  // Determine first step based on available content
+  const getFirstStep = () => {
+    const inbox = selectInboxItems(usePlannerStore.getState().items);
+    if (inbox.length > 0) return 1; // inbox triage
+    if (hasGoogleClientId && !usePlannerStore.getState().googleCalendarDismissed) return 2; // calendar
+    return 3; // organize
+  };
+  const [step, setStep] = useState(getFirstStep);
   const [practice, setPractice] = useState('');
   const setView = usePlannerStore((s) => s.setView);
   const addItem = usePlannerStore((s) => s.addItem);
   const updateItem = usePlannerStore((s) => s.updateItem);
+  const moveItem = usePlannerStore((s) => s.moveItem);
+  const sendToLater = usePlannerStore((s) => s.sendToLater);
   const completeRitual = usePlannerStore((s) => s.completeRitual);
   const items = usePlannerStore((s) => s.items);
   const googleCalendarConnected = usePlannerStore((s) => s.googleCalendarConnected);
@@ -109,8 +119,10 @@ export function DailyRitualView() {
   const [calConnecting, setCalConnecting] = useState(false);
 
   const dayKey = toDayKey(new Date());
+  const tomorrowKey = toDayKey(addDays(new Date(), 1));
   const allTodayItems = selectItemsForDay(items, dayKey);
   const todayItems = allTodayItems.filter((i) => i.type !== 'note');
+  const inboxItems = selectInboxItems(items);
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority).length;
@@ -140,7 +152,7 @@ export function DailyRitualView() {
   }, []);
 
   useEffect(() => {
-    if (step === 3 && hasGoogleClientId && !googleCalendarDismissed && googleCalendarConnected && calEvents.length === 0 && !calLoading && !calError) {
+    if (step === 2 && hasGoogleClientId && !googleCalendarDismissed && googleCalendarConnected && calEvents.length === 0 && !calLoading && !calError) {
       loadCalendarEvents();
     }
   }, [step, calEvents.length, calLoading, calError, loadCalendarEvents, googleCalendarConnected, googleCalendarDismissed]);
@@ -171,7 +183,18 @@ export function DailyRitualView() {
         addItem({ type: 'task', text: event.taskText, dayKey });
       }
     }
-    setStep(4);
+    setStep(3);
+  };
+
+  const moveInboxToToday = (id: string) => {
+    const maxOrder = todayItems.length > 0 ? Math.max(...todayItems.map((i) => i.order)) : -1;
+    moveItem(id, dayKey, maxOrder + 1);
+  };
+
+  const moveInboxToTomorrow = (id: string) => {
+    const tomorrowItems = selectItemsForDay(items, tomorrowKey);
+    const maxOrder = tomorrowItems.length > 0 ? Math.max(...tomorrowItems.map((i) => i.order)) : -1;
+    moveItem(id, tomorrowKey, maxOrder + 1);
   };
 
   const togglePriority = (item: PlannerItem) => {
@@ -188,15 +211,25 @@ export function DailyRitualView() {
       addItem({ type: 'task', text: trimmedPractice, dayKey, isPractice: true });
       setPractice('');
     }
-    setStep(6);
+    setStep(7);
   };
 
   // Whether the calendar step is active (has client ID and not permanently dismissed)
   const showCalendarStep = hasGoogleClientId && !googleCalendarDismissed;
+  // Whether inbox triage step was shown (track initial state so circles remain even after moving items)
+  const [hadInboxItems] = useState(() => inboxItems.length > 0);
+  const showInboxStep = hadInboxItems;
 
-  // Map internal step to display step (skip calendar step when not shown)
-  const displayStep = !showCalendarStep && step >= 3 ? step - 1 : step;
-  const displayTotal = showCalendarStep ? 6 : 5;
+  // Calculate display step and total, skipping hidden steps
+  // Internal steps: 1=inbox, 2=calendar, 3=organize, 4=priorities, 5=medium, 6=practice, 7=summary
+  const getDisplayStep = () => {
+    let display = step;
+    if (!showInboxStep && step >= 2) display -= 1;
+    if (!showCalendarStep && step >= 3) display -= 1;
+    return Math.max(1, display);
+  };
+  const displayStep = getDisplayStep();
+  const displayTotal = 5 + (showInboxStep ? 1 : 0) + (showCalendarStep ? 1 : 0);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -231,38 +264,88 @@ export function DailyRitualView() {
           ))}
         </div>
 
-        {step === 1 && (
+        {/* Step 1: Triage Inbox */}
+        {step === 1 && showInboxStep && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Mark up to 3 top priorities
+              Triage your inbox
             </h2>
-            <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
-              Star the tasks that matter most today.
+            <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
+              Move tasks to Today, Tomorrow, or Later — or leave them in the inbox.
             </p>
-            <p className="text-xs text-center mb-6">
-              <span className={cn(
-                'font-semibold',
-                priorityCount === 3 ? 'text-amber-500' : 'text-[var(--color-text-muted)]'
-              )}>
-                {priorityCount} of 3 selected
-              </span>
-            </p>
-            <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px]">
-              {todayItems.map((item) => (
-                <RitualTaskRow
-                  key={item.id}
-                  item={item}
-                  starred={!!item.isPriority}
-                  color="yellow"
-                  onToggle={() => togglePriority(item)}
-                  disabled={priorityCount >= 3}
-                />
-              ))}
-              <AddItemForm dayKey={dayKey} className="mt-1 px-3" />
+
+            <div className="flex gap-6">
+              {/* Inbox items on the left */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
+                  Inbox ({inboxItems.length})
+                </h3>
+                <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[120px] max-h-[50vh] overflow-y-auto">
+                  {inboxItems.length === 0 ? (
+                    <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
+                      Inbox is empty!
+                    </p>
+                  ) : (
+                    inboxItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-surface)] transition-colors">
+                        <span className="flex-1 min-w-0 text-sm text-[var(--color-text-primary)] truncate">
+                          {item.text}
+                        </span>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => moveInboxToToday(item.id)}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
+                            title="Move to Today"
+                          >
+                            Today
+                          </button>
+                          <button
+                            onClick={() => moveInboxToTomorrow(item.id)}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                            title="Move to Tomorrow"
+                          >
+                            Tmrw
+                          </button>
+                          <button
+                            onClick={() => sendToLater(item.id)}
+                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-colors"
+                            title="Move to Later"
+                          >
+                            Later
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Drop targets on the right */}
+              <div className="flex flex-col gap-3 w-28 flex-shrink-0 pt-6">
+                <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-blue-400/40 bg-blue-500/5 text-center">
+                  <svg className="w-5 h-5 text-blue-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                  </svg>
+                  <span className="text-xs font-medium text-blue-400">Today</span>
+                </div>
+                <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+                  <svg className="w-5 h-5 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                  <span className="text-xs font-medium text-[var(--color-text-muted)]">Tomorrow</span>
+                </div>
+                <div className="flex flex-col items-center justify-center w-28 h-28 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+                  <svg className="w-5 h-5 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                  </svg>
+                  <span className="text-xs font-medium text-[var(--color-text-muted)]">Later</span>
+                </div>
+              </div>
             </div>
+
             <div className="flex justify-end mt-6">
               <button
-                onClick={() => setStep(2)}
+                onClick={() => setStep(showCalendarStep ? 2 : 3)}
                 className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
               >
                 Next
@@ -271,55 +354,8 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 2 && (
-          <div>
-            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              Mark up to 3 medium priorities
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
-              Optional — star tasks that are important but not critical.
-            </p>
-            <p className="text-xs text-center mb-6">
-              <span className={cn(
-                'font-semibold',
-                mediumCount === 3 ? 'text-slate-500' : 'text-[var(--color-text-muted)]'
-              )}>
-                {mediumCount} of 3 selected
-              </span>
-            </p>
-            <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px]">
-              {todayItems.map((item) => (
-                <RitualTaskRow
-                  key={item.id}
-                  item={item}
-                  starred={!!item.isMediumPriority}
-                  locked={!!item.isPriority}
-                  lockedColor="yellow"
-                  color="blue"
-                  onToggle={() => toggleMediumPriority(item)}
-                  disabled={mediumCount >= 3}
-                />
-              ))}
-              <AddItemForm dayKey={dayKey} className="mt-1 px-3" />
-            </div>
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={() => setStep(1)}
-                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={() => setStep(showCalendarStep ? 3 : 4)}
-                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && showCalendarStep && (
+        {/* Step 2: Google Calendar import */}
+        {step === 2 && showCalendarStep && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Import from Google Calendar?
@@ -342,13 +378,13 @@ export function DailyRitualView() {
                 </button>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setStep(4)}
+                    onClick={() => setStep(3)}
                     className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
                   >
                     Skip
                   </button>
                   <button
-                    onClick={() => { setGoogleCalendarDismissed(true); setStep(4); }}
+                    onClick={() => { setGoogleCalendarDismissed(true); setStep(3); }}
                     className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
                   >
                     Don't ask again
@@ -405,16 +441,18 @@ export function DailyRitualView() {
             )}
 
             <div className="flex justify-between mt-6">
-              <button
-                onClick={() => setStep(2)}
-                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-              >
-                Back
-              </button>
+              {showInboxStep && (
+                <button
+                  onClick={() => setStep(1)}
+                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                >
+                  Back
+                </button>
+              )}
               {googleCalendarConnected && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setStep(4)}
+                    onClick={() => setStep(3)}
                     className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
                   >
                     Skip
@@ -432,7 +470,8 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 4 && (
+        {/* Step 3: Organize tasks */}
+        {step === 3 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Organize your tasks for today
@@ -446,9 +485,58 @@ export function DailyRitualView() {
               </div>
               <AddItemForm dayKey={dayKey} className="mt-1" />
             </div>
+            <div className={cn('flex mt-6', (showCalendarStep || showInboxStep) ? 'justify-between' : 'justify-end')}>
+              {(showCalendarStep || showInboxStep) && (
+                <button
+                  onClick={() => setStep(showCalendarStep ? 2 : 1)}
+                  className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+                >
+                  Back
+                </button>
+              )}
+              <button
+                onClick={() => setStep(4)}
+                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Top priorities */}
+        {step === 4 && (
+          <div>
+            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
+              Mark up to 3 top priorities
+            </h2>
+            <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
+              Star the tasks that matter most today.
+            </p>
+            <p className="text-xs text-center mb-6">
+              <span className={cn(
+                'font-semibold',
+                priorityCount === 3 ? 'text-amber-500' : 'text-[var(--color-text-muted)]'
+              )}>
+                {priorityCount} of 3 selected
+              </span>
+            </p>
+            <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px]">
+              {todayItems.map((item) => (
+                <RitualTaskRow
+                  key={item.id}
+                  item={item}
+                  starred={!!item.isPriority}
+                  color="yellow"
+                  onToggle={() => togglePriority(item)}
+                  disabled={priorityCount >= 3}
+                />
+              ))}
+              <AddItemForm dayKey={dayKey} className="mt-1 px-3" />
+            </div>
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(showCalendarStep ? 3 : 2)}
+                onClick={() => setStep(3)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
@@ -463,7 +551,57 @@ export function DailyRitualView() {
           </div>
         )}
 
+        {/* Step 5: Medium priorities */}
         {step === 5 && (
+          <div>
+            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
+              Mark up to 3 medium priorities
+            </h2>
+            <p className="text-sm text-[var(--color-text-muted)] text-center mb-2">
+              Optional — star tasks that are important but not critical.
+            </p>
+            <p className="text-xs text-center mb-6">
+              <span className={cn(
+                'font-semibold',
+                mediumCount === 3 ? 'text-slate-500' : 'text-[var(--color-text-muted)]'
+              )}>
+                {mediumCount} of 3 selected
+              </span>
+            </p>
+            <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px]">
+              {todayItems.map((item) => (
+                <RitualTaskRow
+                  key={item.id}
+                  item={item}
+                  starred={!!item.isMediumPriority}
+                  locked={!!item.isPriority}
+                  lockedColor="yellow"
+                  color="blue"
+                  onToggle={() => toggleMediumPriority(item)}
+                  disabled={mediumCount >= 3}
+                />
+              ))}
+              <AddItemForm dayKey={dayKey} className="mt-1 px-3" />
+            </div>
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={() => setStep(4)}
+                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => setStep(6)}
+                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Practice */}
+        {step === 6 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               What would you like to practice today?
@@ -482,7 +620,7 @@ export function DailyRitualView() {
             />
             <div className="flex justify-between mt-6">
               <button
-                onClick={() => setStep(4)}
+                onClick={() => setStep(5)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back
@@ -497,7 +635,8 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {step === 6 && (() => {
+        {/* Step 7: Summary */}
+        {step === 7 && (() => {
           const practiceItems = allTodayItems.filter((i) => i.isPractice);
           const priorityItems = todayItems.filter((i) => i.isPriority);
           const mediumPriorityItems = todayItems.filter((i) => i.isMediumPriority && !i.isPriority);
@@ -570,7 +709,7 @@ export function DailyRitualView() {
 
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => setStep(5)}
+                  onClick={() => setStep(6)}
                   className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
                 >
                   Back
