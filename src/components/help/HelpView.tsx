@@ -108,7 +108,7 @@ const sections: HelpSection[] = [
     items: [
       {
         q: 'What are the most important shortcuts?',
-        a: 'H = Home/Timeline, T = Today, I = Inbox, L = Later, N = New task, Cmd/Ctrl+K = Command palette, M = Move task, F = Focus mode, R = Recurrence, S = Toggle sidebar, ? = Show all shortcuts.',
+        a: '• H = Home/Timeline\n• T = Today\n• I = Inbox\n• L = Later\n• N = New task\n• Cmd/Ctrl+K = Command palette\n• M = Move task\n• F = Focus mode\n• R = Recurrence\n• S = Toggle sidebar\n• ? = Show all shortcuts',
       },
       {
         q: 'How does the Command Palette work?',
@@ -207,27 +207,46 @@ function SectionIcon({ icon, className }: { icon: string; className?: string }) 
 function RichText({ text }: { text: string }) {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
-  let listItems: string[] = [];
+  let olItems: string[] = [];
+  let ulItems: string[] = [];
   let key = 0;
 
-  const flushList = () => {
-    if (listItems.length === 0) return;
+  const flushOl = () => {
+    if (olItems.length === 0) return;
     elements.push(
       <ol key={key++} className="list-decimal list-inside space-y-1.5 my-3 text-base text-[var(--color-text-secondary)] leading-relaxed">
-        {listItems.map((li, i) => (
+        {olItems.map((li, i) => (
           <li key={i}>{li}</li>
         ))}
       </ol>
     );
-    listItems = [];
+    olItems = [];
+  };
+
+  const flushUl = () => {
+    if (ulItems.length === 0) return;
+    elements.push(
+      <ul key={key++} className="list-disc list-inside space-y-1.5 my-3 text-base text-[var(--color-text-secondary)] leading-relaxed">
+        {ulItems.map((li, i) => (
+          <li key={i}>{li}</li>
+        ))}
+      </ul>
+    );
+    ulItems = [];
   };
 
   for (const line of lines) {
-    const match = line.match(/^\d+\.\s+(.*)/);
-    if (match) {
-      listItems.push(match[1]);
+    const olMatch = line.match(/^\d+\.\s+(.*)/);
+    const ulMatch = line.match(/^[•\-]\s*(.*)/);
+    if (olMatch) {
+      flushUl();
+      olItems.push(olMatch[1]);
+    } else if (ulMatch) {
+      flushOl();
+      ulItems.push(ulMatch[1]);
     } else {
-      flushList();
+      flushOl();
+      flushUl();
       if (line.trim()) {
         elements.push(
           <p key={key++} className="text-base text-[var(--color-text-secondary)] leading-relaxed">
@@ -237,7 +256,8 @@ function RichText({ text }: { text: string }) {
       }
     }
   }
-  flushList();
+  flushOl();
+  flushUl();
 
   return <div className="space-y-1">{elements}</div>;
 }
