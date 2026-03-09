@@ -47,7 +47,10 @@ export function TodayView() {
   const incompleteTasks = Object.values(items).filter(
     (item) => item.type === 'task' && !item.parentId && !item.isArchived && item.dayKey === dayKey && !item.completed
   );
-  console.log('[TodayView]', { dayKey, totalTasks, doneTasks, allTasksDone, showAllDone, incompleteTasks: incompleteTasks.map(t => ({ id: t.id, text: t.text, completed: t.completed })) });
+  if (incompleteTasks.length > 0 && incompleteTasks.length <= 3) {
+    console.log('[TodayView] INCOMPLETE TASKS:', incompleteTasks.map(t => `"${t.text}" (id=${t.id})`).join(' | '));
+  }
+  console.log('[TodayView]', { totalTasks, doneTasks, allTasksDone });
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
