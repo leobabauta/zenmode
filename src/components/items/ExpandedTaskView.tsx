@@ -219,12 +219,17 @@ export function ExpandedTaskView() {
         />
       )}
 
+      {/* Task Focus background */}
+      {expandedTaskFullScreen && (
+        <div className="fixed inset-0 bg-[var(--color-surface)] -z-10" />
+      )}
+
       {/* Modal / Task Focus view */}
       <div className={cn(
-        'bg-[var(--color-bg)] flex flex-col overflow-hidden',
+        'bg-[var(--color-bg)] flex flex-col overflow-hidden rounded-xl',
         expandedTaskFullScreen
-          ? 'w-[50%] h-[80%] mx-auto mt-[5%] rounded-xl border border-[var(--color-border)]'
-          : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] rounded-xl border border-[var(--color-border)] shadow-2xl z-50'
+          ? 'w-[40%] h-[80%] mx-auto mt-[5%] border-2 border-[var(--color-border)] shadow-[0_0_20px_rgba(234,179,8,0.15)]'
+          : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] border border-[var(--color-border)] shadow-2xl z-50'
       )}>
         {/* Header */}
         <div className={cn(
