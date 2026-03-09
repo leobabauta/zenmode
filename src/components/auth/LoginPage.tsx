@@ -183,7 +183,7 @@ export function LoginPage() {
       {/* Principles */}
       <section className="py-20 overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">Principles</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">zenmode philosophy</p>
           <div className="flex items-end justify-between gap-8">
             <h2 className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight leading-tight max-w-lg">
               5 Essential Principles
