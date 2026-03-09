@@ -43,6 +43,9 @@ export function TodayView() {
   const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
   const showAllDone = allTasksDone && !showCompletedTasks;
 
+  // DEBUG: remove after confirming feature works
+  console.log('[TodayView]', { dayKey, totalTasks, doneTasks, allTasksDone, showAllDone, showCompletedTasks });
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto">

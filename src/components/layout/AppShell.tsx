@@ -92,11 +92,15 @@ export function AppShell() {
       if (item.completed) done++;
     }
 
+    // DEBUG: remove after confirming feature works
+    console.log('[AppShell confetti]', { todayKey, total, done, wasCompleted: todayCompletedRef.current, isInitialLoad: initialLoadRef.current });
+
     if (total > 0 && done === total) {
       if (!todayCompletedRef.current) {
         todayCompletedRef.current = true;
         // Only fire confetti if this isn't the initial page load
         if (!initialLoadRef.current) {
+          console.log('[AppShell] FIRING CONFETTI!');
           setShowFullConfetti(true);
         }
       }
