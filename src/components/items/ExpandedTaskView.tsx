@@ -140,6 +140,7 @@ export function ExpandedTaskView() {
   const [inputText, setInputText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [notesText, setNotesText] = useState('');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -226,7 +227,7 @@ export function ExpandedTaskView() {
           : ''
       )}>
       <div className={cn(
-        'bg-[var(--color-bg)] flex flex-col overflow-hidden rounded-xl',
+        'bg-[var(--color-bg)] flex flex-col overflow-hidden rounded-xl relative',
         expandedTaskFullScreen
           ? 'w-[40%] h-[80%] mt-[5%] border-2 border-[var(--color-border)] shadow-[0_0_20px_rgba(234,179,8,0.15)]'
           : 'fixed left-1/2 -translate-x-1/2 top-[10%] w-[50%] h-[80%] border border-[var(--color-border)] shadow-2xl z-50'
@@ -236,8 +237,18 @@ export function ExpandedTaskView() {
           'flex items-start justify-between pt-5 pb-3',
           expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'px-5'
         )}>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-[var(--color-text-primary)] break-words">
+          <div className="flex-1 min-w-0 flex items-start gap-2.5">
+            <div className="mt-1 flex-shrink-0">
+              <Checkbox
+                checked={task.completed}
+                onChange={(checked) => updateItem(task.id, { completed: checked })}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+            <h2 className={cn(
+              'text-lg font-semibold break-words',
+              task.completed ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
+            )}>
               {task.text}
             </h2>
             <p className="text-xs text-[var(--color-text-muted)] mt-1">
@@ -252,6 +263,7 @@ export function ExpandedTaskView() {
                 {describeRecurrence(task.recurrence)}
               </p>
             )}
+            </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             <button
@@ -294,12 +306,21 @@ export function ExpandedTaskView() {
             'flex justify-center',
             expandedTaskFullScreen ? 'max-w-2xl mx-auto w-full px-6' : 'px-5'
           )}>
-            <FocusTimer onSessionComplete={(duration) => {
-              if (expandedTaskId) {
-                addTimerSession(expandedTaskId, { startedAt: timerStartRef.current, duration });
-              }
-              timerStartRef.current = new Date().toISOString();
-            }} />
+            <FocusTimer
+              onSessionComplete={(duration) => {
+                if (expandedTaskId) {
+                  addTimerSession(expandedTaskId, { startedAt: timerStartRef.current, duration });
+                }
+                timerStartRef.current = new Date().toISOString();
+              }}
+              onComplete={() => {
+                if (expandedTaskId) {
+                  updateItem(expandedTaskId, { completed: true });
+                  setShowConfetti(true);
+                  setTimeout(() => setShowConfetti(false), 3000);
+                }
+              }}
+            />
           </div>
         )}
 
@@ -423,6 +444,44 @@ export function ExpandedTaskView() {
             />
           </div>
         </div>
+
+        {/* Confetti overlay inside the modal */}
+        {showConfetti && (
+          <>
+            <style>{`
+              @keyframes modal-confetti-fall {
+                0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+                100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+              }
+            `}</style>
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+              {Array.from({ length: 50 }, (_, i) => {
+                const colors = ['#FF6B6B', '#FFE66D', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F7DC6F', '#BB8FCE'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const x = Math.random() * 100;
+                const size = 4 + Math.random() * 6;
+                const delay = Math.random() * 1;
+                const duration = 2 + Math.random() * 2;
+                const isCircle = Math.random() > 0.5;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      left: `${x}%`,
+                      top: 0,
+                      width: size,
+                      height: size,
+                      backgroundColor: color,
+                      borderRadius: isCircle ? '50%' : '2px',
+                      animation: `modal-confetti-fall ${duration}s ease-in ${delay}s forwards`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
       </div>
     </>

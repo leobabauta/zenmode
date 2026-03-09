@@ -57,9 +57,10 @@ function generateConfetti(count: number): ConfettiParticle[] {
 
 interface FocusTimerProps {
   onSessionComplete?: (duration: number) => void;
+  onComplete?: () => void;
 }
 
-export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
+export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
   const [totalSeconds, setTotalSeconds] = useState(1500);
   const [remainingSeconds, setRemainingSeconds] = useState(1500);
   const [status, setStatus] = useState<TimerStatus>('idle');
@@ -145,6 +146,7 @@ export function FocusTimer({ onSessionComplete }: FocusTimerProps) {
     const elapsed = totalSeconds - remainingSeconds;
     setStatus('done');
     triggerCelebration(elapsed);
+    onComplete?.();
   };
 
   const handleReset = () => {
