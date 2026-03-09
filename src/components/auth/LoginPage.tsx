@@ -186,7 +186,7 @@ export function LoginPage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">Principles</p>
           <div className="flex items-end justify-between gap-8">
             <h2 className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight leading-tight max-w-lg">
-              A calmer way to get things done
+              5 Essential Principles
             </h2>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
