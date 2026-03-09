@@ -242,11 +242,12 @@ export function LoginPage() {
               description: 'Life unfolds day by day — so your tasks should too. See your week at a glance and drag tasks between days.',
               feature: 'Timeline view',
             },
-          ].map((principle) => (
+          ].map((principle, i) => (
             <div
               key={principle.title}
               className="flex-shrink-0 w-[420px] snap-start rounded-2xl bg-white border border-stone-200 p-8 flex flex-col"
             >
+              <span className="w-8 h-8 rounded-full bg-stone-900 text-white text-sm font-semibold flex items-center justify-center mb-4">{i + 1}</span>
               <h3 className="text-xl font-bold text-stone-900 mb-3">{principle.title}</h3>
               <p className="text-sm leading-relaxed text-stone-500 flex-1">{principle.description}</p>
               <p className="mt-5 text-xs font-medium text-stone-400 uppercase tracking-wide">{principle.feature}</p>
