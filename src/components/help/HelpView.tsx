@@ -2,14 +2,21 @@ import { useState } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { cn } from '../../lib/utils';
 
+interface HelpItem {
+  q: string;
+  a: string;
+}
+
 interface HelpSection {
   title: string;
-  items: { q: string; a: string }[];
+  icon: string;
+  items: HelpItem[];
 }
 
 const sections: HelpSection[] = [
   {
     title: 'Getting Started',
+    icon: 'rocket',
     items: [
       {
         q: 'What is zenmode?',
@@ -27,6 +34,7 @@ const sections: HelpSection[] = [
   },
   {
     title: 'Daily Planning Ritual',
+    icon: 'sun',
     items: [
       {
         q: 'What is the Daily Planning Ritual?',
@@ -44,6 +52,7 @@ const sections: HelpSection[] = [
   },
   {
     title: 'Managing Tasks',
+    icon: 'check',
     items: [
       {
         q: 'How do I move a task to a different day?',
@@ -73,6 +82,7 @@ const sections: HelpSection[] = [
   },
   {
     title: 'Organization',
+    icon: 'folder',
     items: [
       {
         q: 'How do labels/hashtags work?',
@@ -94,6 +104,7 @@ const sections: HelpSection[] = [
   },
   {
     title: 'Keyboard Shortcuts',
+    icon: 'keyboard',
     items: [
       {
         q: 'What are the most important shortcuts?',
@@ -111,6 +122,7 @@ const sections: HelpSection[] = [
   },
   {
     title: 'Syncing & Settings',
+    icon: 'sync',
     items: [
       {
         q: 'How does syncing work?',
@@ -132,96 +144,300 @@ const sections: HelpSection[] = [
   },
 ];
 
-function Accordion({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
+// Featured docs shown on the landing page
+const featuredDocs = [
+  { section: 0, item: 0, label: 'Overview' },       // What is zenmode?
+  { section: 0, item: 2, label: 'Adding tasks' },    // How do I add a task?
+  { section: 1, item: 0, label: 'Daily ritual' },    // What is the Daily Planning Ritual?
+  { section: 2, item: 2, label: 'Focus mode' },      // What is Task Focus mode?
+  { section: 4, item: 0, label: 'Shortcuts' },       // Most important shortcuts
+  { section: 3, item: 0, label: 'Labels & tags' },   // How do labels/hashtags work?
+];
 
-  return (
-    <div className="border-b border-[var(--color-border)] last:border-b-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-3 py-3 text-left text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors"
-      >
-        <span>{q}</span>
-        <svg
-          className={cn('w-4 h-4 flex-shrink-0 text-[var(--color-text-muted)] transition-transform', open && 'rotate-180')}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+const resourceLinks = [
+  { title: 'About', href: '/about', description: 'Learn about the zenmode philosophy' },
+  { title: 'Manifesto', href: '/manifesto', description: 'Our principles for calm productivity' },
+  { title: 'Changelog', href: '/changelog', description: 'Latest updates and improvements' },
+];
+
+function SectionIcon({ icon, className }: { icon: string; className?: string }) {
+  const cls = cn('w-4 h-4', className);
+  switch (icon) {
+    case 'rocket':
+      return (
+        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
         </svg>
-      </button>
-      {open && (
-        <p className="pb-3 text-sm text-[var(--color-text-secondary)] leading-relaxed">
-          {a}
-        </p>
-      )}
-    </div>
-  );
+      );
+    case 'sun':
+      return (
+        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+        </svg>
+      );
+    case 'check':
+      return (
+        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    case 'folder':
+      return (
+        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+        </svg>
+      );
+    case 'keyboard':
+      return (
+        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      );
+    case 'sync':
+      return (
+        <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182M21.015 4.356v4.992" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }
 
 export function HelpView() {
   const setShowHelp = usePlannerStore((s) => s.setShowHelp);
-  const [activeSection, setActiveSection] = useState(0);
+  // null = landing page, otherwise { section, item } for a specific doc
+  const [selected, setSelected] = useState<{ section: number; item: number } | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+
+  const toggleSection = (idx: number) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const selectItem = (sectionIdx: number, itemIdx: number) => {
+    setSelected({ section: sectionIdx, item: itemIdx });
+    setExpandedSections((prev) => new Set(prev).add(sectionIdx));
+  };
+
+  const selectedDoc = selected ? sections[selected.section].items[selected.item] : null;
+  const selectedSection = selected ? sections[selected.section] : null;
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Support</h1>
-            <p className="text-sm text-[var(--color-text-muted)] mt-1">
-              Everything you need to know about zenmode
-            </p>
-          </div>
+    <div className="flex-1 flex overflow-hidden">
+      {/* Left sidebar */}
+      <div className="w-56 flex-shrink-0 border-r border-[var(--color-border)] overflow-y-auto py-4 px-3">
+        {/* Back / title */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Support</h2>
           <button
             onClick={() => setShowHelp(false)}
-            className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+            className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+            title="Close"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Section tabs */}
-        <div className="flex gap-2 flex-wrap mb-8">
-          {sections.map((section, i) => (
-            <button
-              key={section.title}
-              onClick={() => setActiveSection(i)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
-                i === activeSection
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
-              )}
-            >
-              {section.title}
-            </button>
-          ))}
-        </div>
+        {/* Home link */}
+        <button
+          onClick={() => setSelected(null)}
+          className={cn(
+            'w-full text-left px-2 py-1.5 rounded-md text-xs font-medium mb-2 transition-colors',
+            selected === null
+              ? 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]',
+          )}
+        >
+          Home
+        </button>
 
-        {/* Active section */}
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-5">
-          {sections[activeSection].items.map((item) => (
-            <Accordion key={item.q} q={item.q} a={item.a} />
-          ))}
-        </div>
+        {/* Topic sections */}
+        <nav className="space-y-0.5">
+          {sections.map((section, si) => {
+            const isExpanded = expandedSections.has(si);
+            return (
+              <div key={section.title}>
+                <button
+                  onClick={() => toggleSection(si)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+                >
+                  <SectionIcon icon={section.icon} className="flex-shrink-0 w-3.5 h-3.5" />
+                  <span className="flex-1 text-left truncate">{section.title}</span>
+                  <svg
+                    className={cn('w-3 h-3 flex-shrink-0 transition-transform', isExpanded && 'rotate-90')}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                {isExpanded && (
+                  <div className="ml-4 pl-2 border-l border-[var(--color-border)] space-y-0.5 mt-0.5 mb-1">
+                    {section.items.map((item, ii) => (
+                      <button
+                        key={item.q}
+                        onClick={() => selectItem(si, ii)}
+                        className={cn(
+                          'w-full text-left px-2 py-1 rounded text-[11px] leading-snug transition-colors',
+                          selected?.section === si && selected?.item === ii
+                            ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
+                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
+                        )}
+                      >
+                        {item.q}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+      </div>
 
-        {/* Footer links */}
-        <div className="mt-8 pt-6 border-t border-[var(--color-border)] text-center">
-          <p className="text-sm text-[var(--color-text-muted)]">
-            Need more help? Check the{' '}
-            <a href="/about" className="text-[var(--color-accent)] hover:underline">About</a>
-            {' '}page, read the{' '}
-            <a href="/manifesto" className="text-[var(--color-accent)] hover:underline">Manifesto</a>
-            , or view the{' '}
-            <a href="/changelog" className="text-[var(--color-accent)] hover:underline">Changelog</a>.
-          </p>
-        </div>
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto">
+        {selectedDoc && selectedSection ? (
+          /* Individual doc view */
+          <div className="max-w-2xl mx-auto px-8 py-8">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] mb-6">
+              <button
+                onClick={() => setSelected(null)}
+                className="hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                Support
+              </button>
+              <span>/</span>
+              <span className="text-[var(--color-text-secondary)]">{selectedSection.title}</span>
+            </div>
+
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">
+              {selectedDoc.q}
+            </h1>
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              {selectedDoc.a}
+            </p>
+
+            {/* Navigate within section */}
+            <div className="mt-10 pt-6 border-t border-[var(--color-border)]">
+              <p className="text-xs font-medium text-[var(--color-text-muted)] mb-3 uppercase tracking-wide">
+                More in {selectedSection.title}
+              </p>
+              <div className="space-y-1">
+                {selectedSection.items.map((item, ii) => {
+                  if (ii === selected!.item) return null;
+                  return (
+                    <button
+                      key={item.q}
+                      onClick={() => selectItem(selected!.section, ii)}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                    >
+                      {item.q}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Landing page */
+          <div className="max-w-3xl mx-auto px-8 py-8">
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
+              Support
+            </h1>
+            <p className="text-sm text-[var(--color-text-muted)] mb-8">
+              Everything you need to know about zenmode
+            </p>
+
+            {/* Popular docs grid */}
+            <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+              Popular docs
+            </h2>
+            <div className="grid grid-cols-2 gap-3 mb-10">
+              {featuredDocs.map((fd) => {
+                const doc = sections[fd.section].items[fd.item];
+                const section = sections[fd.section];
+                return (
+                  <button
+                    key={fd.label}
+                    onClick={() => selectItem(fd.section, fd.item)}
+                    className="text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 hover:border-[var(--color-accent)]/40 hover:shadow-sm transition-all group"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <SectionIcon icon={section.icon} className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+                      <span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
+                        {section.title}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
+                      {fd.label}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)] line-clamp-2 leading-relaxed">
+                      {doc.a.slice(0, 100)}...
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Resources */}
+            <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+              Resources
+            </h2>
+            <div className="grid grid-cols-3 gap-3">
+              {resourceLinks.map((link) => (
+                <a
+                  key={link.title}
+                  href={link.href}
+                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 hover:border-[var(--color-accent)]/40 hover:shadow-sm transition-all group"
+                >
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
+                    {link.title}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)] leading-relaxed">
+                    {link.description}
+                  </p>
+                </a>
+              ))}
+            </div>
+
+            {/* Browse all topics */}
+            <div className="mt-10 pt-6 border-t border-[var(--color-border)]">
+              <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">
+                Browse all topics
+              </h2>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                {sections.map((section, si) => (
+                  <div key={section.title}>
+                    <button
+                      onClick={() => {
+                        toggleSection(si);
+                        selectItem(si, 0);
+                      }}
+                      className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors mb-1"
+                    >
+                      <SectionIcon icon={section.icon} className="w-4 h-4" />
+                      {section.title}
+                    </button>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {section.items.length} {section.items.length === 1 ? 'article' : 'articles'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
