@@ -97,13 +97,7 @@ interface CalendarEvent {
 
 export function DailyRitualView() {
   // Determine first step based on available content
-  const getFirstStep = () => {
-    const inbox = selectInboxItems(usePlannerStore.getState().items);
-    if (inbox.length > 0) return 1; // inbox triage
-    if (hasGoogleClientId && !usePlannerStore.getState().googleCalendarDismissed) return 2; // calendar
-    return 3; // organize
-  };
-  const [step, setStep] = useState(getFirstStep);
+  const [step, setStep] = useState(1);
   const [practice, setPractice] = useState('');
   const setView = usePlannerStore((s) => s.setView);
   const addItem = usePlannerStore((s) => s.addItem);
@@ -212,20 +206,12 @@ export function DailyRitualView() {
 
   // Whether the calendar step is active (has client ID and not permanently dismissed)
   const showCalendarStep = hasGoogleClientId && !googleCalendarDismissed;
-  // Whether inbox triage step was shown (track initial state so circles remain even after moving items)
-  const [hadInboxItems] = useState(() => inboxItems.length > 0);
-  const showInboxStep = hadInboxItems;
+  // Inbox step always shows so users see inbox status even if empty
+  const showInboxStep = true;
 
-  // Calculate display step and total, skipping hidden steps
-  // Internal steps: 1=inbox, 2=calendar, 3=organize, 4=priorities, 5=medium, 6=practice, 7=summary
-  const getDisplayStep = () => {
-    let display = step;
-    if (!showInboxStep && step >= 2) display -= 1;
-    if (!showCalendarStep && step >= 3) display -= 1;
-    return Math.max(1, display);
-  };
-  const displayStep = getDisplayStep();
-  const displayTotal = 5 + (showInboxStep ? 1 : 0) + (showCalendarStep ? 1 : 0);
+  // Calculate display step and total (calendar step may be hidden)
+  const displayStep = !showCalendarStep && step >= 3 ? step - 1 : step;
+  const displayTotal = showCalendarStep ? 7 : 6;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -261,7 +247,7 @@ export function DailyRitualView() {
         </div>
 
         {/* Step 1: Triage Inbox */}
-        {step === 1 && showInboxStep && (
+        {step === 1 && (
           <div>
             <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
               Triage your inbox
