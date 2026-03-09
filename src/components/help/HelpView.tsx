@@ -213,7 +213,7 @@ function RichText({ text }: { text: string }) {
   const flushList = () => {
     if (listItems.length === 0) return;
     elements.push(
-      <ol key={key++} className="list-decimal list-inside space-y-1.5 my-3 text-sm text-[var(--color-text-secondary)] leading-relaxed">
+      <ol key={key++} className="list-decimal list-inside space-y-1.5 my-3 text-base text-[var(--color-text-secondary)] leading-relaxed">
         {listItems.map((li, i) => (
           <li key={i}>{li}</li>
         ))}
@@ -230,7 +230,7 @@ function RichText({ text }: { text: string }) {
       flushList();
       if (line.trim()) {
         elements.push(
-          <p key={key++} className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          <p key={key++} className="text-base text-[var(--color-text-secondary)] leading-relaxed">
             {line}
           </p>
         );
@@ -270,10 +270,10 @@ export function HelpView() {
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Left sidebar */}
-      <div className="w-64 flex-shrink-0 border-r border-[var(--color-border)] overflow-y-auto py-4 px-3">
+      <div className="w-72 flex-shrink-0 border-r border-[var(--color-border)] overflow-y-auto py-5 px-4">
         {/* Back / title */}
         <div className="flex items-center justify-between mb-4 px-1">
-          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">Support</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Support</h2>
           <button
             onClick={() => setShowHelp(false)}
             className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
@@ -289,7 +289,7 @@ export function HelpView() {
         <button
           onClick={() => setSelected(null)}
           className={cn(
-            'w-full text-left px-2 py-1.5 rounded-md text-sm font-medium mb-2 transition-colors',
+            'w-full text-left px-2 py-2 rounded-md text-base font-medium mb-2 transition-colors',
             selected === null
               ? 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]',
@@ -306,7 +306,7 @@ export function HelpView() {
               <div key={section.title}>
                 <button
                   onClick={() => toggleSection(si)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+                  className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-base font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
                 >
                   <SectionIcon icon={section.icon} className="flex-shrink-0 w-4 h-4" />
                   <span className="flex-1 text-left truncate">{section.title}</span>
@@ -327,7 +327,7 @@ export function HelpView() {
                         key={item.q}
                         onClick={() => selectItem(si, ii)}
                         className={cn(
-                          'w-full text-left px-2 py-1.5 rounded text-xs leading-snug transition-colors',
+                          'w-full text-left px-2 py-1.5 rounded text-sm leading-snug transition-colors',
                           selected?.section === si && selected?.item === ii
                             ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
                             : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
@@ -350,7 +350,7 @@ export function HelpView() {
           /* Individual doc view */
           <div className="max-w-2xl mx-auto px-8 py-8">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] mb-6">
+            <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] mb-6">
               <button
                 onClick={() => setSelected(null)}
                 className="hover:text-[var(--color-text-primary)] transition-colors"
@@ -361,14 +361,14 @@ export function HelpView() {
               <span className="text-[var(--color-text-secondary)]">{selectedSection.title}</span>
             </div>
 
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-5">
               {selectedDoc.q}
             </h1>
             <RichText text={selectedDoc.a} />
 
             {/* Navigate within section */}
             <div className="mt-10 pt-6 border-t border-[var(--color-border)]">
-              <p className="text-xs font-medium text-[var(--color-text-muted)] mb-3 uppercase tracking-wide">
+              <p className="text-sm font-medium text-[var(--color-text-muted)] mb-3 uppercase tracking-wide">
                 More in {selectedSection.title}
               </p>
               <div className="space-y-1">
@@ -378,7 +378,7 @@ export function HelpView() {
                     <button
                       key={item.q}
                       onClick={() => selectItem(selected!.section, ii)}
-                      className="w-full text-left px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                      className="w-full text-left px-3 py-2 rounded-lg text-base text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
                     >
                       {item.q}
                     </button>
@@ -390,15 +390,15 @@ export function HelpView() {
         ) : (
           /* Landing page */
           <div className="max-w-3xl mx-auto px-8 py-8">
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">
               Support
             </h1>
-            <p className="text-sm text-[var(--color-text-muted)] mb-8">
+            <p className="text-base text-[var(--color-text-muted)] mb-8">
               Everything you need to know about zenmode
             </p>
 
             {/* Popular docs grid */}
-            <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
               Popular docs
             </h2>
             <div className="grid grid-cols-2 gap-3 mb-10">
@@ -412,15 +412,15 @@ export function HelpView() {
                     className="text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 hover:border-[var(--color-accent)]/40 hover:shadow-sm transition-all group"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <SectionIcon icon={section.icon} className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-                      <span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
+                      <SectionIcon icon={section.icon} className="w-4 h-4 text-[var(--color-text-muted)]" />
+                      <span className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
                         {section.title}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
+                    <p className="text-base font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
                       {fd.label}
                     </p>
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)] line-clamp-2 leading-relaxed">
+                    <p className="mt-1 text-sm text-[var(--color-text-muted)] line-clamp-2 leading-relaxed">
                       {doc.a.slice(0, 100)}...
                     </p>
                   </button>
@@ -429,7 +429,7 @@ export function HelpView() {
             </div>
 
             {/* Resources */}
-            <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
               Resources
             </h2>
             <div className="grid grid-cols-3 gap-3">
@@ -439,10 +439,10 @@ export function HelpView() {
                   href={link.href}
                   className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4 hover:border-[var(--color-accent)]/40 hover:shadow-sm transition-all group"
                 >
-                  <p className="text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
+                  <p className="text-base font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
                     {link.title}
                   </p>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)] leading-relaxed">
+                  <p className="mt-1 text-sm text-[var(--color-text-muted)] leading-relaxed">
                     {link.description}
                   </p>
                 </a>
@@ -451,7 +451,7 @@ export function HelpView() {
 
             {/* Browse all topics */}
             <div className="mt-10 pt-6 border-t border-[var(--color-border)]">
-              <h2 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">
+              <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">
                 Browse all topics
               </h2>
               <div className="grid grid-cols-2 gap-x-8 gap-y-4">
@@ -462,12 +462,12 @@ export function HelpView() {
                         toggleSection(si);
                         selectItem(si, 0);
                       }}
-                      className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors mb-1"
+                      className="flex items-center gap-2 text-base font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors mb-1"
                     >
                       <SectionIcon icon={section.icon} className="w-4 h-4" />
                       {section.title}
                     </button>
-                    <p className="text-xs text-[var(--color-text-muted)]">
+                    <p className="text-sm text-[var(--color-text-muted)]">
                       {section.items.length} {section.items.length === 1 ? 'article' : 'articles'}
                     </p>
                   </div>
