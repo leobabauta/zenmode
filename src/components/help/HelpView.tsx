@@ -20,11 +20,11 @@ const sections: HelpSection[] = [
     items: [
       {
         q: 'What is zenmode?',
-        a: 'zenmode is a calm, focused task planner built around 5 principles: get clear each morning, focus on today, tackle one task at a time, capture ideas frictionlessly, and organize on a timeline. It strips away the noise so you can focus on what matters.',
+        a: 'zenmode is a calm, focused task planner built around 5 core principles:\n1. Get clear each morning — start your day with a planning ritual\n2. Focus on today — see only what matters right now\n3. One task at a time — expand any task into a distraction-free focus view\n4. Frictionless capture — jot down ideas in seconds with keyboard shortcuts\n5. Organize on a timeline — your week at a glance, drag tasks between days\nIt strips away the noise so you can focus on what matters.',
       },
       {
         q: 'What are the main views?',
-        a: 'Home (Timeline) shows your week at a glance. Today shows only what you need to focus on right now. Inbox is where new tasks land. Later is for someday/maybe items. You can switch views with keyboard shortcuts: H for Home, T for Today, I for Inbox, L for Later.',
+        a: 'zenmode has four main views, each with a keyboard shortcut:\n1. Home / Timeline (H) — see your week at a glance with tasks organized by day\n2. Today (T) — only what you need to focus on right now\n3. Inbox (I) — where new tasks land before you triage them\n4. Later (L) — your someday/maybe list for tasks without a date\nYou can switch between them instantly using the shortcuts above.',
       },
       {
         q: 'How do I add a task?',
@@ -204,6 +204,44 @@ function SectionIcon({ icon, className }: { icon: string; className?: string }) 
   }
 }
 
+function RichText({ text }: { text: string }) {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let listItems: string[] = [];
+  let key = 0;
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    elements.push(
+      <ol key={key++} className="list-decimal list-inside space-y-1.5 my-3 text-sm text-[var(--color-text-secondary)] leading-relaxed">
+        {listItems.map((li, i) => (
+          <li key={i}>{li}</li>
+        ))}
+      </ol>
+    );
+    listItems = [];
+  };
+
+  for (const line of lines) {
+    const match = line.match(/^\d+\.\s+(.*)/);
+    if (match) {
+      listItems.push(match[1]);
+    } else {
+      flushList();
+      if (line.trim()) {
+        elements.push(
+          <p key={key++} className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            {line}
+          </p>
+        );
+      }
+    }
+  }
+  flushList();
+
+  return <div className="space-y-1">{elements}</div>;
+}
+
 export function HelpView() {
   const setShowHelp = usePlannerStore((s) => s.setShowHelp);
   // null = landing page, otherwise { section, item } for a specific doc
@@ -326,9 +364,7 @@ export function HelpView() {
             <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">
               {selectedDoc.q}
             </h1>
-            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-              {selectedDoc.a}
-            </p>
+            <RichText text={selectedDoc.a} />
 
             {/* Navigate within section */}
             <div className="mt-10 pt-6 border-t border-[var(--color-border)]">
