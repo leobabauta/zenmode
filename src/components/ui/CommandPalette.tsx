@@ -302,7 +302,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
       <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-[20%] -translate-x-1/2 w-[500px] z-50 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[60vh]">
+      <div className="fixed left-1/2 top-[20%] -translate-x-1/2 w-[500px] z-50 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-[0_0_30px_rgba(234,179,8,0.2)] overflow-hidden flex flex-col max-h-[60vh]">
         {/* Search/add input */}
         <div className="px-4 pt-4 pb-3 flex items-center gap-3">
           <svg className="w-4 h-4 text-[var(--color-text-muted)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
