@@ -306,8 +306,8 @@ export function AppShell() {
       {showWeeklyPlanningPrompt && <WeeklyPlanningPrompt />}
       {showWeeklyReviewPrompt && <WeeklyReviewPrompt />}
 
-      {/* Quick capture bar — visible in all views */}
-      <QuickCaptureBar />
+      {/* Quick capture bar — hidden during rituals */}
+      {!['ritual', 'review', 'weeklyPlanning', 'weeklyReview'].includes(view) && <QuickCaptureBar />}
 
       {/* Expanded task modal (non-fullscreen only; fullscreen renders inline above) */}
       {expandedTaskId && !expandedTaskFullScreen && <ExpandedTaskView />}
