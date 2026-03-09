@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Provider } from '@supabase/supabase-js';
 
@@ -9,6 +9,14 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const signInRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollCards = useCallback((direction: 'left' | 'right') => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const cardWidth = 420 + 24; // card width + gap
+    el.scrollBy({ left: direction === 'right' ? cardWidth : -cardWidth, behavior: 'smooth' });
+  }, []);
 
   const scrollToSignIn = () => {
     signInRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -169,6 +177,83 @@ export function LoginPage() {
               <p className="mt-2 text-sm leading-relaxed text-stone-500">Built-in Pomodoro timer to help you stay in flow and work with calm focus.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Principles */}
+      <section className="py-20 overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 mb-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-stone-400 mb-3">Principles</p>
+          <div className="flex items-end justify-between gap-8">
+            <h2 className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight leading-tight max-w-lg">
+              A calmer way to get things done
+            </h2>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => scrollCards('left')}
+                className="w-10 h-10 rounded-full border border-stone-300 flex items-center justify-center text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors"
+                aria-label="Scroll left"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => scrollCards('right')}
+                className="w-10 h-10 rounded-full bg-stone-900 flex items-center justify-center text-white hover:bg-stone-800 transition-colors"
+                aria-label="Scroll right"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-6 overflow-x-auto px-4 pb-4 snap-x snap-mandatory scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', paddingLeft: 'max(1rem, calc((100vw - 56rem) / 2 + 1rem))' }}
+        >
+          {[
+            {
+              title: 'Get clear each morning',
+              description: 'Start your day with a Daily Planning Ritual — set priorities, review your inbox, and choose what matters most.',
+              feature: 'Daily Planning Ritual',
+            },
+            {
+              title: 'Focus on today',
+              description: 'Don\'t drown in everything that needs to be done. See only what\'s on your plate right now and give it your full attention.',
+              feature: 'Today view',
+            },
+            {
+              title: 'One task at a time',
+              description: 'Expand any task into a distraction-free focus view with a built-in timer. Everything else fades away.',
+              feature: 'Task Focus view',
+            },
+            {
+              title: 'Frictionless capture',
+              description: 'Jot down tasks and ideas in seconds with keyboard shortcuts and Quick Capture. Nothing slips through the cracks.',
+              feature: 'Keyboard shortcuts & Quick Capture',
+            },
+            {
+              title: 'Organize on a timeline',
+              description: 'Life unfolds day by day — so your tasks should too. See your week at a glance and drag tasks between days.',
+              feature: 'Timeline view',
+            },
+          ].map((principle) => (
+            <div
+              key={principle.title}
+              className="flex-shrink-0 w-[420px] snap-start rounded-2xl bg-white border border-stone-200 p-8 flex flex-col"
+            >
+              <h3 className="text-xl font-bold text-stone-900 mb-3">{principle.title}</h3>
+              <p className="text-sm leading-relaxed text-stone-500 flex-1">{principle.description}</p>
+              <p className="mt-5 text-xs font-medium text-stone-400 uppercase tracking-wide">{principle.feature}</p>
+            </div>
+          ))}
+          {/* Spacer for last card peek */}
+          <div className="flex-shrink-0 w-4" />
         </div>
       </section>
 
