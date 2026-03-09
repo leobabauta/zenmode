@@ -62,6 +62,7 @@ interface PlannerState {
   laterExpanded: boolean;
   labelColors: Record<string, string>;
   deleteConfirmItemId: string | null;
+  lastDeletedItems: PlannerItem[] | null;
   navOrder: string[];
   labelOrder: string[];
   googleCalendarConnected: boolean;
@@ -78,6 +79,7 @@ interface PlannerState {
   updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice' | 'notes'>>) => void;
   addTimerSession: (taskId: string, session: { startedAt: string; duration: number }) => void;
   deleteItem: (id: string) => void;
+  undoDelete: () => void;
   promptDeleteItem: (id: string) => void;
   confirmDeleteSingle: (id: string) => void;
   confirmDeleteAllFuture: (id: string) => void;
@@ -196,6 +198,7 @@ export const usePlannerStore = create<PlannerState>()(
       laterExpanded: true,
       labelColors: {},
       deleteConfirmItemId: null,
+      lastDeletedItems: null,
       navOrder: ['timeline', 'inbox', 'today', 'later', 'archive'],
       labelOrder: [],
       googleCalendarConnected: false,
@@ -465,11 +468,28 @@ export const usePlannerStore = create<PlannerState>()(
 
       deleteItem: (id) => {
         set((state) => {
-          // Also delete child items
+          const parent = state.items[id];
+          if (!parent) return;
+          // Collect item + children for undo
+          const deleted: PlannerItem[] = [{ ...parent }];
           Object.values(state.items).forEach((item) => {
-            if (item.parentId === id) delete state.items[item.id];
+            if (item.parentId === id) {
+              deleted.push({ ...item });
+              delete state.items[item.id];
+            }
           });
           delete state.items[id];
+          state.lastDeletedItems = deleted;
+        });
+      },
+
+      undoDelete: () => {
+        set((state) => {
+          if (!state.lastDeletedItems) return;
+          for (const item of state.lastDeletedItems) {
+            state.items[item.id] = item;
+          }
+          state.lastDeletedItems = null;
         });
       },
 

@@ -177,10 +177,19 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     switch (item.kind) {
       case 'command':
         if (item.id === 'cmd-new-task') {
-          onClose();
-          store.setShowCommandPalette(true);
           store.setCommandPaletteAddTask(true);
+          onClose();
+          // Re-open in add task mode after closing
+          setTimeout(() => {
+            store.setShowCommandPalette(true);
+          }, 0);
           return;
+        }
+        if (item.id === 'cmd-delete') {
+          const focusedId = store.selectionFocusId;
+          if (focusedId && store.items[focusedId]) {
+            store.promptDeleteItem(focusedId);
+          }
         }
         if (item.id === 'cmd-toggle-sidebar') {
           store.toggleSidebar();

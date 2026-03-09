@@ -19,6 +19,7 @@ import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
 import { DeleteRecurrenceModal } from '../ui/DeleteRecurrenceModal';
+import { UndoDeleteToast } from '../ui/UndoDeleteToast';
 import { QuickCaptureBar } from '../forms/QuickCaptureBar';
 import { RitualPrompt } from '../ritual/RitualPrompt';
 import { DailyRitualView } from '../ritual/DailyRitualView';
@@ -337,6 +338,9 @@ export function AppShell() {
 
       {/* Full-screen confetti for day completion */}
       {showFullConfetti && <FullScreenConfetti onDone={dismissConfetti} />}
+
+      {/* Undo delete toast */}
+      <UndoDeleteToast />
 
       {/* Drag overlay — floating ghost copy */}
       <DragOverlay>
