@@ -3,11 +3,11 @@
  */
 import { useState } from 'react';
 
-// Calm images for empty inbox
-const inboxImages = ['/celebrate2.png', '/celebrate3.png'];
-
-// Celebration images for all tasks done
-const celebrationImages = ['/celebrate1.png', '/celebrate4.png', '/celebrate5.png'];
+// All illustrations shared across both empty states
+const allImages = [
+  '/celebrate1.png', '/celebrate2.png', '/celebrate3.png', '/celebrate4.png', '/celebrate5.png',
+  '/celebrate6.png', '/celebrate7.png', '/celebrate8.png', '/celebrate9.png', '/celebrate10.png',
+];
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -18,7 +18,7 @@ interface EmptyInboxProps {
 }
 
 export function EmptyInbox({ className }: EmptyInboxProps) {
-  const [img] = useState(() => pickRandom(inboxImages));
+  const [img] = useState(() => pickRandom(allImages));
 
   return (
     <div className={`flex flex-col items-center justify-center py-12 ${className ?? ''}`}>
@@ -43,7 +43,7 @@ interface AllDoneProps {
 }
 
 export function AllDoneToday({ className, onShowCompleted }: AllDoneProps) {
-  const [img] = useState(() => pickRandom(celebrationImages));
+  const [img] = useState(() => pickRandom(allImages));
 
   return (
     <div className={`flex flex-col items-center justify-center py-12 ${className ?? ''}`}>
