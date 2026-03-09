@@ -256,7 +256,7 @@ export function ExpandedTaskView() {
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             <button
               onClick={() => setShowTimer(!showTimer)}
-              className="text-xs px-2.5 py-1 rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+              className="text-xs px-4 py-1.5 rounded-full bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-primary)] transition-colors"
             >
               Focus Timer
             </button>
