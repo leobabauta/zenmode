@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 interface HelpItem {
   q: string;
   a: string;
+  img?: string; // path to screenshot in /public
 }
 
 interface HelpSection {
@@ -29,6 +30,7 @@ const sections: HelpSection[] = [
       {
         q: 'How do I add a task?',
         a: 'Press N to open the quick add panel, or use the + Add task button in the sidebar. You can also press Cmd/Ctrl+K to open the command palette and type your task. Tasks go to Today by default — add a date or type "inbox" to send them elsewhere.',
+        img: '/add-task.png',
       },
     ],
   },
@@ -57,14 +59,22 @@ const sections: HelpSection[] = [
       {
         q: 'How do I move a task to a different day?',
         a: 'Select a task and press M to open the move modal. You can pick any date, or use Tomorrow/Later shortcuts. You can also drag tasks between days in the Timeline view.',
+        img: '/move-task.png',
       },
       {
         q: 'How do I make a task recurring?',
         a: 'Select a task and press R to set a recurrence pattern. You can choose daily, weekdays, weekly, or custom intervals. When you complete a recurring task, the next occurrence is automatically created.',
+        img: '/recurring-task.png',
       },
       {
         q: 'What is Task Focus mode?',
         a: 'Press F on any task (or click the expand icon) to enter Task Focus mode. Everything else disappears, leaving just your task with its subtasks, notes, and an optional focus timer. Press Esc to exit.',
+        img: '/task-focus-mode.png',
+      },
+      {
+        q: 'How does the Focus Timer work?',
+        a: 'Inside Task Focus mode, click the Focus Timer button to reveal a visual countdown timer. Drag the dial hand to set your duration (1–60 minutes) or click the time to type a custom value. Press Start Session to begin. When you hit Complete, the task is automatically checked off with a celebration.',
+        img: '/focus-timer.png',
       },
       {
         q: 'How do subtasks work?',
@@ -396,6 +406,17 @@ export function HelpView() {
               {selectedDoc.q}
             </h1>
             <RichText text={selectedDoc.a} />
+
+            {selectedDoc.img && (
+              <div className="mt-5">
+                <img
+                  src={selectedDoc.img}
+                  alt={selectedDoc.q}
+                  className="rounded-lg border border-[var(--color-border)] shadow-sm max-w-full"
+                  style={{ maxHeight: 400 }}
+                />
+              </div>
+            )}
 
             {/* Navigate within section */}
             <div className="mt-10 pt-6 border-t border-[var(--color-border)]">
