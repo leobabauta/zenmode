@@ -268,7 +268,18 @@ export function HelpView() {
   const selectedSection = selected ? sections[selected.section] : null;
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden relative">
+      {/* Top-right close button */}
+      <button
+        onClick={() => setShowHelp(false)}
+        className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] transition-colors"
+        title="Close support"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       {/* Left sidebar */}
       <div className="w-72 flex-shrink-0 border-r border-[var(--color-border)] overflow-y-auto py-5 px-4">
         {/* Back / title */}
