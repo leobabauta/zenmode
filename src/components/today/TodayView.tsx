@@ -32,9 +32,15 @@ export function TodayView() {
   const practiceItems = todayItems.filter((i) => i.isPractice);
   const nonPracticeItems = todayItems.filter((i) => !i.isPractice);
 
-  // Check if all tasks are completed (only count top-level tasks, not notes)
-  const topLevelTasks = todayItems.filter((i) => i.type === 'task' && !i.parentId);
-  const allTasksDone = topLevelTasks.length > 0 && topLevelTasks.every((t) => t.completed);
+  // Check if all tasks are completed — use raw items (same logic as AppShell confetti)
+  let totalTasks = 0;
+  let doneTasks = 0;
+  for (const item of Object.values(items)) {
+    if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== dayKey) continue;
+    totalTasks++;
+    if (item.completed) doneTasks++;
+  }
+  const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
   const showAllDone = allTasksDone && !showCompletedTasks;
 
   return (
