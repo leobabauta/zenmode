@@ -16,12 +16,16 @@ export function WeekPlanPage() {
   const allWeekKeys = Object.keys(weeklyPlans).sort((a, b) => b.localeCompare(a));
   const currentIdx = allWeekKeys.indexOf(selectedWeekKey);
 
-  const getDayIndex = (dayKey?: string): number | undefined => {
-    if (!dayKey) return undefined;
+  const getDayIndices = (dayKeys?: string[]): Set<number> => {
+    if (!dayKeys || dayKeys.length === 0) return new Set();
     const monday = new Date(selectedWeekKey + 'T00:00:00');
-    const target = new Date(dayKey + 'T00:00:00');
-    const diff = Math.round((target.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
-    return diff >= 0 && diff <= 6 ? diff : undefined;
+    const indices = new Set<number>();
+    for (const dk of dayKeys) {
+      const target = new Date(dk + 'T00:00:00');
+      const diff = Math.round((target.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff >= 0 && diff <= 6) indices.add(diff);
+    }
+    return indices;
   };
 
   const mondayDate = new Date(selectedWeekKey + 'T00:00:00');
@@ -82,16 +86,20 @@ export function WeekPlanPage() {
                 <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 block">
                   Priorities
                 </span>
-                {plan.priorities.map((p) => (
-                  <div key={p.id} className="flex items-center gap-2 px-3 py-1.5">
-                    <span className="text-sm text-[var(--color-text-primary)] flex-1">{p.text}</span>
-                    {p.dayKey && (
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {DAY_LABELS[getDayIndex(p.dayKey) ?? 0]}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {plan.priorities.map((p) => {
+                  const dayIndices = getDayIndices(p.dayKeys);
+                  const dayLabels = DAY_LABELS.filter((_, i) => dayIndices.has(i));
+                  return (
+                    <div key={p.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <span className="text-sm text-[var(--color-text-primary)] flex-1">{p.text}</span>
+                      {dayLabels.length > 0 && (
+                        <span className="text-xs text-[var(--color-text-muted)]">
+                          {dayLabels.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

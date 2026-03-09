@@ -80,9 +80,17 @@ export function DailyReviewView() {
             </svg>
           </button>
           <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
-            Daily Review
+            Daily Review Ritual
           </h1>
         </div>
+
+        {/* Intro paragraph — only on step 1 */}
+        {step === 1 && (
+          <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 max-w-md mx-auto leading-relaxed">
+            Reflection is how we grow. Taking a few minutes to review your day helps you celebrate progress, notice patterns, and carry forward what matters — turning each day into a stepping stone for the next.
+          </p>
+        )}
+
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3].map((s) => (

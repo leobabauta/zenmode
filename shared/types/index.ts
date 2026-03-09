@@ -41,7 +41,7 @@ export interface CustomList {
 
 export interface WeeklyPlan {
   weekKey: string;        // "YYYY-MM-DD" of Monday
-  priorities: Array<{ id: string; text: string; dayKey?: string }>;
+  priorities: Array<{ id: string; text: string; dayKeys?: string[] }>;
   intentions: string;
   completedAt: string;
 }

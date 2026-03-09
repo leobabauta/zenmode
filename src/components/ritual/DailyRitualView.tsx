@@ -224,6 +224,13 @@ export function DailyRitualView() {
             Daily Planning Ritual
           </h1>
         </div>
+        {/* Intro paragraph — only on step 1 */}
+        {step === 1 && (
+          <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 max-w-md mx-auto leading-relaxed">
+            A few minutes of intentional planning each morning transforms your entire day. This ritual helps you clear your inbox, set priorities, and choose what to focus on — so you can work with calm clarity instead of reactive urgency.
+          </p>
+        )}
+
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {Array.from({ length: displayTotal }, (_, i) => i + 1).map((s) => (

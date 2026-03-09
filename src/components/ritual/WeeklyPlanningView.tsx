@@ -13,7 +13,7 @@ export function WeeklyPlanningView() {
   const existingPlan = usePlannerStore((s) => s.weeklyPlans[weekKey]);
 
   const [step, setStep] = useState(1);
-  const [priorities, setPriorities] = useState<Array<{ id: string; text: string; dayKey?: string }>>(
+  const [priorities, setPriorities] = useState<Array<{ id: string; text: string; dayKeys?: string[] }>>(
     existingPlan?.priorities ?? []
   );
   const [newPriorityText, setNewPriorityText] = useState('');
@@ -35,24 +35,32 @@ export function WeeklyPlanningView() {
     setPriorities((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const assignDay = (id: string, dayIndex: number | undefined) => {
+  const toggleDay = (id: string, dayIndex: number) => {
+    const monday = new Date(weekKey + 'T00:00:00');
+    const target = addDays(monday, dayIndex);
+    const dayKey = toDayKey(target);
+
     setPriorities((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
-        if (dayIndex === undefined) return { ...p, dayKey: undefined };
-        const monday = new Date(weekKey + 'T00:00:00');
-        const target = addDays(monday, dayIndex);
-        return { ...p, dayKey: toDayKey(target) };
+        const current = p.dayKeys ?? [];
+        const has = current.includes(dayKey);
+        const next = has ? current.filter((k) => k !== dayKey) : [...current, dayKey];
+        return { ...p, dayKeys: next.length > 0 ? next : undefined };
       })
     );
   };
 
-  const getDayIndex = (dayKey?: string): number | undefined => {
-    if (!dayKey) return undefined;
+  const getDayIndices = (dayKeys?: string[]): Set<number> => {
+    if (!dayKeys || dayKeys.length === 0) return new Set();
     const monday = new Date(weekKey + 'T00:00:00');
-    const target = new Date(dayKey + 'T00:00:00');
-    const diff = Math.round((target.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
-    return diff >= 0 && diff <= 6 ? diff : undefined;
+    const indices = new Set<number>();
+    for (const dk of dayKeys) {
+      const target = new Date(dk + 'T00:00:00');
+      const diff = Math.round((target.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff >= 0 && diff <= 6) indices.add(diff);
+    }
+    return indices;
   };
 
   const handleFinish = () => {
@@ -64,10 +72,12 @@ export function WeeklyPlanningView() {
     };
     saveWeeklyPlan(plan);
 
-    // Create tasks on assigned days
+    // Create tasks on assigned days — one task per day per priority
     for (const p of priorities) {
-      if (p.dayKey) {
-        addItem({ type: 'task', text: p.text, dayKey: p.dayKey });
+      if (p.dayKeys && p.dayKeys.length > 0) {
+        for (const dk of p.dayKeys) {
+          addItem({ type: 'task', text: p.text, dayKey: dk });
+        }
       }
     }
 
@@ -88,9 +98,17 @@ export function WeeklyPlanningView() {
             </svg>
           </button>
           <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
-            Weekly Planning
+            Weekly Planning Ritual
           </h1>
         </div>
+
+        {/* Intro paragraph — only on step 1 */}
+        {step === 1 && (
+          <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 max-w-md mx-auto leading-relaxed">
+            Starting the week with intention makes everything easier. This ritual helps you identify what truly matters, assign it to specific days, and set a mindset for the week — so you can move through each day with clarity instead of scrambling.
+          </p>
+        )}
+
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
@@ -168,7 +186,7 @@ export function WeeklyPlanningView() {
               Assign days (optional)
             </h2>
             <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
-              Assign priorities to specific days. They'll be added as tasks.
+              Assign priorities to one or more days. A task will be created for each day you select.
             </p>
 
             <div className="rounded-xl border border-[var(--color-border)] p-3 space-y-3">
@@ -176,7 +194,7 @@ export function WeeklyPlanningView() {
                 <p className="text-sm text-[var(--color-text-muted)] text-center py-4">No priorities added yet.</p>
               )}
               {priorities.map((p) => {
-                const selectedDay = getDayIndex(p.dayKey);
+                const selectedDays = getDayIndices(p.dayKeys);
                 return (
                   <div key={p.id} className="px-3 py-2">
                     <p className="text-sm text-[var(--color-text-primary)] mb-2">{p.text}</p>
@@ -184,10 +202,10 @@ export function WeeklyPlanningView() {
                       {DAY_LABELS.map((label, i) => (
                         <button
                           key={label}
-                          onClick={() => assignDay(p.id, selectedDay === i ? undefined : i)}
+                          onClick={() => toggleDay(p.id, i)}
                           className={cn(
                             'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
-                            selectedDay === i
+                            selectedDays.has(i)
                               ? 'bg-blue-500 text-white'
                               : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]'
                           )}
@@ -267,16 +285,20 @@ export function WeeklyPlanningView() {
                 <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 block">
                   Priorities
                 </span>
-                {priorities.map((p) => (
-                  <div key={p.id} className="flex items-center gap-2 px-3 py-1.5">
-                    <span className="text-sm text-[var(--color-text-primary)] flex-1">{p.text}</span>
-                    {p.dayKey && (
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {DAY_LABELS[getDayIndex(p.dayKey) ?? 0]}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {priorities.map((p) => {
+                  const dayIndices = getDayIndices(p.dayKeys);
+                  const dayLabels = DAY_LABELS.filter((_, i) => dayIndices.has(i));
+                  return (
+                    <div key={p.id} className="flex items-center gap-2 px-3 py-1.5">
+                      <span className="text-sm text-[var(--color-text-primary)] flex-1">{p.text}</span>
+                      {dayLabels.length > 0 && (
+                        <span className="text-xs text-[var(--color-text-muted)]">
+                          {dayLabels.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

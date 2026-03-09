@@ -52,9 +52,17 @@ export function WeeklyReviewView() {
             </svg>
           </button>
           <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
-            Weekly Review
+            Weekly Review Ritual
           </h1>
         </div>
+
+        {/* Intro paragraph — only on step 1 */}
+        {step === 1 && (
+          <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 max-w-md mx-auto leading-relaxed">
+            A weekly review closes the loop on your week. By reflecting on what worked, celebrating wins, and capturing lessons, you build momentum and set yourself up for an even better week ahead.
+          </p>
+        )}
+
         {/* Progress dots */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
