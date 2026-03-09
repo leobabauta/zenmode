@@ -76,12 +76,7 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
     playBeep();
     onSessionComplete?.(elapsed);
     setShowCelebration(true);
-    setTimeout(() => {
-      setShowCelebration(false);
-      setRemainingSeconds(totalSeconds);
-      setStatus('idle');
-    }, 4000);
-  }, [onSessionComplete, totalSeconds]);
+  }, [onSessionComplete]);
 
   // Timer interval
   useEffect(() => {
@@ -273,10 +268,11 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
               }}
             />
           ))}
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-xl font-semibold text-[var(--color-text-primary)]">
               Congratulations!
             </span>
+            <span className="text-4xl mt-2">🎊</span>
           </div>
         </div>
       </div>
