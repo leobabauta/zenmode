@@ -123,10 +123,13 @@ export async function pullFromSupabase(): Promise<void> {
     const merged: Record<string, PlannerItem> = { ...localItems };
     const localNewer: PlannerItem[] = [];
 
-    // Items with pending local changes should never be overwritten by remote
+    // Items with pending local changes or deletes should never be overwritten by remote
     const pendingLocalIds = new Set(changedIds);
+    const pendingDeleteIds = new Set(deletedIds);
 
     for (const remote of remoteItems) {
+      // Skip items that are pending local delete
+      if (pendingDeleteIds.has(remote.id)) continue;
       const local = localItems[remote.id];
       if (!local) {
         // Remote-only: take it
@@ -293,6 +296,9 @@ let prefsPullDone = false;
 
 export async function pullPreferences(): Promise<void> {
   if (!supabase) return;
+  // Skip pull if there's a pending local preferences push — avoids overwriting
+  // the user's just-changed prefs with stale remote data before push fires.
+  if (prefsTimer) return;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
