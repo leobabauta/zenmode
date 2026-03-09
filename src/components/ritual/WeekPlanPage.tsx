@@ -8,7 +8,8 @@ const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function WeekPlanPage() {
   const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
   const setView = usePlannerStore((s) => s.setView);
-  const [selectedWeekKey, setSelectedWeekKey] = useState(getWeekKey(new Date()));
+  const activeWeekPlanKey = usePlannerStore((s) => s.activeWeekPlanKey);
+  const [selectedWeekKey, setSelectedWeekKey] = useState(activeWeekPlanKey || getWeekKey(new Date()));
 
   const plan = weeklyPlans[selectedWeekKey];
 
@@ -132,8 +133,34 @@ export function WeekPlanPage() {
           </>
         )}
 
+        {/* Prev / Next week plan links */}
+        <div className="mt-8 flex items-center justify-center gap-6">
+          {currentIdx < allWeekKeys.length - 1 ? (
+            <button
+              onClick={() => setSelectedWeekKey(allWeekKeys[currentIdx + 1])}
+              className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Previous week's plan
+            </button>
+          ) : <span />}
+          {currentIdx > 0 ? (
+            <button
+              onClick={() => setSelectedWeekKey(allWeekKeys[currentIdx - 1])}
+              className="inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+            >
+              Next week's plan
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : <span />}
+        </div>
+
         {/* Weekly Review link */}
-        <div className="mt-8 text-center">
+        <div className="mt-4 text-center">
           <button
             onClick={() => setView('weekReviewPage')}
             className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"

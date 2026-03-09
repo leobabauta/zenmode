@@ -19,6 +19,7 @@ interface PlannerState {
   theme: 'light' | 'dark';
   view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats' | 'weeklyPlanning' | 'weeklyReview' | 'weekPlan' | 'weekReviewPage' | 'archive' | 'onboarding';
   activeHashtag: string | null;
+  activeWeekPlanKey: string | null;
   customLists: CustomList[];
   activeListId: string | null;
   lastRitualDate: string | null;
@@ -154,6 +155,7 @@ export const usePlannerStore = create<PlannerState>()(
       theme: 'light',
       view: 'timeline' as const,
       activeHashtag: null,
+      activeWeekPlanKey: null,
       customLists: [],
       activeListId: null,
       lastRitualDate: null,

@@ -24,12 +24,16 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
     const setView = usePlannerStore((s) => s.setView);
     const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
 
-    // Show "This Week's Plan" at bottom of Monday, but only starting Tuesday
+    // Show "This Week's Plan" at bottom of any Monday that has a plan,
+    // except the current week's Monday on Monday itself (show starting Tuesday)
     const isMonday = day.date.getDay() === 1;
-    const todayDow = new Date().getDay(); // 0=Sun, 1=Mon, ...
-    const isTuesdayOrLater = todayDow >= 2 || todayDow === 0; // Tue-Sun
-    const hasWeekPlan = !!weeklyPlans[getWeekKey(day.date)];
-    const showWeekPlanOnMonday = isMonday && isTuesdayOrLater && hasWeekPlan;
+    const weekKey = isMonday ? getWeekKey(day.date) : '';
+    const hasWeekPlan = isMonday && !!weeklyPlans[weekKey];
+    const currentWeekKey = getWeekKey(new Date());
+    const isCurrentWeek = weekKey === currentWeekKey;
+    const todayDow = new Date().getDay();
+    const isTuesdayOrLater = todayDow >= 2 || todayDow === 0;
+    const showWeekPlanOnMonday = hasWeekPlan && (!isCurrentWeek || isTuesdayOrLater);
 
     const dayNum = day.date.getDate();
     const weekday = WEEKDAYS[day.date.getDay()];
@@ -95,7 +99,10 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
             <AddItemForm dayKey={day.key} className="mt-1" />
             {showWeekPlanOnMonday && (
               <button
-                onClick={() => setView('weekPlan')}
+                onClick={() => {
+                  usePlannerStore.setState({ activeWeekPlanKey: weekKey });
+                  setView('weekPlan');
+                }}
                 className="flex items-center gap-1.5 ml-[24px] mt-3 mb-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
