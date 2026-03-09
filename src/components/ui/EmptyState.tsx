@@ -21,7 +21,7 @@ export function EmptyInbox({ className }: EmptyInboxProps) {
   const [img] = useState(() => pickRandom(allImages));
 
   return (
-    <div className={`flex flex-col items-center justify-center py-12 ${className ?? ''}`}>
+    <div className={`flex flex-col items-start py-8 ${className ?? ''}`}>
       <img
         src={img}
         alt="Peaceful scene"
@@ -30,7 +30,7 @@ export function EmptyInbox({ className }: EmptyInboxProps) {
       <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
         Hooray, your Inbox is empty!
       </h2>
-      <p className="text-sm text-[var(--color-text-muted)] text-center max-w-xs leading-relaxed">
+      <p className="text-sm text-[var(--color-text-muted)] max-w-xs leading-relaxed">
         Nothing waiting for your attention. Enjoy the calm.
       </p>
     </div>
