@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
-import { toDayKey, getWeekKey } from '../../lib/dates';
+import { toDayKey } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { PracticeBox } from '../ui/PracticeBox';
@@ -11,7 +11,6 @@ import { AllDoneToday } from '../ui/EmptyState';
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
   const setView = usePlannerStore((s) => s.setView);
-  const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
   const reviewRitualEnabled = usePlannerStore((s) => s.reviewRitualEnabled);
   const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
   const reviewRitualSnoozedUntil = usePlannerStore((s) => s.reviewRitualSnoozedUntil);
@@ -21,7 +20,6 @@ export function TodayView() {
   const today = new Date();
   const dayKey = toDayKey(today);
   const todayItems = selectItemsForDay(items, dayKey);
-  const hasWeekPlan = !!weeklyPlans[getWeekKey(today)];
 
   // Show Daily Review button when ritual is enabled, not completed for today,
   // and either snoozed or past the trigger hour
@@ -50,17 +48,6 @@ export function TodayView() {
           <div className="ml-[24px] mr-[34px]">
             <GreetingBanner />
           </div>
-          {hasWeekPlan && (
-            <button
-              onClick={() => setView('weekPlan')}
-              className="flex items-center gap-1.5 ml-[24px] mb-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-              <span>Week's Plan</span>
-            </button>
-          )}
           {showReviewButton && (
             <button
               onClick={() => setView('review')}

@@ -23,7 +23,13 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
     const { setNodeRef, isOver } = useDroppable({ id: day.key });
     const setView = usePlannerStore((s) => s.setView);
     const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
-    const hasWeekPlan = day.isToday && !!weeklyPlans[getWeekKey(day.date)];
+
+    // Show "This Week's Plan" at bottom of Monday, but only starting Tuesday
+    const isMonday = day.date.getDay() === 1;
+    const todayDow = new Date().getDay(); // 0=Sun, 1=Mon, ...
+    const isTuesdayOrLater = todayDow >= 2 || todayDow === 0; // Tue-Sun
+    const hasWeekPlan = !!weeklyPlans[getWeekKey(day.date)];
+    const showWeekPlanOnMonday = isMonday && isTuesdayOrLater && hasWeekPlan;
 
     const dayNum = day.date.getDate();
     const weekday = WEEKDAYS[day.date.getDay()];
@@ -76,22 +82,9 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
           {/* Right column: tasks + add form */}
           <div className="flex-1 min-w-0">
             {day.isToday && (
-              <>
-                <div className="ml-[24px] mr-[34px]">
-                  <GreetingBanner />
-                </div>
-                {hasWeekPlan && (
-                  <button
-                    onClick={() => setView('weekPlan')}
-                    className="flex items-center gap-1.5 ml-[24px] mb-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                    <span>Week's Plan</span>
-                  </button>
-                )}
-              </>
+              <div className="ml-[24px] mr-[34px]">
+                <GreetingBanner />
+              </div>
             )}
             {practiceItems.length > 0 && (
               <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
@@ -100,6 +93,17 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
               <ItemList items={nonPracticeItems} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />
             </div>
             <AddItemForm dayKey={day.key} className="mt-1" />
+            {showWeekPlanOnMonday && (
+              <button
+                onClick={() => setView('weekPlan')}
+                className="flex items-center gap-1.5 ml-[24px] mt-3 mb-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                <span>This Week's Plan</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
