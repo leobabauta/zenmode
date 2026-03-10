@@ -11,7 +11,26 @@
 </head>
 <body>
   <div class="msg">
-    <p>Sign in successful. You can close this tab and return to the app.</p>
+    <p>Signing you in...</p>
   </div>
+  <script>
+    // Extract tokens from URL hash/query and redirect back to Expo Go
+    const hash = window.location.hash.substring(1);
+    const search = window.location.search.substring(1);
+    const params = hash || search;
+
+    if (params) {
+      // Try intent:// URI (reliable way to open apps from Chrome on Android)
+      const intentUrl = 'intent://auth?' + params + '#Intent;scheme=exp;package=host.exp.exponent;end';
+      window.location.href = intentUrl;
+
+      // Fallback: show message after a delay if redirect didn't work
+      setTimeout(function() {
+        document.querySelector('.msg p').textContent = 'Sign in successful. You can close this tab and return to the app.';
+      }, 2000);
+    } else {
+      document.querySelector('.msg p').textContent = 'Sign in successful. You can close this tab and return to the app.';
+    }
+  </script>
 </body>
 </html>

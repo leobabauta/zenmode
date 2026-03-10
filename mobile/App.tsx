@@ -94,10 +94,24 @@ export default function App() {
       const supabase = getSupabase();
       if (!supabase) return;
 
-      // Extract tokens from hash fragment (e.g. #access_token=...&refresh_token=...)
+      // Parse params from query string or hash fragment
+      const queryIndex = url.indexOf('?');
       const hashIndex = url.indexOf('#');
-      if (hashIndex === -1) return;
-      const params = new URLSearchParams(url.substring(hashIndex + 1));
+      let paramStr = '';
+      if (queryIndex !== -1) paramStr = url.substring(queryIndex + 1, hashIndex !== -1 ? hashIndex : undefined);
+      if (hashIndex !== -1) paramStr = paramStr ? paramStr + '&' + url.substring(hashIndex + 1) : url.substring(hashIndex + 1);
+      if (!paramStr) return;
+
+      const params = new URLSearchParams(paramStr);
+
+      // Google ID token flow (from expo-auth-session callback page)
+      const idToken = params.get('id_token');
+      if (idToken) {
+        await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+        return;
+      }
+
+      // Supabase session token flow (magic link, etc.)
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
       if (accessToken && refreshToken) {
