@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Linking from 'expo-linking';
 import { ToastProvider } from './src/components/Toast';
 
 import { setupSupabase } from './src/lib/supabaseInit';
@@ -86,6 +87,31 @@ function MainTabs() {
 
 export default function App() {
   const { user, loading } = useAuthStore();
+
+  // Handle deep link auth callback (OAuth redirect back to app)
+  useEffect(() => {
+    const handleUrl = async (url: string) => {
+      const supabase = getSupabase();
+      if (!supabase) return;
+
+      // Extract tokens from hash fragment (e.g. #access_token=...&refresh_token=...)
+      const hashIndex = url.indexOf('#');
+      if (hashIndex === -1) return;
+      const params = new URLSearchParams(url.substring(hashIndex + 1));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      }
+    };
+
+    // Handle URL that launched the app
+    Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
+
+    // Handle URLs while app is running
+    const sub = Linking.addEventListener('url', (event) => handleUrl(event.url));
+    return () => sub.remove();
+  }, []);
 
   // Listen for auth state changes
   useEffect(() => {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getSupabase } from '../../../shared/lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import { useColors } from '../lib/colors';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -18,7 +18,7 @@ export function LoginScreen() {
     if (!supabase || !email.trim()) return;
 
     setLoading(true);
-    const redirectTo = makeRedirectUri();
+    const redirectTo = Linking.createURL('/');
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: { emailRedirectTo: redirectTo },
@@ -36,7 +36,7 @@ export function LoginScreen() {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const redirectTo = makeRedirectUri();
+    const redirectTo = Linking.createURL('/');
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
