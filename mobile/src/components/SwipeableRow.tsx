@@ -5,17 +5,17 @@ import Svg, { Path } from 'react-native-svg';
 
 interface SwipeableRowProps {
   children: React.ReactNode;
-  onDelete: () => void;
-  onSnooze: () => void;
+  onTomorrow?: () => void;
+  onSnooze?: () => void;
   onMoveToInbox?: () => void;
+  onDelete?: () => void;
   enabled?: boolean;
 }
 
-const SNOOZE_THRESHOLD = 80;
-const INBOX_THRESHOLD = 160;
-const DELETE_THRESHOLD = 80;
+const SHORT_THRESHOLD = 80;
+const LONG_THRESHOLD = 160;
 
-// Clock icon (Heroicon outline)
+// Clock icon
 function ClockIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -24,7 +24,16 @@ function ClockIcon() {
   );
 }
 
-// Inbox icon (Heroicon outline)
+// Calendar icon (for snooze)
+function CalendarIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+// Inbox icon
 function InboxIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -33,7 +42,7 @@ function InboxIcon() {
   );
 }
 
-// Trash icon (Heroicon outline)
+// Trash icon
 function TrashIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
@@ -42,9 +51,20 @@ function TrashIcon() {
   );
 }
 
-export function SwipeableRow({ children, onDelete, onSnooze, onMoveToInbox, enabled = true }: SwipeableRowProps) {
+export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, onDelete, enabled = true }: SwipeableRowProps) {
   const translateX = useSharedValue(0);
-  const isInboxZone = useSharedValue(false);
+  // 0 = none, 1 = tomorrow (short right), 2 = snooze (long right)
+  const rightZone = useSharedValue(0);
+  // 0 = none, 1 = inbox (short left), 2 = delete (long left)
+  const leftZone = useSharedValue(0);
+
+  const hasRightShort = !!onTomorrow;
+  const hasRightLong = !!onSnooze;
+  const hasLeftShort = !!onMoveToInbox;
+  const hasLeftLong = !!onDelete;
+
+  const maxRight = hasRightLong ? 220 : (hasRightShort ? 120 : 0);
+  const maxLeft = hasLeftLong ? 220 : (hasLeftShort ? 120 : (hasLeftLong ? 120 : 0));
 
   const panGesture = Gesture.Pan()
     .enabled(enabled)
@@ -52,74 +72,113 @@ export function SwipeableRow({ children, onDelete, onSnooze, onMoveToInbox, enab
     .failOffsetY([-20, 20])
     .onUpdate((event) => {
       'worklet';
-      const maxRight = onMoveToInbox ? 200 : 120;
-      translateX.value = Math.max(-120, Math.min(maxRight, event.translationX));
-      isInboxZone.value = onMoveToInbox ? event.translationX > INBOX_THRESHOLD : false;
+      translateX.value = Math.max(-maxLeft, Math.min(maxRight, event.translationX));
+
+      // Right zones
+      if (event.translationX > 0) {
+        if (hasRightLong && event.translationX > LONG_THRESHOLD) {
+          rightZone.value = 2;
+        } else if (hasRightShort && event.translationX > SHORT_THRESHOLD) {
+          rightZone.value = 1;
+        } else {
+          rightZone.value = 0;
+        }
+        leftZone.value = 0;
+      }
+      // Left zones
+      else {
+        if (hasLeftLong && event.translationX < -LONG_THRESHOLD) {
+          leftZone.value = 2;
+        } else if (hasLeftShort && event.translationX < -SHORT_THRESHOLD) {
+          leftZone.value = 1;
+        } else if (!hasLeftShort && hasLeftLong && event.translationX < -SHORT_THRESHOLD) {
+          leftZone.value = 2;
+        } else {
+          leftZone.value = 0;
+        }
+        rightZone.value = 0;
+      }
     })
     .onEnd((event) => {
       'worklet';
-      if (onMoveToInbox && event.translationX > INBOX_THRESHOLD) {
-        translateX.value = withTiming(400, { duration: 200 }, () => {
-          runOnJS(onMoveToInbox)();
-          translateX.value = 0;
-        });
-      } else if (event.translationX > SNOOZE_THRESHOLD) {
-        translateX.value = withTiming(400, { duration: 200 }, () => {
-          runOnJS(onSnooze)();
-          translateX.value = 0;
-        });
-      } else if (event.translationX < -DELETE_THRESHOLD) {
-        translateX.value = withTiming(-400, { duration: 200 }, () => {
-          runOnJS(onDelete)();
-          translateX.value = 0;
-        });
-      } else {
-        translateX.value = withTiming(0, { duration: 150 });
+      // Right swipe actions
+      if (event.translationX > 0) {
+        if (hasRightLong && event.translationX > LONG_THRESHOLD && onSnooze) {
+          translateX.value = withTiming(400, { duration: 200 }, () => {
+            runOnJS(onSnooze)();
+            translateX.value = 0;
+          });
+          return;
+        }
+        if (hasRightShort && event.translationX > SHORT_THRESHOLD && onTomorrow) {
+          translateX.value = withTiming(400, { duration: 200 }, () => {
+            runOnJS(onTomorrow)();
+            translateX.value = 0;
+          });
+          return;
+        }
       }
+      // Left swipe actions
+      if (event.translationX < 0) {
+        if (hasLeftLong && event.translationX < -LONG_THRESHOLD && onDelete) {
+          translateX.value = withTiming(-400, { duration: 200 }, () => {
+            runOnJS(onDelete)();
+            translateX.value = 0;
+          });
+          return;
+        }
+        if (hasLeftShort && event.translationX < -SHORT_THRESHOLD && onMoveToInbox) {
+          translateX.value = withTiming(-400, { duration: 200 }, () => {
+            runOnJS(onMoveToInbox)();
+            translateX.value = 0;
+          });
+          return;
+        }
+        // If no short left but has long left, trigger delete at short threshold
+        if (!hasLeftShort && hasLeftLong && event.translationX < -SHORT_THRESHOLD && onDelete) {
+          translateX.value = withTiming(-400, { duration: 200 }, () => {
+            runOnJS(onDelete)();
+            translateX.value = 0;
+          });
+          return;
+        }
+      }
+      // Snap back
+      translateX.value = withTiming(0, { duration: 150 });
     });
 
-  const foregroundStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      transform: [{ translateX: translateX.value }],
-    };
-  });
+  const foregroundStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
-  const leftActionStyle = useAnimatedStyle(() => {
-    'worklet';
-    const show = translateX.value > 5;
-    return {
-      opacity: show ? 1 : 0,
-      width: Math.max(0, translateX.value),
-    };
-  });
+  const leftActionStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value > 5 ? 1 : 0,
+    width: Math.max(0, translateX.value),
+  }));
 
-  const leftBgStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      backgroundColor: isInboxZone.value ? '#6b8aad' : '#5a9e72',
-    };
-  });
+  const leftBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: rightZone.value === 2 ? '#5a7e9e' : '#5a9e72',
+  }));
 
-  const rightActionStyle = useAnimatedStyle(() => {
-    'worklet';
-    return {
-      opacity: translateX.value < -5 ? 1 : 0,
-      width: Math.max(0, -translateX.value),
-    };
-  });
+  const rightActionStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value < -5 ? 1 : 0,
+    width: Math.max(0, -translateX.value),
+  }));
+
+  const rightBgStyle = useAnimatedStyle(() => ({
+    backgroundColor: leftZone.value === 2 ? '#c05050' : '#6b8aad',
+  }));
 
   return (
     <View style={styles.container}>
-      {/* Left action (snooze / inbox) */}
+      {/* Right swipe actions (Tomorrow / Snooze) */}
       <Animated.View style={[styles.leftAction, leftActionStyle, leftBgStyle]}>
-        <LeftActionContent isInboxZone={isInboxZone} hasInbox={!!onMoveToInbox} />
+        <RightSwipeContent rightZone={rightZone} hasLong={hasRightLong} />
       </Animated.View>
 
-      {/* Right action (delete) */}
-      <Animated.View style={[styles.rightAction, rightActionStyle]}>
-        <TrashIcon />
-        <Text style={styles.actionLabel}>Delete</Text>
+      {/* Left swipe actions (Inbox / Delete) */}
+      <Animated.View style={[styles.rightAction, rightActionStyle, rightBgStyle]}>
+        <LeftSwipeContent leftZone={leftZone} hasShort={hasLeftShort} />
       </Animated.View>
 
       <GestureDetector gesture={panGesture}>
@@ -131,41 +190,67 @@ export function SwipeableRow({ children, onDelete, onSnooze, onMoveToInbox, enab
   );
 }
 
-// Separate component to reactively switch icons based on shared value
-function LeftActionContent({ isInboxZone, hasInbox }: { isInboxZone: { value: boolean }; hasInbox: boolean }) {
+function RightSwipeContent({ rightZone, hasLong }: { rightZone: { value: number }; hasLong: boolean }) {
+  if (!hasLong) {
+    return (
+      <View style={styles.actionContent}>
+        <ClockIcon />
+        <Text style={styles.actionLabel}>Tomorrow</Text>
+      </View>
+    );
+  }
+
+  const tomorrowStyle = useAnimatedStyle(() => ({
+    opacity: rightZone.value === 2 ? 0 : 1,
+    position: 'absolute' as const,
+  }));
+  const snoozeStyle = useAnimatedStyle(() => ({
+    opacity: rightZone.value === 2 ? 1 : 0,
+    position: 'absolute' as const,
+  }));
+
   return (
-    <View style={styles.actionContent}>
-      {hasInbox ? (
-        <LeftActionDynamic isInboxZone={isInboxZone} />
-      ) : (
-        <>
-          <ClockIcon />
-          <Text style={styles.actionLabel}>Tomorrow</Text>
-        </>
-      )}
+    <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 80 }}>
+      <Animated.View style={[{ alignItems: 'center' }, tomorrowStyle]}>
+        <ClockIcon />
+        <Text style={styles.actionLabel}>Tomorrow</Text>
+      </Animated.View>
+      <Animated.View style={[{ alignItems: 'center' }, snoozeStyle]}>
+        <CalendarIcon />
+        <Text style={styles.actionLabel}>Snooze</Text>
+      </Animated.View>
     </View>
   );
 }
 
-function LeftActionDynamic({ isInboxZone }: { isInboxZone: { value: boolean } }) {
-  const snoozeStyle = useAnimatedStyle(() => {
-    'worklet';
-    return { opacity: isInboxZone.value ? 0 : 1, position: 'absolute' as const };
-  });
-  const inboxStyle = useAnimatedStyle(() => {
-    'worklet';
-    return { opacity: isInboxZone.value ? 1 : 0, position: 'absolute' as const };
-  });
+function LeftSwipeContent({ leftZone, hasShort }: { leftZone: { value: number }; hasShort: boolean }) {
+  if (!hasShort) {
+    return (
+      <View style={styles.actionContent}>
+        <TrashIcon />
+        <Text style={styles.actionLabel}>Delete</Text>
+      </View>
+    );
+  }
+
+  const inboxStyle = useAnimatedStyle(() => ({
+    opacity: leftZone.value === 2 ? 0 : 1,
+    position: 'absolute' as const,
+  }));
+  const deleteStyle = useAnimatedStyle(() => ({
+    opacity: leftZone.value === 2 ? 1 : 0,
+    position: 'absolute' as const,
+  }));
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 80 }}>
-      <Animated.View style={[{ alignItems: 'center' }, snoozeStyle]}>
-        <ClockIcon />
-        <Text style={styles.actionLabel}>Tomorrow</Text>
-      </Animated.View>
       <Animated.View style={[{ alignItems: 'center' }, inboxStyle]}>
         <InboxIcon />
         <Text style={styles.actionLabel}>Inbox</Text>
+      </Animated.View>
+      <Animated.View style={[{ alignItems: 'center' }, deleteStyle]}>
+        <TrashIcon />
+        <Text style={styles.actionLabel}>Delete</Text>
       </Animated.View>
     </View>
   );
@@ -180,7 +265,7 @@ const styles = StyleSheet.create({
   },
   rightAction: {
     position: 'absolute', right: 0, top: 0, bottom: 0,
-    backgroundColor: '#c05050', justifyContent: 'center', alignItems: 'center',
+    justifyContent: 'center', alignItems: 'center',
     flexDirection: 'column', overflow: 'hidden',
   },
   actionContent: {

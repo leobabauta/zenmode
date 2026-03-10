@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -74,7 +74,7 @@ function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: 
     });
   };
 
-  const handleSnooze = () => {
+  const handleTomorrow = () => {
     const tomorrowKey = toDayKey(addDays(new Date(), 1));
     const prevDayKey = item.dayKey;
     const prevIsLater = item.isLater;
@@ -82,9 +82,16 @@ function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: 
     show('Moved to tomorrow', () => { moveItem(item.id, prevDayKey, prevIsLater); });
   };
 
+  const handleMoveToInbox = () => {
+    const prevDayKey = item.dayKey;
+    const prevIsLater = item.isLater;
+    moveItem(item.id, null, false);
+    show('Moved to Inbox', () => { moveItem(item.id, prevDayKey, prevIsLater); });
+  };
+
   return (
     <ScaleDecorator>
-      <SwipeableRow onDelete={handleDelete} onSnooze={handleSnooze} enabled={!isActive}>
+      <SwipeableRow onTomorrow={handleTomorrow} onMoveToInbox={handleMoveToInbox} onDelete={handleDelete} enabled={!isActive}>
         <Pressable onPress={() => navigation.navigate('TaskDetail', { itemId: item.id })} onLongPress={drag} disabled={isActive}>
           <View style={[styles.taskRow, { backgroundColor: isActive ? colors.surface : colors.bg }]}>
             <Checkbox checked={!!item.completed} onChange={(checked) => updateItem(item.id, { completed: checked })} colors={colors} />
@@ -165,6 +172,16 @@ export function BrowseScreen() {
   const navigation = useNavigation<any>();
   const isSearching = searchQuery.trim().length > 0;
 
+  // Reset sub-view when user taps the Browse tab again
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return;
+    const unsubscribe = parent.addListener('tabPress', () => {
+      setSubView(null);
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const todayKey = toDayKey(new Date());
   const handleAdd = (text: string) => { addItem({ type: 'task', text, dayKey: todayKey }); };
 
@@ -180,9 +197,6 @@ export function BrowseScreen() {
   if (subView) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => setSubView(null)} activeOpacity={0.6}>
-          <Text style={[styles.backText, { color: colors.accent }]}>{'< Browse'}</Text>
-        </TouchableOpacity>
         <Text style={[styles.subViewTitle, { color: colors.text }]}>{subViewTitle(subView)}</Text>
         <DraggableFlatList
           data={filteredItems}
@@ -401,12 +415,9 @@ const styles = StyleSheet.create({
   bottomLinkText: { fontSize: 15 },
 
   // Sub-view
-  subViewTitle: { fontSize: 40, fontWeight: '700', paddingHorizontal: 20, paddingTop: 4, marginBottom: 16 },
+  subViewTitle: { fontSize: 40, fontWeight: '700', paddingHorizontal: 20, paddingTop: 20, marginBottom: 16 },
   list: { paddingHorizontal: 12, paddingBottom: 80 },
   empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
-  backButton: { paddingHorizontal: 20, paddingTop: 12 },
-  backText: { fontSize: 16 },
-
   // Task rows (sub-view)
   taskRow: {
     flexDirection: 'row', alignItems: 'center',

@@ -31,6 +31,7 @@ setupSupabase();
 setupSync();
 
 const Stack = createNativeStackNavigator();
+const BrowseStackNav = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused, color }: { label: string; focused: boolean; color: string }) {
@@ -58,6 +59,15 @@ function TabIcon({ label, focused, color }: { label: string; focused: boolean; c
   );
 }
 
+function BrowseStack() {
+  return (
+    <BrowseStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <BrowseStackNav.Screen name="BrowseMain" component={BrowseScreen} />
+      <BrowseStackNav.Screen name="Help" component={HelpScreen} />
+    </BrowseStackNav.Navigator>
+  );
+}
+
 function MainTabs() {
   const colors = useColors();
 
@@ -81,7 +91,7 @@ function MainTabs() {
       <Tab.Screen name="Today" component={TodayScreen} />
       <Tab.Screen name="Timeline" component={TimelineScreen} />
       <Tab.Screen name="Inbox" component={InboxScreen} />
-      <Tab.Screen name="Browse" component={BrowseScreen} />
+      <Tab.Screen name="Browse" component={BrowseStack} />
     </Tab.Navigator>
   );
 }
@@ -184,7 +194,6 @@ export default function App() {
                   <Stack.Screen name="Settings" component={SettingsScreen} />
                   <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
                   <Stack.Screen name="FocusTimer" component={FocusTimerScreen} />
-                  <Stack.Screen name="Help" component={HelpScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />

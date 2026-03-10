@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, Pressable, StyleSheet,
 } from 'react-native';
@@ -12,12 +12,16 @@ import type { PlannerItem } from '../../../shared/types';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { Checkbox } from '../components/Checkbox';
 import { PriorityStar } from '../components/PriorityStar';
+import { SnoozeModal } from '../components/SnoozeModal';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import { EmptyInbox } from '../components/EmptyState';
 import { AddTaskFAB } from '../components/AddTaskFAB';
 
-function TaskRow({ item, colors, navigation, drag, isActive }: { item: PlannerItem; colors: Colors; navigation: any; drag: () => void; isActive: boolean }) {
+function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: {
+  item: PlannerItem; colors: Colors; navigation: any; drag: () => void; isActive: boolean;
+  onRequestSnooze: (itemId: string) => void;
+}) {
   const updateItem = usePlannerStore((s) => s.updateItem);
   const deleteItem = usePlannerStore((s) => s.deleteItem);
   const moveItem = usePlannerStore((s) => s.moveItem);
@@ -29,32 +33,27 @@ function TaskRow({ item, colors, navigation, drag, isActive }: { item: PlannerIt
     deleteItem(item.id);
     show('Item deleted', () => {
       addItem({
-        type: snapshot.type,
-        text: snapshot.text,
-        dayKey: snapshot.dayKey ?? null,
-        isLater: snapshot.isLater,
-        isPriority: snapshot.isPriority,
-        isMediumPriority: snapshot.isMediumPriority,
-        isPractice: snapshot.isPractice,
+        type: snapshot.type, text: snapshot.text, dayKey: snapshot.dayKey ?? null,
+        isLater: snapshot.isLater, isPriority: snapshot.isPriority,
+        isMediumPriority: snapshot.isMediumPriority, isPractice: snapshot.isPractice,
       });
     });
   };
 
-  const handleSnooze = () => {
+  const handleTomorrow = () => {
     const tomorrowKey = toDayKey(addDays(new Date(), 1));
     const prevDayKey = item.dayKey;
     const prevIsLater = item.isLater;
     moveItem(item.id, tomorrowKey, false);
-    show('Moved to tomorrow', () => {
-      moveItem(item.id, prevDayKey, prevIsLater);
-    });
+    show('Moved to tomorrow', () => { moveItem(item.id, prevDayKey, prevIsLater); });
   };
 
   return (
     <ScaleDecorator>
       <SwipeableRow
+        onTomorrow={handleTomorrow}
+        onSnooze={() => onRequestSnooze(item.id)}
         onDelete={handleDelete}
-        onSnooze={handleSnooze}
         enabled={!isActive}
       >
         <Pressable
@@ -72,19 +71,14 @@ function TaskRow({ item, colors, navigation, drag, isActive }: { item: PlannerIt
             )}
             <Text
               style={[
-                styles.taskText,
-                { color: colors.text },
+                styles.taskText, { color: colors.text },
                 item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' },
               ]}
               numberOfLines={3}
             >
               {item.text}
             </Text>
-            <PriorityStar
-              isPriority={item.isPriority}
-              isMediumPriority={item.isMediumPriority}
-              colors={colors}
-            />
+            <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
           </View>
         </Pressable>
       </SwipeableRow>
@@ -95,14 +89,29 @@ function TaskRow({ item, colors, navigation, drag, isActive }: { item: PlannerIt
 export function InboxScreen() {
   const items = usePlannerStore((s) => s.items);
   const addItem = usePlannerStore((s) => s.addItem);
+  const moveItem = usePlannerStore((s) => s.moveItem);
   const reorderItems = usePlannerStore((s) => s.reorderItems);
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const inboxItems = selectInboxItems(items);
+  const { show } = useToast();
+
+  const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
 
   const handleAdd = (text: string) => {
     addItem({ type: 'task', text, dayKey: null });
+  };
+
+  const handleSnoozeSelect = (dayKey: string | null, isLater: boolean) => {
+    if (!snoozeItemId) return;
+    const item = items[snoozeItemId];
+    if (!item) return;
+    const prevDayKey = item.dayKey;
+    const prevIsLater = item.isLater;
+    moveItem(snoozeItemId, dayKey, isLater);
+    const label = isLater ? 'Moved to Later' : 'Snoozed';
+    show(label, () => { moveItem(snoozeItemId, prevDayKey, prevIsLater); });
   };
 
   const handleDragEnd = useCallback(({ data }: { data: PlannerItem[] }) => {
@@ -110,7 +119,7 @@ export function InboxScreen() {
   }, [reorderItems]);
 
   const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<PlannerItem>) => (
-    <TaskRow item={item} colors={colors} navigation={navigation} drag={drag} isActive={isActive} />
+    <TaskRow item={item} colors={colors} navigation={navigation} drag={drag} isActive={isActive} onRequestSnooze={setSnoozeItemId} />
   ), [colors, navigation]);
 
   return (
@@ -125,12 +134,17 @@ export function InboxScreen() {
         renderItem={renderItem}
         onDragEnd={handleDragEnd}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <EmptyInbox colors={colors} />
-        }
+        ListEmptyComponent={<EmptyInbox colors={colors} />}
       />
 
       <AddTaskFAB colors={colors} placeholder="Add to inbox..." onAdd={handleAdd} />
+
+      <SnoozeModal
+        visible={!!snoozeItemId}
+        colors={colors}
+        onSelect={handleSnoozeSelect}
+        onClose={() => setSnoozeItemId(null)}
+      />
     </View>
   );
 }
