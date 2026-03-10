@@ -1,17 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getSupabase } from '../../../shared/lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import * as Linking from 'expo-linking';
 import { useColors } from '../lib/colors';
 
 WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID = '792674113739-mpggu1759u4q6ue4k0qg5r9j98f5fs9c.apps.googleusercontent.com';
 
 export function LoginScreen() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const colors = useColors();
+
+  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
+    clientId: GOOGLE_WEB_CLIENT_ID,
+    redirectUri: 'https://zenmode.work/auth/callback',
+  });
+
+  // Handle Google OAuth response
+  useEffect(() => {
+    if (googleResponse?.type !== 'success') return;
+    const idToken = googleResponse.params.id_token;
+    const supabase = getSupabase();
+    if (!supabase || !idToken) return;
+
+    supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    }).then(({ error }) => {
+      if (error) Alert.alert('Error', error.message);
+    });
+  }, [googleResponse]);
 
   const handleMagicLink = async () => {
     const supabase = getSupabase();
@@ -33,32 +56,7 @@ export function LoginScreen() {
   };
 
   const handleGoogleSignIn = async () => {
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    const redirectTo = Linking.createURL('/');
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
-
-    if (error) {
-      Alert.alert('Error', error.message);
-      return;
-    }
-
-    if (data.url) {
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-      if (result.type === 'success' && result.url) {
-        const url = new URL(result.url);
-        const params = new URLSearchParams(url.hash.substring(1));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        if (accessToken && refreshToken) {
-          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-        }
-      }
-    }
+    await promptGoogleAsync({ showInRecents: true });
   };
 
   if (sent) {
