@@ -20,13 +20,14 @@ function describeArc(fraction: number): string {
   if (fraction <= 0) return '';
   if (fraction >= 1) {
     const r = RADIUS + 1;
-    return `M ${CENTER} ${CENTER - r} A ${r} ${r} 0 1 1 ${CENTER - 0.001} ${CENTER - r} L ${CENTER} ${CENTER} Z`;
+    return `M ${CENTER} ${CENTER - r} A ${r} ${r} 0 1 0 ${CENTER + 0.001} ${CENTER - r} L ${CENTER} ${CENTER} Z`;
   }
+  // Counterclockwise: sweep from top going left
   const angle = fraction * 2 * Math.PI;
-  const endX = CENTER + RADIUS * Math.sin(angle);
+  const endX = CENTER - RADIUS * Math.sin(angle);
   const endY = CENTER - RADIUS * Math.cos(angle);
   const largeArc = fraction > 0.5 ? 1 : 0;
-  return `M ${CENTER} ${CENTER} L ${CENTER} ${CENTER - RADIUS} A ${RADIUS} ${RADIUS} 0 ${largeArc} 1 ${endX} ${endY} Z`;
+  return `M ${CENTER} ${CENTER} L ${CENTER} ${CENTER - RADIUS} A ${RADIUS} ${RADIUS} 0 ${largeArc} 0 ${endX} ${endY} Z`;
 }
 
 function InlineFocusTimer({ colors, onComplete }: { colors: any; onComplete: () => void }) {

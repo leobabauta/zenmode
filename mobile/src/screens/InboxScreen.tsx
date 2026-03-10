@@ -138,7 +138,7 @@ export function InboxScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 12 },
-  title: { fontSize: 28, fontWeight: '700' },
+  title: { fontSize: 34, fontWeight: '700' },
   list: { paddingBottom: 80, paddingHorizontal: 12 },
   taskRow: {
     flexDirection: 'row', alignItems: 'center',

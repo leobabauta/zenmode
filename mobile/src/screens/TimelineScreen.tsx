@@ -142,7 +142,7 @@ export function TimelineScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  title: { fontSize: 28, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16 },
+  title: { fontSize: 34, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16 },
   list: { paddingBottom: 100, paddingHorizontal: 12 },
   empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
   sectionHeader: { paddingTop: 20, paddingBottom: 8, paddingHorizontal: 20 },

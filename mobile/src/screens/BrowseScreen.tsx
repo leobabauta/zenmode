@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   bottomLinkText: { fontSize: 15 },
 
   // Sub-view
-  subViewTitle: { fontSize: 28, fontWeight: '700', paddingHorizontal: 20, paddingTop: 4, marginBottom: 16 },
+  subViewTitle: { fontSize: 34, fontWeight: '700', paddingHorizontal: 20, paddingTop: 4, marginBottom: 16 },
   list: { paddingHorizontal: 12, paddingBottom: 80 },
   empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
   backButton: { paddingHorizontal: 20, paddingTop: 12 },
