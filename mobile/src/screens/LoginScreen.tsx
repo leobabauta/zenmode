@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getSupabase } from '../../../shared/lib/supabase';
+import { useAuthStore } from '../../../shared/store/useAuthStore';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import * as Linking from 'expo-linking';
@@ -93,6 +94,16 @@ export function LoginScreen() {
       >
         <Text style={[styles.buttonText, { color: colors.accentText }]}>{loading ? 'Sending...' : 'Send magic link'}</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.devBypass}
+        onPress={() => {
+          // Dev bypass: skip auth for Expo Go testing
+          useAuthStore.getState().setAuth({ id: 'dev', email: 'leo.babauta@gmail.com' } as any, null);
+        }}
+      >
+        <Text style={{ color: colors.bg, fontSize: 10 }}>.</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -120,4 +131,5 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.5 },
   buttonText: { fontSize: 15, fontWeight: '500' },
   link: { fontSize: 14, textAlign: 'center', marginTop: 16 },
+  devBypass: { position: 'absolute', bottom: 20, right: 20, padding: 10 },
 });
