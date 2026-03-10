@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet,
+  View, Text, Pressable, StyleSheet, Platform, Vibration,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,22 @@ import { SnoozeModal } from '../components/SnoozeModal';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import * as Haptics from 'expo-haptics';
+
+const triggerHaptic = () => {
+  if (Platform.OS === 'ios') {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  } else {
+    Vibration.vibrate(10);
+  }
+};
+
+const triggerHapticMedium = () => {
+  if (Platform.OS === 'ios') {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  } else {
+    Vibration.vibrate(20);
+  }
+};
 
 function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: {
   item: PlannerItem; colors: Colors; navigation: any; drag: () => void; isActive: boolean;
@@ -151,8 +167,8 @@ export function TodayScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         onDragEnd={handleDragEnd}
-        onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
-        onPlaceholderIndexChange={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+        onDragBegin={triggerHapticMedium}
+        onPlaceholderIndexChange={triggerHaptic}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
