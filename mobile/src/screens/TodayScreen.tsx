@@ -149,19 +149,6 @@ export function TodayScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View style={{ paddingTop: insets.top + 8 }}>
-            <View style={styles.headerRow}>
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Settings')}
-                style={styles.settingsButton}
-              >
-                <View style={styles.dotsMenu}>
-                  <View style={[styles.dot, { backgroundColor: colors.textMuted }]} />
-                  <View style={[styles.dot, { backgroundColor: colors.textMuted }]} />
-                  <View style={[styles.dot, { backgroundColor: colors.textMuted }]} />
-                </View>
-              </TouchableOpacity>
-            </View>
             <GreetingBanner colors={colors} />
             {showAllDone && (
               <AllDoneToday colors={colors} onShowCompleted={() => setShowCompletedTasks(true)} />
@@ -182,13 +169,6 @@ export function TodayScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerRow: {
-    flexDirection: 'row', justifyContent: 'flex-end',
-    paddingHorizontal: 20, paddingBottom: 4,
-  },
-  settingsButton: { padding: 8 },
-  dotsMenu: { flexDirection: 'column', alignItems: 'center', gap: 3 },
-  dot: { width: 4, height: 4, borderRadius: 2 },
   list: { paddingBottom: 80, paddingHorizontal: 12 },
   empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
   taskRow: {

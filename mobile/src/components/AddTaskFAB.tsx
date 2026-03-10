@@ -26,7 +26,7 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', onAdd }: Add
   useEffect(() => {
     if (open) {
       // Animate FAB up and show input
-      fabTranslateY.value = withSpring(-70);
+      fabTranslateY.value = withSpring(-280);
       fabScale.value = withSpring(0.85);
       inputOpacity.value = withTiming(1, { duration: 200 });
       inputTranslateY.value = withSpring(0);

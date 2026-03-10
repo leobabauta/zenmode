@@ -45,7 +45,7 @@ function TabIcon({ label, focused, color }: { label: string; focused: boolean; c
   const { Path } = require('react-native-svg');
 
   return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+    <Svg width={30} height={30} viewBox="0 0 24 24" fill="none">
       <Path
         d={iconPaths[label] ?? ''}
         stroke={color}
@@ -70,9 +70,9 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 4,
-          paddingTop: 6,
+          height: 68,
+          paddingBottom: 6,
+          paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
       })}
