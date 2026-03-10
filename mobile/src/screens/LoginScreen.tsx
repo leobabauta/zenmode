@@ -16,25 +16,13 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const colors = useColors();
 
+  // Encode the Expo return URL in state so the callback page knows where to redirect
+  const expoReturnUrl = Linking.createURL('auth');
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID,
     redirectUri: 'https://zenmode.work/auth/callback',
+    state: expoReturnUrl,
   });
-
-  // Handle Google OAuth response
-  useEffect(() => {
-    if (googleResponse?.type !== 'success') return;
-    const idToken = googleResponse.params.id_token;
-    const supabase = getSupabase();
-    if (!supabase || !idToken) return;
-
-    supabase.auth.signInWithIdToken({
-      provider: 'google',
-      token: idToken,
-    }).then(({ error }) => {
-      if (error) Alert.alert('Error', error.message);
-    });
-  }, [googleResponse]);
 
   const handleMagicLink = async () => {
     const supabase = getSupabase();
