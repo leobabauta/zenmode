@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, Keyboard, KeyboardAvoidingView, Platform,
+  View, Text, Pressable, StyleSheet,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +14,11 @@ import { Checkbox } from '../components/Checkbox';
 import { PriorityStar } from '../components/PriorityStar';
 import { GreetingBanner } from '../components/GreetingBanner';
 import { AllDoneToday } from '../components/EmptyState';
+import { AddTaskFAB } from '../components/AddTaskFAB';
 import { SnoozeModal } from '../components/SnoozeModal';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
+import * as Haptics from 'expo-haptics';
 
 function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: {
   item: PlannerItem; colors: Colors; navigation: any; drag: () => void; isActive: boolean;
@@ -105,19 +107,9 @@ export function TodayScreen() {
   const todayKey = toDayKey(new Date());
   const todayItems = selectItemsForDay(items, todayKey);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
-  const [inputOpen, setInputOpen] = useState(false);
-  const [inputText, setInputText] = useState('');
-  const inputRef = useRef<TextInput>(null);
   const { show } = useToast();
 
-  // Snooze modal state
   const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (inputOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [inputOpen]);
 
   let totalTasks = 0;
   let doneTasks = 0;
@@ -129,14 +121,8 @@ export function TodayScreen() {
   const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
   const showAllDone = allTasksDone && !showCompletedTasks;
 
-  const handleAdd = () => {
-    const trimmed = inputText.trim();
-    if (trimmed) {
-      addItem({ type: 'task', text: trimmed, dayKey: todayKey });
-    }
-    setInputText('');
-    setInputOpen(false);
-    Keyboard.dismiss();
+  const handleAdd = (text: string) => {
+    addItem({ type: 'task', text, dayKey: todayKey });
   };
 
   const handleSnoozeSelect = (dayKey: string | null, isLater: boolean) => {
@@ -158,34 +144,15 @@ export function TodayScreen() {
     <TaskRow item={item} colors={colors} navigation={navigation} drag={drag} isActive={isActive} onRequestSnooze={setSnoozeItemId} />
   ), [colors, navigation]);
 
-  const inlineInput = inputOpen ? (
-    <View style={[styles.inlineInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <TextInput
-        ref={inputRef}
-        style={[styles.inlineInput, { color: colors.text }]}
-        placeholder="Add a task..."
-        placeholderTextColor={colors.textMuted}
-        value={inputText}
-        onChangeText={setInputText}
-        onSubmitEditing={handleAdd}
-        returnKeyType="done"
-      />
-      <TouchableOpacity onPress={handleAdd} style={[styles.inlinePlusBtn, { backgroundColor: colors.accent }]} activeOpacity={0.8}>
-        <View style={styles.inlinePlusIcon}>
-          <View style={[styles.plusH, { backgroundColor: colors.accentText }]} />
-          <View style={[styles.plusV, { backgroundColor: colors.accentText }]} />
-        </View>
-      </TouchableOpacity>
-    </View>
-  ) : null;
-
   return (
-    <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <DraggableFlatList
         data={showAllDone ? [] : todayItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         onDragEnd={handleDragEnd}
+        onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+        onPlaceholderIndexChange={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
@@ -194,7 +161,6 @@ export function TodayScreen() {
             {showAllDone && (
               <AllDoneToday colors={colors} onShowCompleted={() => setShowCompletedTasks(true)} />
             )}
-            {inlineInput}
           </View>
         }
         ListEmptyComponent={
@@ -204,18 +170,7 @@ export function TodayScreen() {
         }
       />
 
-      {!inputOpen && (
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.accent }]}
-          onPress={() => setInputOpen(true)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.fabPlusIcon}>
-            <View style={[styles.plusH, { backgroundColor: colors.accentText }]} />
-            <View style={[styles.plusV, { backgroundColor: colors.accentText }]} />
-          </View>
-        </TouchableOpacity>
-      )}
+      <AddTaskFAB colors={colors} onAdd={handleAdd} />
 
       <SnoozeModal
         visible={!!snoozeItemId}
@@ -223,7 +178,7 @@ export function TodayScreen() {
         onSelect={handleSnoozeSelect}
         onClose={() => setSnoozeItemId(null)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -237,28 +192,4 @@ const styles = StyleSheet.create({
     borderRadius: 10, marginVertical: 1,
   },
   taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
-
-  inlineInputRow: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderRadius: 12,
-    paddingLeft: 16, paddingRight: 6, paddingVertical: 6,
-    marginTop: 12, marginHorizontal: 4,
-  },
-  inlineInput: { flex: 1, fontSize: 16, padding: 0, paddingVertical: 8 },
-  inlinePlusBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 8,
-  },
-  inlinePlusIcon: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
-  plusH: { position: 'absolute', width: 18, height: 2.5, borderRadius: 1 },
-  plusV: { position: 'absolute', width: 2.5, height: 18, borderRadius: 1 },
-
-  fab: {
-    position: 'absolute', bottom: 24, right: 24,
-    width: 52, height: 52, borderRadius: 26,
-    alignItems: 'center', justifyContent: 'center',
-    elevation: 4, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4,
-  },
-  fabPlusIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
 });

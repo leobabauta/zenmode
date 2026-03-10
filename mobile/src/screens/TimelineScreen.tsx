@@ -187,7 +187,7 @@ export function TimelineScreen() {
         keyExtractor={(item) => item.id}
         renderSectionHeader={({ section }) => (
           <View style={[styles.sectionHeader, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.sectionHeaderText, { color: colors.textSecondary }]}>{section.title.toUpperCase()}</Text>
+            <Text style={[styles.sectionHeaderText, { color: colors.text }]}>{section.title}</Text>
           </View>
         )}
         renderItem={({ item }) => (
@@ -215,8 +215,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   title: { fontSize: 40, fontWeight: '700', paddingHorizontal: 20, paddingTop: 28, marginBottom: 16 },
   list: { paddingBottom: 100, paddingHorizontal: 12 },
-  sectionHeader: { paddingTop: 20, paddingBottom: 8, paddingHorizontal: 20 },
-  sectionHeaderText: { fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
+  sectionHeader: { paddingTop: 24, paddingBottom: 8, paddingHorizontal: 20 },
+  sectionHeaderText: { fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   taskRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 10, paddingHorizontal: 12,

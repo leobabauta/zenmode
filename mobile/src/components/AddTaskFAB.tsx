@@ -54,7 +54,7 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', onAdd }: Add
         </View>
       </TouchableOpacity>
 
-      {/* Modal with input positioned at mid-screen */}
+      {/* Modal with input */}
       <Modal visible={open} transparent animationType="fade" onRequestClose={handleClose}>
         <Pressable style={styles.backdrop} onPress={handleClose}>
           <KeyboardAvoidingView
@@ -62,17 +62,29 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', onAdd }: Add
             style={styles.keyboardAvoid}
           >
             <Pressable style={styles.inputWrapper} onPress={(e) => e.stopPropagation()}>
-              <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <TextInput
-                  ref={inputRef}
-                  style={[styles.input, { color: colors.text }]}
-                  placeholder={placeholder}
-                  placeholderTextColor={colors.textMuted}
-                  value={text}
-                  onChangeText={setText}
-                  onSubmitEditing={handleSubmit}
-                  returnKeyType="done"
-                />
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <TextInput
+                    ref={inputRef}
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder={placeholder}
+                    placeholderTextColor={colors.textMuted}
+                    value={text}
+                    onChangeText={setText}
+                    onSubmitEditing={handleSubmit}
+                    returnKeyType="done"
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={handleSubmit}
+                  style={[styles.submitBtn, { backgroundColor: colors.accent }]}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.submitPlus}>
+                    <View style={[styles.plusH, { backgroundColor: colors.accentText }]} />
+                    <View style={[styles.plusV, { backgroundColor: colors.accentText }]} />
+                  </View>
+                </TouchableOpacity>
               </View>
             </Pressable>
           </KeyboardAvoidingView>
@@ -102,22 +114,27 @@ const styles = StyleSheet.create({
     width: 24, height: 24,
     alignItems: 'center', justifyContent: 'center',
   },
-  plusH: { position: 'absolute', width: 22, height: 2.5, borderRadius: 1 },
-  plusV: { position: 'absolute', width: 2.5, height: 22, borderRadius: 1 },
+  plusH: { position: 'absolute', width: 20, height: 2.5, borderRadius: 1 },
+  plusV: { position: 'absolute', width: 2.5, height: 20, borderRadius: 1 },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
   },
   keyboardAvoid: {
-    flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
   },
   inputWrapper: {
-    paddingHorizontal: 24,
-    marginBottom: 80,
+    paddingHorizontal: 20,
+    paddingBottom: 120,
+  },
+  inputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   inputRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -129,5 +146,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     padding: 0,
+  },
+  submitBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitPlus: {
+    width: 22, height: 22,
+    alignItems: 'center', justifyContent: 'center',
   },
 });

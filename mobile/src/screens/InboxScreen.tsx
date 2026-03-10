@@ -17,6 +17,7 @@ import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import { EmptyInbox } from '../components/EmptyState';
 import { AddTaskFAB } from '../components/AddTaskFAB';
+import * as Haptics from 'expo-haptics';
 
 function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: {
   item: PlannerItem; colors: Colors; navigation: any; drag: () => void; isActive: boolean;
@@ -133,6 +134,8 @@ export function InboxScreen() {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         onDragEnd={handleDragEnd}
+        onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+        onPlaceholderIndexChange={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
         contentContainerStyle={styles.list}
         ListEmptyComponent={<EmptyInbox colors={colors} />}
       />

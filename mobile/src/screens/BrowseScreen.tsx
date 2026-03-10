@@ -14,6 +14,7 @@ import { AddTaskFAB } from '../components/AddTaskFAB';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import Svg, { Path, Circle } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 
 type SubView =
   | { kind: 'later' }
@@ -203,6 +204,8 @@ export function BrowseScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           onDragEnd={handleDragEnd}
+          onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+          onPlaceholderIndexChange={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={[styles.empty, { color: colors.textMuted }]}>No items.</Text>}
         />
