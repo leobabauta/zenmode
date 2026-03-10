@@ -17,9 +17,14 @@
     // Google implicit flow puts params in the hash fragment:
     // #id_token=TOKEN&state=exp://IP:PORT/--/auth&...
     var hash = window.location.hash.substring(1);
-    var params = new URLSearchParams(hash);
+    var search = window.location.search.substring(1);
+    var raw = hash || search;
+    var params = new URLSearchParams(raw);
     var idToken = params.get('id_token');
     var returnUrl = params.get('state'); // This is the Expo dev URL
+
+    // Debug: show what we received
+    document.getElementById('status').textContent = 'hash: ' + hash.substring(0, 80) + ' | search: ' + search.substring(0, 80);
 
     if (idToken && returnUrl) {
       // Build the deep link: exp://10.0.0.29:8081/--/auth?id_token=TOKEN
