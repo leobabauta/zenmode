@@ -24,6 +24,7 @@ import { BrowseScreen } from './src/screens/BrowseScreen';
 import { FocusTimerScreen } from './src/screens/FocusTimerScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TaskDetailScreen } from './src/screens/TaskDetailScreen';
+import { HelpScreen } from './src/screens/HelpScreen';
 
 // Initialize Supabase and sync
 setupSupabase();
@@ -183,6 +184,7 @@ export default function App() {
                   <Stack.Screen name="Settings" component={SettingsScreen} />
                   <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
                   <Stack.Screen name="FocusTimer" component={FocusTimerScreen} />
+                  <Stack.Screen name="Help" component={HelpScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />

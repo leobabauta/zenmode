@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, Pressable, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, Keyboard,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { Checkbox } from '../components/Checkbox';
 import { PriorityStar } from '../components/PriorityStar';
 import { GreetingBanner } from '../components/GreetingBanner';
 import { AllDoneToday } from '../components/EmptyState';
-import { AddTaskFAB } from '../components/AddTaskFAB';
+// AddTaskFAB not used — inline input below
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 
@@ -115,6 +115,15 @@ export function TodayScreen() {
   const todayKey = toDayKey(new Date());
   const todayItems = selectItemsForDay(items, todayKey);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [inputOpen, setInputOpen] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (inputOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [inputOpen]);
 
   // Check if all tasks are done (exclude practice items)
   let totalTasks = 0;
@@ -127,8 +136,14 @@ export function TodayScreen() {
   const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
   const showAllDone = allTasksDone && !showCompletedTasks;
 
-  const handleAdd = (text: string) => {
-    addItem({ type: 'task', text, dayKey: todayKey });
+  const handleAdd = () => {
+    const trimmed = inputText.trim();
+    if (trimmed) {
+      addItem({ type: 'task', text: trimmed, dayKey: todayKey });
+    }
+    setInputText('');
+    setInputOpen(false);
+    Keyboard.dismiss();
   };
 
   const handleDragEnd = useCallback(({ data }: { data: PlannerItem[] }) => {
@@ -138,6 +153,27 @@ export function TodayScreen() {
   const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<PlannerItem>) => (
     <TaskRow item={item} colors={colors} navigation={navigation} drag={drag} isActive={isActive} />
   ), [colors, navigation]);
+
+  const inlineInput = inputOpen ? (
+    <View style={[styles.inlineInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <TextInput
+        ref={inputRef}
+        style={[styles.inlineInput, { color: colors.text }]}
+        placeholder="Add a task..."
+        placeholderTextColor={colors.textMuted}
+        value={inputText}
+        onChangeText={setInputText}
+        onSubmitEditing={handleAdd}
+        returnKeyType="done"
+      />
+      <TouchableOpacity onPress={handleAdd} style={[styles.inlinePlusBtn, { backgroundColor: colors.accent }]} activeOpacity={0.8}>
+        <View style={styles.inlinePlusIcon}>
+          <View style={[styles.plusH, { backgroundColor: colors.accentText }]} />
+          <View style={[styles.plusV, { backgroundColor: colors.accentText }]} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  ) : null;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -155,6 +191,7 @@ export function TodayScreen() {
             )}
           </View>
         }
+        ListFooterComponent={inlineInput}
         ListEmptyComponent={
           showAllDone ? null : (
             <Text style={[styles.empty, { color: colors.textMuted }]}>No tasks for today. Add one below.</Text>
@@ -162,7 +199,18 @@ export function TodayScreen() {
         }
       />
 
-      <AddTaskFAB colors={colors} onAdd={handleAdd} />
+      {!inputOpen && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.accent }]}
+          onPress={() => setInputOpen(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.fabPlusIcon}>
+            <View style={[styles.plusH, { backgroundColor: colors.accentText }]} />
+            <View style={[styles.plusV, { backgroundColor: colors.accentText }]} />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -177,4 +225,58 @@ const styles = StyleSheet.create({
     borderRadius: 10, marginVertical: 1,
   },
   taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
+
+  // Inline add-task input
+  inlineInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingLeft: 16,
+    paddingRight: 6,
+    paddingVertical: 6,
+    marginTop: 12,
+    marginHorizontal: 4,
+  },
+  inlineInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+    paddingVertical: 8,
+  },
+  inlinePlusBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  inlinePlusIcon: {
+    width: 20, height: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  plusH: { position: 'absolute', width: 18, height: 2.5, borderRadius: 1 },
+  plusV: { position: 'absolute', width: 2.5, height: 18, borderRadius: 1 },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabPlusIcon: {
+    width: 24, height: 24,
+    alignItems: 'center', justifyContent: 'center',
+  },
 });

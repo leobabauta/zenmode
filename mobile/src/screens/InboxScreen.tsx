@@ -115,7 +115,7 @@ export function InboxScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
       </View>
 
@@ -138,7 +138,7 @@ export function InboxScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 12 },
-  title: { fontSize: 34, fontWeight: '700' },
+  title: { fontSize: 40, fontWeight: '700' },
   list: { paddingBottom: 80, paddingHorizontal: 12 },
   taskRow: {
     flexDirection: 'row', alignItems: 'center',
