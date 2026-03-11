@@ -9,18 +9,30 @@ export function InboxView() {
   const items = usePlannerStore((s) => s.items);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const startSelection = usePlannerStore((s) => s.startSelection);
+  const selectionFocusId = usePlannerStore((s) => s.selectionFocusId);
   const inboxItems = selectInboxItems(items);
 
   const isEmpty = inboxItems.length === 0;
+  const inboxIds = new Set(inboxItems.map((i) => i.id));
 
-  // Auto-select first item when inbox loads with items
+  // Auto-select first item on load, and re-select first item when focused item leaves inbox
   const didAutoSelect = useRef(false);
   useEffect(() => {
-    if (!isEmpty && !didAutoSelect.current) {
+    if (isEmpty) {
+      didAutoSelect.current = false;
+      return;
+    }
+    // Initial auto-select
+    if (!didAutoSelect.current) {
       didAutoSelect.current = true;
       startSelection(inboxItems[0].id);
+      return;
     }
-  }, [isEmpty]);
+    // If focused item is no longer in inbox, select the first item
+    if (selectionFocusId && !inboxIds.has(selectionFocusId)) {
+      startSelection(inboxItems[0].id);
+    }
+  }, [isEmpty, selectionFocusId, inboxItems.length]);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
