@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, SectionList, Pressable, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
+import { View, Text, TextInput, FlatList, Pressable, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { usePlannerStore, selectItemsForDay } from '../store/usePlannerStore';
-import { toDayKey, formatDayLabel } from '../../../shared/lib/dates';
-import { addDays, isToday, isTomorrow } from 'date-fns';
+import { toDayKey } from '../../../shared/lib/dates';
+import { addDays, isToday, isTomorrow, format, isPast, startOfDay } from 'date-fns';
 import type { PlannerItem } from '../../../shared/types';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { Checkbox } from '../components/Checkbox';
@@ -59,7 +59,7 @@ function TaskRow({ item, colors, navigation, onRequestSnooze }: {
       onDelete={handleDelete}
     >
       <Pressable onPress={() => navigation.navigate('TaskDetail', { itemId: item.id })}>
-        <View style={[styles.taskRow, { backgroundColor: colors.bg }]}>
+        <View style={styles.taskRow}>
           <Checkbox
             checked={!!item.completed}
             onChange={(checked) => updateItem(item.id, { completed: checked })}
@@ -79,18 +79,6 @@ function TaskRow({ item, colors, navigation, onRequestSnooze }: {
       </Pressable>
     </SwipeableRow>
   );
-}
-
-function getDayLabel(date: Date): string {
-  if (isToday(date)) return 'Today';
-  if (isTomorrow(date)) return 'Tomorrow';
-  return formatDayLabel(date);
-}
-
-interface TimelineSection {
-  title: string;
-  dayKey: string;
-  data: PlannerItem[];
 }
 
 function AddTaskRow({ dayKey, colors }: { dayKey: string; colors: Colors }) {
@@ -131,11 +119,69 @@ function AddTaskRow({ dayKey, colors }: { dayKey: string; colors: Colors }) {
 
   return (
     <TouchableOpacity style={styles.addTaskRow} onPress={() => setEditing(true)} activeOpacity={0.6}>
-      <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
         <Path d="M12 4.5v15m7.5-7.5h-15" stroke={colors.textMuted} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
       <Text style={[styles.addTaskText, { color: colors.textMuted }]}>Add task</Text>
     </TouchableOpacity>
+  );
+}
+
+interface DayData {
+  date: Date;
+  dayKey: string;
+  dayNum: string;
+  weekday: string;
+  isCurrentDay: boolean;
+  isPastDay: boolean;
+  items: PlannerItem[];
+}
+
+function DayColumn({ day, colors, navigation, onRequestSnooze }: {
+  day: DayData; colors: Colors; navigation: any;
+  onRequestSnooze: (itemId: string) => void;
+}) {
+  const dayNumColor = day.isCurrentDay
+    ? colors.accent
+    : day.isPastDay
+      ? colors.textMuted
+      : colors.text;
+
+  const weekdayColor = day.isCurrentDay
+    ? colors.accent
+    : day.isPastDay
+      ? colors.textMuted
+      : colors.textSecondary;
+
+  return (
+    <View style={[
+      styles.dayColumn,
+      day.isCurrentDay
+        ? { backgroundColor: colors.todayBg, borderRadius: 16 }
+        : { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+    ]}>
+      <View style={styles.dayLayout}>
+        {/* Left: day number + weekday */}
+        <View style={styles.dayLabel}>
+          <Text style={[styles.dayNum, { color: dayNumColor }]}>{day.dayNum}</Text>
+          <Text style={[styles.weekday, { color: weekdayColor }]}>{day.weekday}</Text>
+        </View>
+
+        {/* Right: tasks + add task */}
+        <View style={styles.dayContent}>
+          {day.items.map((item) => (
+            <TaskRow
+              key={item.id}
+              item={item}
+              colors={colors}
+              navigation={navigation}
+              onRequestSnooze={onRequestSnooze}
+            />
+          ))}
+          <AddTaskRow dayKey={day.dayKey} colors={colors} />
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -150,20 +196,23 @@ export function TimelineScreen() {
   const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
 
   const today = new Date();
-  const sections: TimelineSection[] = [];
+  const days: DayData[] = [];
 
   for (let i = 0; i < 14; i++) {
     const date = addDays(today, i);
     const dayKey = toDayKey(date);
     const dayItems = selectItemsForDay(items, dayKey);
-
     const incomplete = dayItems.filter((item) => !item.completed);
     const completed = dayItems.filter((item) => item.completed);
 
-    sections.push({
-      title: getDayLabel(date),
+    days.push({
+      date,
       dayKey,
-      data: [...incomplete, ...completed],
+      dayNum: format(date, 'd'),
+      weekday: format(date, 'EEE'),
+      isCurrentDay: isToday(date),
+      isPastDay: isPast(startOfDay(date)) && !isToday(date),
+      items: [...completed, ...incomplete],
     });
   }
 
@@ -182,22 +231,13 @@ export function TimelineScreen() {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
       <Text style={[styles.title, { color: colors.text }]}>Timeline</Text>
 
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id}
-        renderSectionHeader={({ section }) => (
-          <View style={[styles.sectionHeader, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.sectionHeaderText, { color: colors.text }]}>{section.title}</Text>
-          </View>
-        )}
-        renderItem={({ item }) => (
-          <TaskRow item={item} colors={colors} navigation={navigation} onRequestSnooze={setSnoozeItemId} />
-        )}
-        renderSectionFooter={({ section }) => (
-          <AddTaskRow dayKey={(section as TimelineSection).dayKey} colors={colors} />
+      <FlatList
+        data={days}
+        keyExtractor={(day) => day.dayKey}
+        renderItem={({ item: day }) => (
+          <DayColumn day={day} colors={colors} navigation={navigation} onRequestSnooze={setSnoozeItemId} />
         )}
         contentContainerStyle={styles.list}
-        stickySectionHeadersEnabled={false}
         keyboardShouldPersistTaps="handled"
       />
 
@@ -215,25 +255,57 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   title: { fontSize: 40, fontWeight: '700', paddingHorizontal: 20, paddingTop: 28, marginBottom: 16 },
   list: { paddingBottom: 100, paddingHorizontal: 12 },
-  sectionHeader: { paddingTop: 24, paddingBottom: 8, paddingHorizontal: 20 },
-  sectionHeaderText: { fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+
+  // Day column (2-column layout like PWA)
+  dayColumn: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    minHeight: 70,
+  },
+  dayLayout: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dayLabel: {
+    width: 48,
+    flexShrink: 0,
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  dayNum: {
+    fontSize: 26,
+    fontWeight: '700',
+    lineHeight: 30,
+  },
+  weekday: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginTop: 1,
+  },
+  dayContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  // Task rows
   taskRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 12,
-    borderRadius: 10, marginVertical: 1,
+    paddingVertical: 8, paddingHorizontal: 4,
+    borderRadius: 8, marginVertical: 1,
   },
   taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
 
+  // Add task
   addTaskRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingVertical: 10, paddingHorizontal: 12,
-    marginBottom: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 8, paddingHorizontal: 4,
   },
-  addTaskText: { fontSize: 14 },
+  addTaskText: { fontSize: 13 },
   addTaskInputRow: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 8, paddingHorizontal: 12,
-    marginBottom: 4,
+    paddingVertical: 8, paddingHorizontal: 4,
   },
   addTaskInput: { fontSize: 15, padding: 0 },
 });
