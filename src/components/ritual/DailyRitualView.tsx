@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
@@ -10,7 +11,61 @@ import { HashtagText } from '../ui/HashtagText';
 import { cn } from '../../lib/utils';
 import type { PlannerItem } from '../../types';
 
+/** Draggable wrapper for items in the ritual step 1 */
+function RitualDraggableItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={cn('touch-none', isDragging && 'opacity-40')}
+    >
+      {children}
+    </div>
+  );
+}
+
 const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+/** Droppable zone wrapper for the today column */
+function RitualDropZone({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={cn(className, isOver && 'ring-2 ring-blue-400/50 rounded-xl')}>
+      {children}
+    </div>
+  );
+}
+
+/** Droppable circle for Tomorrow / Later targets */
+function RitualDropCircle({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-dashed text-center transition-colors',
+        isOver
+          ? 'border-blue-400 bg-blue-500/10 scale-105'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+      )}
+    >
+      {children}
+      <span className={cn(
+        'text-[10px] font-medium',
+        isOver ? 'text-blue-400' : 'text-[var(--color-text-muted)]'
+      )}>
+        {label}
+      </span>
+    </div>
+  );
+}
 
 function StarIcon({ filled, color }: { filled: boolean; color: 'yellow' | 'blue' }) {
   const colors = color === 'yellow'
@@ -210,7 +265,7 @@ export function DailyRitualView() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)]">
+          <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] text-center">
             Daily Planning Ritual
           </h1>
         </div>
@@ -262,18 +317,20 @@ export function DailyRitualView() {
                       </p>
                     ) : (
                       inboxItems.map((item) => (
-                        <div key={item.id} className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group">
-                          <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
-                            {item.text}
-                          </span>
-                          <button
-                            onClick={() => moveInboxToToday(item.id)}
-                            className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Add to Today"
-                          >
-                            +Today
-                          </button>
-                        </div>
+                        <RitualDraggableItem key={item.id} id={item.id}>
+                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing">
+                            <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
+                              {item.text}
+                            </span>
+                            <button
+                              onClick={() => moveInboxToToday(item.id)}
+                              className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Add to Today"
+                            >
+                              +Today
+                            </button>
+                          </div>
+                        </RitualDraggableItem>
                       ))
                     )}
                   </div>
@@ -361,8 +418,8 @@ export function DailyRitualView() {
                 </div>
               </div>
 
-              {/* MIDDLE: Today's tasks */}
-              <div className="flex-1 min-w-0">
+              {/* MIDDLE: Today's tasks (droppable) */}
+              <RitualDropZone id={dayKey} className="flex-1 min-w-0">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 px-1">
                   Today ({todayItems.length})
                 </h3>
@@ -373,54 +430,54 @@ export function DailyRitualView() {
                     </p>
                   ) : (
                     todayItems.map((item) => (
-                      <div key={item.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group">
-                        <Checkbox
-                          checked={item.completed}
-                          onChange={(checked) => updateItem(item.id, { completed: checked })}
-                        />
-                        <span className={cn(
-                          'flex-1 min-w-0 text-xs truncate',
-                          item.completed ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
-                        )}>
-                          {item.text}
-                        </span>
-                        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => moveInboxToTomorrow(item.id)}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
-                            title="Move to Tomorrow"
-                          >
-                            Tmrw
-                          </button>
-                          <button
-                            onClick={() => sendToLater(item.id)}
-                            className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-colors"
-                            title="Move to Later"
-                          >
-                            Later
-                          </button>
+                      <RitualDraggableItem key={item.id} id={item.id}>
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing">
+                          <Checkbox
+                            checked={item.completed}
+                            onChange={(checked) => updateItem(item.id, { completed: checked })}
+                          />
+                          <span className={cn(
+                            'flex-1 min-w-0 text-xs truncate',
+                            item.completed ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
+                          )}>
+                            {item.text}
+                          </span>
+                          <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => moveInboxToTomorrow(item.id)}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                              title="Move to Tomorrow"
+                            >
+                              Tmrw
+                            </button>
+                            <button
+                              onClick={() => sendToLater(item.id)}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-colors"
+                              title="Move to Later"
+                            >
+                              Later
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      </RitualDraggableItem>
                     ))
                   )}
                   <AddItemForm dayKey={dayKey} className="mt-1" />
                 </div>
-              </div>
+              </RitualDropZone>
 
-              {/* RIGHT: Tomorrow & Later circles */}
+              {/* RIGHT: Tomorrow & Later circles (droppable) */}
               <div className="flex flex-col gap-3 w-24 flex-shrink-0 pt-6">
-                <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+                <RitualDropCircle id={tomorrowKey} label="Tomorrow">
                   <svg className="w-4 h-4 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
                   </svg>
-                  <span className="text-[10px] font-medium text-[var(--color-text-muted)]">Tomorrow</span>
-                </div>
-                <div className="flex flex-col items-center justify-center w-24 h-24 rounded-full border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] text-center">
+                </RitualDropCircle>
+                <RitualDropCircle id="later" label="Later">
                   <svg className="w-4 h-4 text-[var(--color-text-muted)] mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                   </svg>
-                  <span className="text-[10px] font-medium text-[var(--color-text-muted)]">Later</span>
-                </div>
+                </RitualDropCircle>
               </div>
             </div>
 

@@ -136,8 +136,8 @@ export function TaskItem({
       onDeselect?.();
       return;
     }
-    // Shift+E → send to Later Archive
-    if (e.key === 'E' && e.shiftKey) {
+    // Shift+E or Shift+L → send to Later Archive
+    if ((e.key === 'E' || e.key === 'L') && e.shiftKey) {
       e.preventDefault();
       sendToLater(item.id);
       onDeselect?.();

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectItemsForDay, selectInboxItems, selectLaterItems, selectChildItems } from '../../store/usePlannerStore';
-import { requestCalendarAccess } from '../../lib/googleCalendar';
+import { requestCalendarAccess, clearCalendarToken } from '../../lib/googleCalendar';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
@@ -120,6 +120,7 @@ export function SettingsView() {
   };
 
   const handleDisconnectCalendar = () => {
+    clearCalendarToken();
     setGoogleCalendarConnected(false);
   };
 

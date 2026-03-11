@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { usePlannerStore, selectInboxItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
@@ -15,24 +15,22 @@ export function InboxView() {
   const isEmpty = inboxItems.length === 0;
   const inboxIds = new Set(inboxItems.map((i) => i.id));
 
-  // Auto-select first item on load, and re-select first item when focused item leaves inbox
-  const didAutoSelect = useRef(false);
+  // Always select the first inbox item: on mount, and when focused item leaves inbox
   useEffect(() => {
-    if (isEmpty) {
-      didAutoSelect.current = false;
-      return;
-    }
-    // Initial auto-select
-    if (!didAutoSelect.current) {
-      didAutoSelect.current = true;
-      startSelection(inboxItems[0].id);
-      return;
-    }
-    // If focused item is no longer in inbox, select the first item
-    if (selectionFocusId && !inboxIds.has(selectionFocusId)) {
+    if (isEmpty) return;
+    // If nothing selected, or focused item is no longer in inbox, select first item
+    if (!selectionFocusId || !inboxIds.has(selectionFocusId)) {
       startSelection(inboxItems[0].id);
     }
   }, [isEmpty, selectionFocusId, inboxItems.length]);
+
+  // Re-select first item when navigating back to inbox
+  useEffect(() => {
+    if (!isEmpty) {
+      startSelection(inboxItems[0].id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -46,7 +44,7 @@ export function InboxView() {
               <p className="mb-1">Quickly process your inbox:</p>
               <div className="flex flex-col gap-0.5">
                 <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">Shift+T</kbd> Move to Today</span>
-                <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">Shift+E</kbd> Move to Later</span>
+                <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">Shift+L</kbd> Move to Later</span>
                 <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">M</kbd> Move to a specific day</span>
                 <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">dd</kbd> Delete</span>
               </div>

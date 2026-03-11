@@ -7,7 +7,7 @@ declare global {
           initTokenClient: (config: {
             client_id: string;
             scope: string;
-            callback: (response: { access_token?: string; error?: string }) => void;
+            callback: (response: { access_token?: string; error?: string; expires_in?: number }) => void;
           }) => { requestAccessToken: () => void };
         };
       };
@@ -22,10 +22,42 @@ interface CalendarEvent {
   end: { dateTime?: string; date?: string };
 }
 
-let accessToken: string | null = null;
+const STORAGE_KEY = 'zenmode-gcal-token';
+
+function loadCachedToken(): string | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const { token, expiresAt } = JSON.parse(raw);
+    if (typeof token === 'string' && typeof expiresAt === 'number' && Date.now() < expiresAt) {
+      return token;
+    }
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  return null;
+}
+
+function saveCachedToken(token: string, expiresIn: number) {
+  // Subtract 60s buffer so we don't use a token right at expiry
+  const expiresAt = Date.now() + (expiresIn - 60) * 1000;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, expiresAt }));
+}
+
+let accessToken: string | null = loadCachedToken();
+
+export function clearCalendarToken() {
+  accessToken = null;
+  localStorage.removeItem(STORAGE_KEY);
+}
 
 export function requestCalendarAccess(): Promise<string> {
   return new Promise((resolve, reject) => {
+    // Check in-memory token first, then localStorage
+    if (!accessToken) {
+      accessToken = loadCachedToken();
+    }
     if (accessToken) {
       resolve(accessToken);
       return;
@@ -52,6 +84,7 @@ export function requestCalendarAccess(): Promise<string> {
         }
         if (response.access_token) {
           accessToken = response.access_token;
+          saveCachedToken(response.access_token, response.expires_in ?? 3600);
           resolve(response.access_token);
         } else {
           reject(new Error('No access token received'));
@@ -83,8 +116,8 @@ export async function fetchTodayEvents(): Promise<CalendarEvent[]> {
   );
 
   if (res.status === 401) {
-    // Token expired — clear and retry once
-    accessToken = null;
+    // Token expired — clear cached token and retry once
+    clearCalendarToken();
     const newToken = await requestCalendarAccess();
     const retry = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
