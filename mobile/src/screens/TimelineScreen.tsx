@@ -110,7 +110,7 @@ function AddTaskRow({ dayKey, colors }: { dayKey: string; colors: Colors }) {
           value={text}
           onChangeText={setText}
           onSubmitEditing={handleSubmit}
-          onBlur={handleSubmit}
+          onBlur={() => { setText(''); setEditing(false); }}
           returnKeyType="done"
         />
       </View>
