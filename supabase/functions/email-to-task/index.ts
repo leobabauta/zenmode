@@ -132,6 +132,65 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Use Claude to generate a better task name and notes from the email
+    let taskNotes: string | null = cleanedBody || null;
+    try {
+      const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+      if (anthropicApiKey) {
+        const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicApiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 256,
+            messages: [
+              {
+                role: 'user',
+                content: `Analyze this email and create a task from it. Return JSON only, no other text.
+
+Email subject: ${subject || '(no subject)'}
+Email body:
+${cleanedBody || '(no body)'}
+
+Return a JSON object with:
+- "task": A concise, action-oriented task name (under 80 chars). Start with a verb like "Reply to", "Review", "Follow up on", "Schedule", etc. Include who/what from the email.
+- "notes": A brief summary of key details from the email body that would be useful context for the task. If there's no meaningful body content, set to null.
+
+JSON response:`,
+              },
+            ],
+          }),
+        });
+
+        if (claudeResponse.ok) {
+          const claudeData = await claudeResponse.json();
+          const content = claudeData?.content?.[0]?.text || '';
+          // Extract JSON from the response (handle possible markdown code blocks)
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.task && typeof parsed.task === 'string') {
+              taskText = parsed.task;
+              console.log(`Claude generated task: "${taskText}"`);
+            }
+            if (parsed.notes !== undefined) {
+              taskNotes = parsed.notes || null;
+              console.log(`Claude generated notes: "${taskNotes}"`);
+            }
+          }
+        } else {
+          console.error(`Claude API error: ${claudeResponse.status} ${claudeResponse.statusText}`);
+        }
+      }
+    } catch (claudeErr) {
+      console.error('Claude API call failed, using fallback:', claudeErr);
+      // Fall back to original subject/body — taskText and taskNotes already set
+    }
+
     // Get current max order in inbox
     const { data: existingItems } = await supabase
       .from('items')
@@ -157,7 +216,7 @@ Deno.serve(async (req) => {
       order: nextOrder,
       created_at: now,
       updated_at: now,
-      notes: cleanedBody || null,
+      notes: taskNotes,
     };
 
     const { error: insertError } = await supabase.from('items').insert([row]);
