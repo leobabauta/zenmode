@@ -37,7 +37,7 @@ interface PlannerState {
 
   // Actions
   addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; listId?: string; isPriority?: boolean; isMediumPriority?: boolean; isPractice?: boolean }) => void;
-  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice'>>) => void;
+  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice' | 'notes'>>) => void;
   deleteItem: (id: string) => void;
   moveItem: (id: string, dayKey: string | null, isLater?: boolean) => void;
   reorderItems: (orderedIds: string[]) => void;
@@ -109,6 +109,22 @@ export const usePlannerStore = create<PlannerState>()(
           item.updatedAt = new Date().toISOString();
           if (patch.completed !== undefined) {
             item.completedAt = patch.completed ? new Date().toISOString() : undefined;
+
+            // Auto-sort: move completed items above incomplete (matches web app)
+            const siblings = Object.values(state.items).filter((i) => {
+              if (i.parentId || i.isArchived) return false;
+              if (item.dayKey) return i.dayKey === item.dayKey;
+              if (item.isLater) return i.dayKey === null && i.isLater === true;
+              if (item.listId) return i.listId === item.listId && !i.isArchived;
+              return i.dayKey === null && !i.isLater;
+            }).sort((a, b) => a.order - b.order);
+
+            const completed = siblings.filter((i) => i.completed);
+            const incomplete = siblings.filter((i) => !i.completed);
+            const sorted = [...completed, ...incomplete];
+            sorted.forEach((s, i) => {
+              state.items[s.id].order = i;
+            });
           }
         });
       },

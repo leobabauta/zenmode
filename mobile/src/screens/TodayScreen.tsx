@@ -24,7 +24,7 @@ const triggerHaptic = () => {
   if (Platform.OS === 'ios') {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   } else {
-    Vibration.vibrate(10);
+    Vibration.vibrate(40);
   }
 };
 
@@ -32,7 +32,7 @@ const triggerHapticMedium = () => {
   if (Platform.OS === 'ios') {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   } else {
-    Vibration.vibrate(20);
+    Vibration.vibrate(60);
   }
 };
 
