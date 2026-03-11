@@ -2,7 +2,7 @@
   "expo": {
     "name": "zenmode",
     "slug": "zenmode",
-    "version": "0.5.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -27,6 +27,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6427143f-b897-44a5-a5ac-97ac79aea918"
+      }
     }
   }
 }
