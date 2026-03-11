@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectChildItems } from '../../store/usePlannerStore';
+import { toDayKey } from '../../lib/dates';
 import { consumePendingEditX, getInputCursorX, getOffsetFromX, setPendingEditX } from '../../lib/editNavigation';
 import { Checkbox } from '../ui/Checkbox';
 import { IconButton } from '../ui/IconButton';
@@ -36,12 +37,13 @@ export function TaskItem({
   onShiftSelectPrev, onShiftSelectNext, onMoveUp, onMoveDown,
   onInsertAfter, onToggleCollapse, isCollapsed, dragHandleProps,
 }: TaskItemProps) {
-  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, setExpandedTask, setExpandedTaskFullScreen, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
+  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, moveItem, setExpandedTask, setExpandedTaskFullScreen, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
     promptDeleteItem: s.promptDeleteItem,
     setRecurrence: s.setRecurrence,
     sendToInbox: s.sendToInbox,
     sendToLater: s.sendToLater,
+    moveItem: s.moveItem,
     setExpandedTask: s.setExpandedTask,
     setExpandedTaskFullScreen: s.setExpandedTaskFullScreen,
     setShowMoveModal: s.setShowMoveModal,
@@ -138,6 +140,13 @@ export function TaskItem({
     if (e.key === 'E' && e.shiftKey) {
       e.preventDefault();
       sendToLater(item.id);
+      onDeselect?.();
+      return;
+    }
+    // Shift+T → move to Today
+    if (e.key === 'T' && e.shiftKey) {
+      e.preventDefault();
+      moveItem(item.id, toDayKey(new Date()), 0);
       onDeselect?.();
       return;
     }

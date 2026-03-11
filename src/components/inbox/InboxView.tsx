@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { usePlannerStore, selectInboxItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
@@ -7,9 +8,19 @@ import { EmptyInbox } from '../ui/EmptyState';
 export function InboxView() {
   const items = usePlannerStore((s) => s.items);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
+  const startSelection = usePlannerStore((s) => s.startSelection);
   const inboxItems = selectInboxItems(items);
 
   const isEmpty = inboxItems.length === 0;
+
+  // Auto-select first item when inbox loads with items
+  const didAutoSelect = useRef(false);
+  useEffect(() => {
+    if (!isEmpty && !didAutoSelect.current) {
+      didAutoSelect.current = true;
+      startSelection(inboxItems[0].id);
+    }
+  }, [isEmpty]);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -19,9 +30,15 @@ export function InboxView() {
             Inbox
           </h1>
           {!isEmpty && (
-            <span className="text-xs text-[var(--color-text-muted)]">
-              {inboxItems.length} {inboxItems.length === 1 ? 'item' : 'items'}
-            </span>
+            <div className="mt-2 text-xs text-[var(--color-text-muted)]">
+              <p className="mb-1">Quickly process your inbox:</p>
+              <div className="flex flex-col gap-0.5">
+                <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">Shift+T</kbd> Move to Today</span>
+                <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">Shift+E</kbd> Move to Later</span>
+                <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">M</kbd> Move to a specific day</span>
+                <span><kbd className="font-mono bg-[var(--color-surface)] px-1 py-0.5 rounded text-[10px]">dd</kbd> Delete</span>
+              </div>
+            </div>
           )}
         </div>
 
