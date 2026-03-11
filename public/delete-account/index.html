@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Account - zenmode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fafafa;
+      color: #1c1917;
+      line-height: 1.7;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #1c1917;
+    }
+    .nav-logo img { width: 2.5rem; height: 2.5rem; }
+    .nav-logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #1d4ed8; }
+    .nav-links .btn-signin {
+      display: inline-block;
+      background: #1c1917;
+      color: #fff;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-links .btn-signin:hover { background: #292524; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #1c1917;
+      margin-bottom: 1.5rem;
+    }
+    .hero .intro {
+      font-size: 1.1rem;
+      color: #57534e;
+      max-width: 40rem;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* Content */
+    .content {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+    }
+    .content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1c1917;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .content h2:first-child {
+      margin-top: 0;
+    }
+    .content p {
+      font-size: 1rem;
+      color: #57534e;
+      margin-bottom: 1rem;
+    }
+    .content ol {
+      font-size: 1rem;
+      color: #57534e;
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+    .content li {
+      margin-bottom: 0.5rem;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid #e7e5e4;
+      padding: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    footer a, footer span {
+      font-size: 1rem;
+      color: #78716c;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer a:hover { color: #1c1917; }
+  </style>
+</head>
+<body>
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/zenmode-logo.svg" alt="" />
+      <span>zenmode</span>
+    </a>
+    <div class="nav-links">
+      <a href="/manifesto">Manifesto</a>
+      <a href="/" class="btn-signin">Sign in</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Delete Your Account</h1>
+    <p class="intro">
+      You can delete your zenmode account and all associated data at any time. Deletion is immediate and permanent.
+    </p>
+  </section>
+
+  <!-- Content -->
+  <section class="content">
+    <h2>How to delete your account</h2>
+    <ol>
+      <li>Open the zenmode app (web or mobile)</li>
+      <li>Go to <strong>Settings</strong></li>
+      <li>Scroll to the bottom and tap <strong>Delete Account</strong></li>
+      <li>Confirm the deletion when prompted</li>
+    </ol>
+    <p>This will permanently delete your account, all tasks, lists, preferences, and any other data associated with your account. This action cannot be undone.</p>
+
+    <h2>What gets deleted</h2>
+    <p>When you delete your account, the following data is permanently removed:</p>
+    <ol>
+      <li>Your user account and authentication credentials</li>
+      <li>All tasks, notes, and lists you created</li>
+      <li>Your app preferences and settings</li>
+      <li>Any synced data across devices</li>
+    </ol>
+
+    <h2>Need help?</h2>
+    <p>If you are unable to access your account or need assistance with deletion, contact us at <strong>l@zenhabits.net</strong> and we will process your request.</p>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a href="/about">About</a>
+    <a href="/manifesto">Manifesto</a>
+    <a href="/privacy">Privacy Policy</a>
+    <a href="/changelog">Changelog & Roadmap</a>
+  </footer>
+</body>
+</html>
