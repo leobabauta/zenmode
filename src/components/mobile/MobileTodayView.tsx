@@ -10,9 +10,6 @@ export function MobileTodayView() {
   const todayItems = selectItemsForDay(items, dayKey);
   const label = formatDayLabel(today);
 
-  const practiceItems = todayItems.filter((i) => i.isPractice);
-  const nonPracticeItems = todayItems.filter((i) => !i.isPractice);
-
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Header */}
@@ -21,19 +18,9 @@ export function MobileTodayView() {
         <span className="text-sm text-[var(--color-text-muted)]">{label}</span>
       </div>
 
-      {/* Practice items */}
-      {practiceItems.length > 0 && (
-        <div className="mx-5 mb-3 px-4 py-2 rounded-lg bg-[var(--color-surface)]">
-          <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Practice</p>
-          {practiceItems.map((item) => (
-            <MobileTaskRow key={item.id} item={item} />
-          ))}
-        </div>
-      )}
-
       {/* Task list */}
       <div className="space-y-0.5">
-        {nonPracticeItems.map((item) => (
+        {todayItems.map((item) => (
           <MobileTaskRow key={item.id} item={item} />
         ))}
       </div>

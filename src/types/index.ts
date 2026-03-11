@@ -25,7 +25,6 @@ export interface PlannerItem {
   consecutiveMoves?: number;
   isPriority?: boolean;
   isMediumPriority?: boolean;
-  isPractice?: boolean;
   listId?: string;
   completedAt?: string;
   timerSessions?: Array<{ startedAt: string; duration: number }>;

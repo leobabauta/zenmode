@@ -36,8 +36,8 @@ interface PlannerState {
   sidebarCollapsed: boolean;
 
   // Actions
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; listId?: string; isPriority?: boolean; isMediumPriority?: boolean; isPractice?: boolean }) => void;
-  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice' | 'notes'>>) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; listId?: string; isPriority?: boolean; isMediumPriority?: boolean }) => void;
+  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'notes'>>) => void;
   deleteItem: (id: string) => void;
   moveItem: (id: string, dayKey: string | null, isLater?: boolean) => void;
   reorderItems: (orderedIds: string[]) => void;
@@ -96,7 +96,6 @@ export const usePlannerStore = create<PlannerState>()(
             listId: payload.listId,
             isPriority: payload.isPriority,
             isMediumPriority: payload.isMediumPriority,
-            isPractice: payload.isPractice,
           };
         });
       },

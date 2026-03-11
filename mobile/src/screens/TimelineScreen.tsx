@@ -31,7 +31,7 @@ function TaskRow({ item, colors, navigation, onRequestSnooze }: {
       addItem({
         type: snapshot.type, text: snapshot.text, dayKey: snapshot.dayKey ?? null,
         isLater: snapshot.isLater, isPriority: snapshot.isPriority,
-        isMediumPriority: snapshot.isMediumPriority, isPractice: snapshot.isPractice,
+        isMediumPriority: snapshot.isMediumPriority,
       });
     });
   };

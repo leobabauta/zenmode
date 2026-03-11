@@ -1,13 +1,12 @@
 import { useDroppable } from '@dnd-kit/core';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
-import { PracticeBox } from '../ui/PracticeBox';
 import { cn } from '../../lib/utils';
 import { GreetingBanner } from '../ui/GreetingBanner';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { getWeekKey } from '../../lib/dates';
 import type { DaySlot } from '../../types';
-import { forwardRef, useMemo } from 'react';
+import { forwardRef } from 'react';
 
 interface DayColumnProps {
   day: DaySlot;
@@ -37,9 +36,6 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
 
     const dayNum = day.date.getDate();
     const weekday = WEEKDAYS[day.date.getDay()];
-    const practiceItems = useMemo(() => day.items.filter((i) => i.isPractice), [day.items]);
-    const nonPracticeItems = useMemo(() => day.items.filter((i) => !i.isPractice), [day.items]);
-
     return (
       <div
         ref={ref}
@@ -90,11 +86,8 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
                 <GreetingBanner />
               </div>
             )}
-            {practiceItems.length > 0 && (
-              <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
-            )}
             <div ref={setNodeRef} className="min-h-[8px]">
-              <ItemList items={nonPracticeItems} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />
+              <ItemList items={day.items} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />
             </div>
             <AddItemForm dayKey={day.key} className="mt-1" />
             {showWeekPlanOnMonday && (

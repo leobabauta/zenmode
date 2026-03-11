@@ -98,7 +98,6 @@ interface CalendarEvent {
 export function DailyRitualView() {
   // Determine first step based on available content
   const [step, setStep] = useState(1);
-  const [practice, setPractice] = useState('');
   const setView = usePlannerStore((s) => s.setView);
   const addItem = usePlannerStore((s) => s.addItem);
   const updateItem = usePlannerStore((s) => s.updateItem);
@@ -195,17 +194,8 @@ export function DailyRitualView() {
     updateItem(item.id, { isMediumPriority: item.isMediumPriority ? undefined : true });
   };
 
-  const handleSavePractice = () => {
-    const trimmedPractice = practice.trim();
-    if (trimmedPractice) {
-      addItem({ type: 'task', text: trimmedPractice, dayKey, isPractice: true });
-      setPractice('');
-    }
-    setStep(6);
-  };
-
-  // Steps: 1=Get your day right, 2=Top priorities, 3=Medium priorities, 4=Organize, 5=Practice, 6=Summary
-  const displayTotal = 6;
+  // Steps: 1=Get your day right, 2=Top priorities, 3=Medium priorities, 4=Organize, 5=Summary
+  const displayTotal = 5;
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -573,47 +563,11 @@ export function DailyRitualView() {
           </div>
         )}
 
-        {/* Step 5: Practice */}
-        {step === 5 && (
-          <div>
-            <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
-              What would you like to practice today?
-            </h2>
-            <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
-              Choose one skill or habit to focus on.
-            </p>
-            <input
-              type="text"
-              value={practice}
-              onChange={(e) => setPractice(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSavePractice(); } }}
-              placeholder="e.g. Deep listening, patience, staying present..."
-              autoFocus
-              className="w-full px-4 py-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-            />
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={() => setStep(4)}
-                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleSavePractice}
-                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 6: Summary */}
-        {step === 6 && (() => {
-          const practiceItems = allTodayItems.filter((i) => i.isPractice);
+        {/* Step 5: Summary */}
+        {step === 5 && (() => {
           const priorityItems = todayItems.filter((i) => i.isPriority);
           const mediumPriorityItems = todayItems.filter((i) => i.isMediumPriority && !i.isPriority);
-          const otherItems = todayItems.filter((i) => !i.isPriority && !i.isMediumPriority && !i.isPractice);
+          const otherItems = todayItems.filter((i) => !i.isPriority && !i.isMediumPriority);
           return (
             <div>
               <h2 className="text-xl font-bold text-center mb-1 text-[var(--color-text-primary)]">
@@ -622,18 +576,6 @@ export function DailyRitualView() {
               <p className="text-sm text-[var(--color-text-muted)] text-center mb-6">
                 Here's your plan for today.
               </p>
-
-              {/* Practice */}
-              {practiceItems.length > 0 && (
-                <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex-shrink-0">
-                    Practice
-                  </span>
-                  <span className="text-sm text-[var(--color-text-primary)]">
-                    {practiceItems.map((i) => i.text).join(', ')}
-                  </span>
-                </div>
-              )}
 
               {/* Priorities */}
               {priorityItems.length > 0 && (
@@ -682,7 +624,7 @@ export function DailyRitualView() {
 
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => setStep(5)}
+                  onClick={() => setStep(4)}
                   className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
                 >
                   Back

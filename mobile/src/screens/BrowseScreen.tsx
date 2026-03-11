@@ -86,7 +86,7 @@ function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: 
       addItem({
         type: snapshot.type, text: snapshot.text, dayKey: snapshot.dayKey ?? null,
         isLater: snapshot.isLater, isPriority: snapshot.isPriority,
-        isMediumPriority: snapshot.isMediumPriority, isPractice: snapshot.isPractice,
+        isMediumPriority: snapshot.isMediumPriority,
       });
     });
   };

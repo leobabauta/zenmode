@@ -132,7 +132,7 @@ export function LoginPage() {
             />
             <div className="rounded-2xl bg-white border border-stone-200 p-6">
               <h3 className="text-base font-bold text-stone-900">Daily Ritual</h3>
-              <p className="mt-2 text-sm leading-relaxed text-stone-500">Start each morning with intention — set your priorities and choose a practice for the day.</p>
+              <p className="mt-2 text-sm leading-relaxed text-stone-500">Start each morning with intention — organize your tasks and set your priorities for the day.</p>
             </div>
           </div>
 

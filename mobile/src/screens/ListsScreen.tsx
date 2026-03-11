@@ -7,6 +7,8 @@ import { toDayKey } from '../../../shared/lib/dates';
 import { addDays } from 'date-fns';
 import type { PlannerItem } from '../../../shared/types';
 import { SwipeableRow } from '../components/SwipeableRow';
+import { Checkbox } from '../components/Checkbox';
+import { PriorityStar } from '../components/PriorityStar';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 
@@ -34,7 +36,6 @@ function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: 
         isLater: snapshot.isLater,
         isPriority: snapshot.isPriority,
         isMediumPriority: snapshot.isMediumPriority,
-        isPractice: snapshot.isPractice,
       });
     });
   };
@@ -56,15 +57,29 @@ function TaskRow({ item, colors, drag, isActive }: { item: PlannerItem; colors: 
           activeOpacity={0.7}
           onLongPress={drag}
           disabled={isActive}
-          style={[styles.taskRow, { borderBottomColor: colors.border, backgroundColor: isActive ? colors.surface : colors.bg }]}
+          style={[styles.taskRow, { backgroundColor: isActive ? colors.surface : colors.bg }]}
           onPress={() => updateItem(item.id, { completed: !item.completed })}
         >
-          <View style={[styles.checkbox, { borderColor: colors.checkboxBorder }, item.completed && { backgroundColor: colors.checkboxDone, borderColor: colors.checkboxDone }]}>
-            {item.completed && <Text style={styles.checkmark}>{'✓'}</Text>}
-          </View>
-          <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={2}>
+          <Checkbox
+            checked={!!item.completed}
+            onChange={(checked) => updateItem(item.id, { completed: checked })}
+            colors={colors}
+          />
+          <Text
+            style={[
+              styles.taskText,
+              { color: colors.text },
+              item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' },
+            ]}
+            numberOfLines={2}
+          >
             {item.text}
           </Text>
+          <PriorityStar
+            isPriority={item.isPriority}
+            isMediumPriority={item.isMediumPriority}
+            colors={colors}
+          />
         </TouchableOpacity>
       </SwipeableRow>
     </ScaleDecorator>
@@ -152,7 +167,7 @@ export function ListsScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => setSubView(null)} activeOpacity={0.6}>
-          <Text style={[styles.backText, { color: colors.textSecondary }]}>{'< Lists'}</Text>
+          <Text style={[styles.backText, { color: colors.accent }]}>{'< Lists'}</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>{subViewTitle(subView)}</Text>
 
@@ -178,17 +193,16 @@ export function ListsScreen() {
         data={[]}
         keyExtractor={() => ''}
         renderItem={() => null}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.menuList}
         ListHeaderComponent={
           <>
-            {/* Built-in lists */}
             <TouchableOpacity
               style={[styles.menuRow, { borderBottomColor: colors.border }]}
               onPress={() => setSubView({ kind: 'later' })}
               activeOpacity={0.6}
             >
               <Text style={[styles.menuText, { color: colors.text }]}>Later</Text>
-              <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
+              <Text style={[styles.chevron, { color: colors.textMuted }]}>{'>'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -197,10 +211,9 @@ export function ListsScreen() {
               activeOpacity={0.6}
             >
               <Text style={[styles.menuText, { color: colors.text }]}>Archive</Text>
-              <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
+              <Text style={[styles.chevron, { color: colors.textMuted }]}>{'>'}</Text>
             </TouchableOpacity>
 
-            {/* Custom lists */}
             {customLists
               .slice()
               .sort((a, b) => a.order - b.order)
@@ -212,11 +225,10 @@ export function ListsScreen() {
                   activeOpacity={0.6}
                 >
                   <Text style={[styles.menuText, { color: colors.text }]}>{cl.name}</Text>
-                  <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
+                  <Text style={[styles.chevron, { color: colors.textMuted }]}>{'>'}</Text>
                 </TouchableOpacity>
               ))}
 
-            {/* Labels section */}
             {labels.length > 0 && (
               <>
                 <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>Labels</Text>
@@ -228,7 +240,7 @@ export function ListsScreen() {
                     activeOpacity={0.6}
                   >
                     <Text style={[styles.menuText, { color: colors.text }]}>{tag}</Text>
-                    <Text style={[styles.chevron, { color: colors.textSecondary }]}>{'>'}</Text>
+                    <Text style={[styles.chevron, { color: colors.textMuted }]}>{'>'}</Text>
                   </TouchableOpacity>
                 ))}
               </>
@@ -245,7 +257,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28, fontWeight: '700', paddingHorizontal: 20, paddingTop: 16, marginBottom: 16,
   },
-  list: { paddingHorizontal: 20, paddingBottom: 80 },
+  list: { paddingHorizontal: 12, paddingBottom: 80 },
+  menuList: { paddingHorizontal: 20, paddingBottom: 80 },
   empty: { fontSize: 14, textAlign: 'center', marginTop: 40 },
   backButton: { paddingHorizontal: 20, paddingTop: 12 },
   backText: { fontSize: 16 },
@@ -260,13 +273,9 @@ const styles = StyleSheet.create({
     marginTop: 24, marginBottom: 8,
   },
   taskRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 10, paddingHorizontal: 12,
+    borderRadius: 10, marginVertical: 1,
   },
-  checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 1.5,
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
-  },
-  checkmark: { fontSize: 13, color: '#fff', fontWeight: '600' },
   taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
 });

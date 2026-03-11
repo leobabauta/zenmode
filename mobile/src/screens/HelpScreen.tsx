@@ -38,7 +38,7 @@ const sections: HelpSection[] = [
     items: [
       {
         q: 'What is the Daily Planning Ritual?',
-        a: "It's a guided morning routine that helps you start your day with intention. You'll triage your inbox, organize your tasks, pick your top priorities, and choose a practice for the day. It takes just a few minutes.",
+        a: "It's a guided morning routine that helps you start your day with intention. You'll triage your inbox, organize your tasks, and pick your top priorities. It takes just a few minutes.",
       },
       {
         q: 'What are priorities?',

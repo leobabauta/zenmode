@@ -53,7 +53,7 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
       addItem({
         type: snapshot.type, text: snapshot.text, dayKey: snapshot.dayKey ?? null,
         isLater: snapshot.isLater, isPriority: snapshot.isPriority,
-        isMediumPriority: snapshot.isMediumPriority, isPractice: snapshot.isPractice,
+        isMediumPriority: snapshot.isMediumPriority,
       });
     });
   };
@@ -130,7 +130,7 @@ export function TodayScreen() {
   let totalTasks = 0;
   let doneTasks = 0;
   for (const item of Object.values(items)) {
-    if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== todayKey || item.isPractice) continue;
+    if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== todayKey) continue;
     totalTasks++;
     if (item.completed) doneTasks++;
   }

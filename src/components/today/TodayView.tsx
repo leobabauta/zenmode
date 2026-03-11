@@ -3,7 +3,6 @@ import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore'
 import { toDayKey } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
-import { PracticeBox } from '../ui/PracticeBox';
 import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 import { GreetingBanner } from '../ui/GreetingBanner';
 import { AllDoneToday } from '../ui/EmptyState';
@@ -27,14 +26,11 @@ export function TodayView() {
   const isPastTriggerHour = today.getHours() >= reviewRitualHour;
   const showReviewButton = reviewRitualEnabled && lastReviewRitualDate !== dayKey && (isSnoozed || isPastTriggerHour);
 
-  const practiceItems = todayItems.filter((i) => i.isPractice);
-  const nonPracticeItems = todayItems.filter((i) => !i.isPractice);
-
-  // Check if all tasks are completed (exclude practice items — they have no checkbox)
+  // Check if all tasks are completed
   let totalTasks = 0;
   let doneTasks = 0;
   for (const item of Object.values(items)) {
-    if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== dayKey || item.isPractice) continue;
+    if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== dayKey) continue;
     totalTasks++;
     if (item.completed) doneTasks++;
   }
@@ -63,11 +59,8 @@ export function TodayView() {
             <AllDoneToday onShowCompleted={() => setShowCompletedTasks(true)} />
           ) : (
             <>
-              {practiceItems.length > 0 && (
-                <PracticeBox items={practiceItems} className="mb-2 ml-[24px] mr-[34px]" />
-              )}
               <div className="min-h-[8px]">
-                <ItemList items={nonPracticeItems} />
+                <ItemList items={todayItems} />
               </div>
               <AddItemForm dayKey={dayKey} className="mt-1" />
               <SortArchiveButtons items={todayItems} />

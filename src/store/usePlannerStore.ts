@@ -73,11 +73,11 @@ interface PlannerState {
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; isPractice?: boolean; listId?: string }) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; listId?: string }) => void;
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
   setExpandedTaskFullScreen: (full: boolean) => void;
-  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'isPractice' | 'notes'>>) => void;
+  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'notes'>>) => void;
   addTimerSession: (taskId: string, session: { startedAt: string; duration: number }) => void;
   deleteItem: (id: string) => void;
   undoDelete: () => void;
@@ -221,7 +221,7 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.labelColors[tag.toLowerCase()] = color; });
       },
 
-      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, isPractice, listId }) => {
+      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, listId }) => {
         set((state) => {
           let existingItems: PlannerItem[];
           if (parentId) {
@@ -251,7 +251,6 @@ export const usePlannerStore = create<PlannerState>()(
             parentId,
             isPriority,
             isMediumPriority,
-            isPractice,
             listId,
           };
         });
@@ -599,12 +598,11 @@ export const usePlannerStore = create<PlannerState>()(
           state.lastAutoMoveDate = todayKey;
           const now = new Date().toISOString();
 
-          // Clear stale priority/practice flags from past days (keep on completed items for stats)
+          // Clear stale priority flags from past days (keep on completed items for stats)
           Object.values(state.items).forEach((item) => {
-            if (item.dayKey && item.dayKey !== todayKey && !item.completed && (item.isPriority || item.isMediumPriority || item.isPractice)) {
+            if (item.dayKey && item.dayKey !== todayKey && !item.completed && (item.isPriority || item.isMediumPriority)) {
               delete item.isPriority;
               delete item.isMediumPriority;
-              delete item.isPractice;
             }
           });
 
