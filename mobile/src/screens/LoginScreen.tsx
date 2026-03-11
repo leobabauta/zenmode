@@ -13,11 +13,11 @@ const GOOGLE_WEB_CLIENT_ID = '792674113739-mpggu1759u4q6ue4k0qg5r9j98f5fs9c.apps
 
 export function LoginScreen() {
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'main' | 'magic-sent' | 'password'>('main');
   const [loading, setLoading] = useState(false);
   const colors = useColors();
 
-  // Encode the Expo return URL in state so the callback page knows where to redirect
   const expoReturnUrl = Linking.createURL('auth');
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
     clientId: GOOGLE_WEB_CLIENT_ID,
@@ -40,7 +40,23 @@ export function LoginScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      setSent(true);
+      setMode('magic-sent');
+    }
+  };
+
+  const handlePasswordLogin = async () => {
+    const supabase = getSupabase();
+    if (!supabase || !email.trim() || !password) return;
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Sign in failed', error.message);
     }
   };
 
@@ -48,13 +64,53 @@ export function LoginScreen() {
     await promptGoogleAsync({ showInRecents: true });
   };
 
-  if (sent) {
+  if (mode === 'magic-sent') {
     return (
       <View style={[styles.container, { backgroundColor: colors.bg }]}>
         <Text style={[styles.title, { color: colors.text }]}>Check your email</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>We sent a magic link to sign you in.</Text>
-        <TouchableOpacity onPress={() => setSent(false)}>
+        <TouchableOpacity onPress={() => setMode('main')}>
           <Text style={[styles.link, { color: colors.textSecondary }]}>Try a different email</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (mode === 'password') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg }]}>
+        <Text style={[styles.brand, { color: colors.text }]}>zenmode</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Sign in with email & password</Text>
+
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+          placeholder="you@example.com"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
+
+        <TextInput
+          style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+          placeholder="Password"
+          placeholderTextColor={colors.textMuted}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: colors.accent }, loading && styles.buttonDisabled]}
+          onPress={handlePasswordLogin}
+          disabled={loading}
+        >
+          <Text style={[styles.buttonText, { color: colors.accentText }]}>{loading ? 'Signing in...' : 'Sign in'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setMode('main')}>
+          <Text style={[styles.link, { color: colors.textSecondary }]}>Back to other options</Text>
         </TouchableOpacity>
       </View>
     );
@@ -95,10 +151,13 @@ export function LoginScreen() {
         <Text style={[styles.buttonText, { color: colors.accentText }]}>{loading ? 'Sending...' : 'Send magic link'}</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity onPress={() => setMode('password')}>
+        <Text style={[styles.link, { color: colors.textSecondary }]}>Sign in with password</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.devBypass}
         onPress={() => {
-          // Dev bypass: skip auth for Expo Go testing
           useAuthStore.getState().setAuth({ id: 'dev', email: 'leo.babauta@gmail.com' } as any, null);
         }}
       >
