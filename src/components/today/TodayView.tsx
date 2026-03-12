@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
@@ -19,6 +19,13 @@ export function TodayView() {
   const today = new Date();
   const dayKey = toDayKey(today);
   const todayItems = selectItemsForDay(items, dayKey);
+
+  // Find the daily review note for today (contains #dailyreview)
+  const reviewNote = useMemo(() => {
+    return Object.values(items).find(
+      (i) => i.type === 'note' && i.dayKey === dayKey && !i.isArchived && i.text.includes('#dailyreview')
+    );
+  }, [items, dayKey]);
 
   // Show Daily Review button when ritual is enabled, not completed for today,
   // and either snoozed or past the trigger hour
@@ -56,7 +63,19 @@ export function TodayView() {
             </button>
           )}
           {showAllDone ? (
-            <AllDoneToday onShowCompleted={() => setShowCompletedTasks(true)} />
+            <>
+              <AllDoneToday onShowCompleted={() => setShowCompletedTasks(true)} />
+              {reviewNote && (
+                <div className="mt-6 mx-auto max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+                  <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Daily Review</h3>
+                  {reviewNote.text.split('\n').filter((line) => !line.startsWith('#')).map((line, i) => (
+                    <p key={i} className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                      {line.replace(/\*\*(.*?)\*\*/g, '$1')}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
             <>
               <div className="min-h-[8px]">
