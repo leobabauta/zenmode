@@ -221,11 +221,14 @@ export function ExpandedTaskView() {
       )}
 
       {/* Modal / Task Focus view */}
-      <div className={cn(
-        expandedTaskFullScreen
-          ? 'flex-1 w-full h-full bg-[var(--color-surface)] flex items-start justify-center'
-          : ''
-      )}>
+      <div
+        className={cn(
+          expandedTaskFullScreen
+            ? 'flex-1 w-full h-full bg-[var(--color-surface)] flex items-start justify-center'
+            : ''
+        )}
+        onClick={expandedTaskFullScreen ? (e) => { if (e.target === e.currentTarget) closeAndSave(); } : undefined}
+      >
       <div className={cn(
         'bg-[var(--color-bg)] flex flex-col overflow-hidden rounded-xl relative',
         expandedTaskFullScreen
@@ -268,7 +271,12 @@ export function ExpandedTaskView() {
           <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             <button
               onClick={() => setShowTimer(!showTimer)}
-              className="text-xs px-4 py-1.5 rounded-full bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-primary)] transition-colors"
+              className={cn(
+                'text-xs px-4 py-1.5 rounded-full transition-colors',
+                showTimer
+                  ? 'bg-violet-500/20 text-violet-400 shadow-[0_0_12px_rgba(139,92,246,0.3)] hover:bg-violet-500/30'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] shadow-[0_0_8px_rgba(139,92,246,0.15)] hover:shadow-[0_0_12px_rgba(139,92,246,0.3)] hover:bg-[var(--color-border)] hover:text-[var(--color-text-primary)]'
+              )}
             >
               Focus Timer
             </button>
