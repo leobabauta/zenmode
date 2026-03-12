@@ -7,6 +7,7 @@ import { HashtagText } from '../ui/HashtagText';
 import { FocusTimer } from '../ui/FocusTimer';
 import { cn } from '../../lib/utils';
 import { describeRecurrence } from '../../lib/recurrence';
+import { SimpleMarkdown } from '../ui/SimpleMarkdown';
 import type { PlannerItem } from '../../types';
 
 interface ChildItemProps {
@@ -367,7 +368,7 @@ export function ExpandedTaskView() {
               className="cursor-text min-h-[20px]"
             >
               {task?.notes ? (
-                <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap break-words">{task.notes}</p>
+                <SimpleMarkdown text={task.notes} />
               ) : (
                 <p className="text-sm text-[var(--color-text-muted)] italic">Add notes...</p>
               )}
