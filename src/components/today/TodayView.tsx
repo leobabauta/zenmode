@@ -6,6 +6,7 @@ import { AddItemForm } from '../forms/AddItemForm';
 import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 import { GreetingBanner } from '../ui/GreetingBanner';
 import { AllDoneToday } from '../ui/EmptyState';
+import { CopyButton } from '../ui/CopyButton';
 
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
@@ -109,6 +110,22 @@ export function TodayView() {
                   )}
                 </div>
               )}
+              <div className="flex justify-center mt-4">
+                <CopyButton
+                  label="Copy completed tasks"
+                  getText={() => {
+                    const completed = Object.values(items).filter(
+                      (i) => i.type === 'task' && i.dayKey === dayKey && i.completed && !i.parentId && !i.isArchived
+                    );
+                    const lines = ['**Completed Today**', ''];
+                    completed.forEach((i) => {
+                      const prefix = i.isPriority ? '(!) ' : i.isMediumPriority ? '(*) ' : '';
+                      lines.push(`- ${prefix}${i.text}`);
+                    });
+                    return lines.join('\n');
+                  }}
+                />
+              </div>
             </>
           ) : (
             <>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { getWeekKey, toDayKey } from '../../lib/dates';
+import { CopyButton } from '../ui/CopyButton';
 import type { WeeklyReview } from '../../types';
 
 export function WeeklyReviewView() {
@@ -226,7 +227,31 @@ export function WeeklyReviewView() {
               </div>
             )}
 
-            <div className="flex justify-between mt-6">
+            <div className="flex items-center justify-center mt-4">
+              <CopyButton
+                label="Copy review"
+                getText={() => {
+                  const lines: string[] = ['**Weekly Review**', ''];
+                  if (weeklyPlan && weeklyPlan.priorities.length > 0) {
+                    lines.push('**Priorities**');
+                    weeklyPlan.priorities.forEach((p) => lines.push(`- ${p.text}`));
+                    lines.push('');
+                  }
+                  if (priorityReflections.trim()) {
+                    lines.push(`**Priority Reflections:** ${priorityReflections.trim()}`, '');
+                  }
+                  if (wins.trim()) {
+                    lines.push(`**Wins:** ${wins.trim()}`, '');
+                  }
+                  if (learned.trim()) {
+                    lines.push(`**Learned:** ${learned.trim()}`);
+                  }
+                  return lines.join('\n');
+                }}
+              />
+            </div>
+
+            <div className="flex justify-between mt-4">
               <button
                 onClick={() => setStep(3)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"

@@ -8,6 +8,7 @@ import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { Checkbox } from '../ui/Checkbox';
 import { HashtagText } from '../ui/HashtagText';
+import { CopyButton } from '../ui/CopyButton';
 import { cn } from '../../lib/utils';
 import type { PlannerItem } from '../../types';
 
@@ -679,7 +680,31 @@ export function DailyRitualView() {
                 </div>
               )}
 
-              <div className="flex justify-between mt-6">
+              <div className="flex items-center justify-center mt-4">
+                <CopyButton
+                  label="Copy plan"
+                  getText={() => {
+                    const lines: string[] = ["**Today's Plan**", ''];
+                    if (priorityItems.length > 0) {
+                      lines.push('**Priorities**');
+                      priorityItems.forEach((i) => lines.push(`- ${i.text}`));
+                      lines.push('');
+                    }
+                    if (mediumPriorityItems.length > 0) {
+                      lines.push('**Medium Priorities**');
+                      mediumPriorityItems.forEach((i) => lines.push(`- ${i.text}`));
+                      lines.push('');
+                    }
+                    if (otherItems.length > 0) {
+                      lines.push('**Other Tasks**');
+                      otherItems.forEach((i) => lines.push(`- ${i.text}`));
+                    }
+                    return lines.join('\n');
+                  }}
+                />
+              </div>
+
+              <div className="flex justify-between mt-4">
                 <button
                   onClick={() => setStep(4)}
                   className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"

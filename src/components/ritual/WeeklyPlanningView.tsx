@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { getWeekKey, toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
+import { CopyButton } from '../ui/CopyButton';
 import { cn } from '../../lib/utils';
 import type { WeeklyPlan } from '../../types';
 
@@ -312,7 +313,30 @@ export function WeeklyPlanningView() {
               </div>
             )}
 
-            <div className="flex justify-between mt-6">
+            <div className="flex items-center justify-center mt-4">
+              <CopyButton
+                label="Copy weekly plan"
+                getText={() => {
+                  const lines: string[] = ['**Weekly Plan**', ''];
+                  if (priorities.length > 0) {
+                    lines.push('**Priorities**');
+                    priorities.forEach((p) => {
+                      const dayIndices = getDayIndices(p.dayKeys);
+                      const dayLabels = DAY_LABELS.filter((_, i) => dayIndices.has(i));
+                      const days = dayLabels.length > 0 ? ` (${dayLabels.join(', ')})` : '';
+                      lines.push(`- ${p.text}${days}`);
+                    });
+                    lines.push('');
+                  }
+                  if (intentions.trim()) {
+                    lines.push(`**Intention:** ${intentions.trim()}`);
+                  }
+                  return lines.join('\n');
+                }}
+              />
+            </div>
+
+            <div className="flex justify-between mt-4">
               <button
                 onClick={() => setStep(3)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
