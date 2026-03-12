@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
@@ -20,6 +20,15 @@ export function TodayView() {
   const today = new Date();
   const dayKey = toDayKey(today);
   const todayItems = selectItemsForDay(items, dayKey);
+  const startSelection = usePlannerStore((s) => s.startSelection);
+
+  // Auto-select first incomplete task on mount
+  useEffect(() => {
+    const firstIncomplete = todayItems.find((i) => i.type === 'task' && !i.completed);
+    if (firstIncomplete) {
+      startSelection(firstIncomplete.id);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Find the daily review note for today (contains #dailyreview)
   const reviewNote = useMemo(() => {
