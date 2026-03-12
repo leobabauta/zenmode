@@ -93,7 +93,16 @@ export function GreetingBanner() {
   const today = new Date();
   const dateLabel = formatDayLabel(today);
   const [tip, setTip] = useState<{ text: string; keys: string } | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      const stored = localStorage.getItem(TIP_STORAGE_KEY);
+      if (stored) {
+        const { dayKey, dismissed: d } = JSON.parse(stored);
+        return d && dayKey === toDayKey(new Date());
+      }
+    } catch { /* ignore */ }
+    return false;
+  });
 
   useEffect(() => {
     setTip(getDailyTip());
@@ -126,7 +135,14 @@ export function GreetingBanner() {
           <span className="flex-shrink-0 mt-0.5 text-amber-400" title="Daily tip">💡</span>
           <span>{tip.text}</span>
           <button
-            onClick={() => setDismissed(true)}
+            onClick={() => {
+              setDismissed(true);
+              try {
+                const stored = JSON.parse(localStorage.getItem(TIP_STORAGE_KEY) || '{}');
+                stored.dismissed = true;
+                localStorage.setItem(TIP_STORAGE_KEY, JSON.stringify(stored));
+              } catch { /* ignore */ }
+            }}
             className="flex-shrink-0 ml-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
             title="Dismiss tip"
           >

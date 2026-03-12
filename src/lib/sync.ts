@@ -278,7 +278,7 @@ interface PrefsRow {
   theme: string;
   view: string;
   active_hashtag: string | null;
-  sidebar_collapsed: boolean;
+  sidebar_collapsed?: boolean; // legacy, no longer synced
   label_colors: Record<string, string>;
   last_ritual_date: string | null;
   planning_ritual_enabled: boolean;
@@ -333,8 +333,9 @@ export async function pullPreferences(): Promise<void> {
 
     // Don't overwrite transient UI state (view, sidebarCollapsed, activeHashtag, activeListId)
     // — these are session-local and already persisted via zustand local storage.
+    // Don't overwrite theme — it's persisted locally and overwriting causes
+    // the toggle to snap back when a pull races with the push.
     usePlannerStore.setState({
-      theme: row.theme as 'light' | 'dark',
       labelColors: row.label_colors,
       lastRitualDate: bestRitualDate,
       planningRitualEnabled: row.planning_ritual_enabled ?? true,
@@ -376,7 +377,6 @@ async function flushPreferences(): Promise<void> {
     theme: s.theme,
     view: s.view,
     active_hashtag: s.activeHashtag,
-    sidebar_collapsed: s.sidebarCollapsed,
     label_colors: s.labelColors,
     last_ritual_date: s.lastRitualDate,
     planning_ritual_enabled: s.planningRitualEnabled,

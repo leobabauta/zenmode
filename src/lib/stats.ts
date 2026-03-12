@@ -10,8 +10,9 @@ function getPriority(item: PlannerItem): PriorityLevel {
 
 /** Filter to top-level tasks only (no notes, no children) */
 function topLevelTasks(items: Record<string, PlannerItem>): PlannerItem[] {
+  if (!items) return [];
   return Object.values(items).filter(
-    (i) => i.type === 'task' && !i.parentId
+    (i) => i && i.type === 'task' && !i.parentId
   );
 }
 

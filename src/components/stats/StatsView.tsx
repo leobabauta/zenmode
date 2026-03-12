@@ -29,7 +29,7 @@ function formatDuration(seconds: number): string {
 }
 
 export function StatsView() {
-  const items = usePlannerStore((s) => s.items);
+  const items = usePlannerStore((s) => s.items) ?? {};
 
   const dailyStats = useMemo(() => computeDailyCompletionStats(items), [items]);
   const dowAverages = useMemo(() => computeDayOfWeekAverages(dailyStats), [dailyStats]);
@@ -40,11 +40,11 @@ export function StatsView() {
 
   // Compute overall daily averages
   const totalDays = dailyStats.length || 1;
-  const avgHigh = Math.round((dailyStats.reduce((s, d) => s + d.high, 0) / totalDays) * 10) / 10;
-  const avgMed = Math.round((dailyStats.reduce((s, d) => s + d.medium, 0) / totalDays) * 10) / 10;
-  const avgOther = Math.round((dailyStats.reduce((s, d) => s + d.other, 0) / totalDays) * 10) / 10;
+  const avgHigh = Math.round((dailyStats.reduce((s, d) => s + (d?.high ?? 0), 0) / totalDays) * 10) / 10;
+  const avgMed = Math.round((dailyStats.reduce((s, d) => s + (d?.medium ?? 0), 0) / totalDays) * 10) / 10;
+  const avgOther = Math.round((dailyStats.reduce((s, d) => s + (d?.other ?? 0), 0) / totalDays) * 10) / 10;
 
-  const maxDow = Math.max(...dowAverages.map((d) => d.total), 1);
+  const maxDow = Math.max(...dowAverages.map((d) => d?.total ?? 0), 1);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -82,6 +82,7 @@ export function StatsView() {
             {/* Reorder to start on Monday */}
             {[1, 2, 3, 4, 5, 6, 0].map((d) => {
               const entry = dowAverages[d];
+              if (!entry) return null;
               return (
                 <div key={d} className="flex items-center gap-2">
                   <span className="text-xs text-[var(--color-text-muted)] w-8 text-right">{entry.label}</span>

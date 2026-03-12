@@ -50,6 +50,7 @@ interface PlannerState {
   weeklyPlanningSnoozedUntil: number | null;
   weeklyReviewSnoozedUntil: number | null;
   sidebarCollapsed: boolean;
+  sidebarUserChoice: boolean | null; // session-only: null = no manual toggle yet
   selectionAnchorId: string | null;
   selectionFocusId: string | null;
   expandedTaskId: string | null;
@@ -186,6 +187,7 @@ export const usePlannerStore = create<PlannerState>()(
       weeklyPlanningSnoozedUntil: null,
       weeklyReviewSnoozedUntil: null,
       sidebarCollapsed: false,
+      sidebarUserChoice: null,
       scrollToTodayRequested: 0,
       selectionAnchorId: null,
       selectionFocusId: null,
@@ -379,6 +381,13 @@ export const usePlannerStore = create<PlannerState>()(
               const horizonStr = `${horizon.getFullYear()}-${String(horizon.getMonth() + 1).padStart(2, '0')}-${String(horizon.getDate()).padStart(2, '0')}`;
 
               const addOccurrence = (dayKey: string) => {
+                // Skip if an identical recurring task already exists on this day
+                const duplicate = Object.values(state.items).find(
+                  (i) => i.dayKey === dayKey && i.text === item.text && i.recurrence &&
+                    i.recurrence.type === recurrence.type && i.recurrence.interval === recurrence.interval
+                );
+                if (duplicate) return;
+
                 const existingItems = Object.values(state.items).filter(
                   (i) => i.dayKey === dayKey
                 );
@@ -689,7 +698,20 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       setView: (view) => {
-        set((state) => { state.view = view; state.activeHashtag = null; state.showSettings = false; state.showHelp = false; });
+        set((state) => {
+          state.view = view;
+          state.activeHashtag = null;
+          state.showSettings = false;
+          state.showHelp = false;
+          // Auto-manage sidebar based on view
+          if (view === 'today') {
+            state.sidebarCollapsed = true;
+          } else if (view === 'timeline') {
+            state.sidebarCollapsed = state.sidebarUserChoice ?? false;
+          } else {
+            state.sidebarCollapsed = state.sidebarUserChoice ?? false;
+          }
+        });
       },
 
       setShowRitualPrompt: (show) => {
@@ -868,7 +890,11 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       toggleSidebar: () => {
-        set((state) => { state.sidebarCollapsed = !state.sidebarCollapsed; });
+        set((state) => {
+          const next = !state.sidebarCollapsed;
+          state.sidebarCollapsed = next;
+          state.sidebarUserChoice = next;
+        });
       },
 
       requestScrollToToday: () => {
@@ -992,7 +1018,13 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'zenmode-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, sidebarCollapsed: state.sidebarCollapsed, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, googleCalendarConnected: state.googleCalendarConnected, googleCalendarDismissed: state.googleCalendarDismissed, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, googleCalendarConnected: state.googleCalendarConnected, googleCalendarDismissed: state.googleCalendarDismissed, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Set initial sidebar state based on restored view
+          state.sidebarCollapsed = state.view === 'today';
+        }
+      },
     }
   )
 );
@@ -1000,7 +1032,7 @@ export const usePlannerStore = create<PlannerState>()(
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'sidebarCollapsed', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed'] as const;
+const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items
