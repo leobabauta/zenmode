@@ -82,7 +82,11 @@ export function TodayView() {
                   </h3>
                   {reviewNote.text.split('\n').filter((line) => !line.startsWith('#')).map((line, i) => (
                     <p key={i} className="text-sm text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
-                      {line.replace(/\*\*(.*?)\*\*/g, '$1')}
+                      {line.split(/(\*\*.*?\*\*)/).map((part, j) =>
+                        part.startsWith('**') && part.endsWith('**')
+                          ? <strong key={j}>{part.slice(2, -2)}</strong>
+                          : part
+                      )}
                     </p>
                   ))}
                   {(completedHighPriority > 0 || completedMediumPriority > 0) && (
