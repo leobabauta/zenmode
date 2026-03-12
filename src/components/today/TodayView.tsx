@@ -41,6 +41,13 @@ export function TodayView() {
     totalTasks++;
     if (item.completed) doneTasks++;
   }
+  let completedHighPriority = 0;
+  let completedMediumPriority = 0;
+  for (const item of Object.values(items)) {
+    if (item.type !== 'task' || item.parentId || item.isArchived || item.dayKey !== dayKey || !item.completed) continue;
+    if (item.isPriority) completedHighPriority++;
+    else if (item.isMediumPriority) completedMediumPriority++;
+  }
   const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
   const showAllDone = allTasksDone && !showCompletedTasks;
 
@@ -78,6 +85,24 @@ export function TodayView() {
                       {line.replace(/\*\*(.*?)\*\*/g, '$1')}
                     </p>
                   ))}
+                  {(completedHighPriority > 0 || completedMediumPriority > 0) && (
+                    <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-amber-200 dark:border-amber-700/50">
+                      {Array.from({ length: completedHighPriority }, (_, i) => (
+                        <span key={`high-${i}`} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 ring-1 ring-amber-400/30">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                          </svg>
+                        </span>
+                      ))}
+                      {Array.from({ length: completedMediumPriority }, (_, i) => (
+                        <span key={`med-${i}`} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-400/60 ring-1 ring-blue-400/20">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                          </svg>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </>
