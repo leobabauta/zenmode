@@ -276,6 +276,7 @@ async function flushDeleted(): Promise<void> {
 interface PrefsRow {
   user_id: string;
   theme: string;
+  accent_color?: string | null;
   view: string;
   active_hashtag: string | null;
   sidebar_collapsed?: boolean; // legacy, no longer synced
@@ -375,6 +376,7 @@ async function flushPreferences(): Promise<void> {
   const row: PrefsRow = {
     user_id: user.id,
     theme: s.theme,
+    accent_color: s.accentColor,
     view: s.view,
     active_hashtag: s.activeHashtag,
     label_colors: s.labelColors,

@@ -17,6 +17,7 @@ export const LABEL_PALETTE = [
 interface PlannerState {
   items: Record<string, PlannerItem>;
   theme: 'light' | 'dark';
+  accentColor: string | null; // null = default purple
   view: 'timeline' | 'today' | 'hashtag' | 'inbox' | 'later' | 'ritual' | 'review' | 'list' | 'stats' | 'weeklyPlanning' | 'weeklyReview' | 'weekPlan' | 'weekReviewPage' | 'archive' | 'onboarding';
   activeHashtag: string | null;
   activeWeekPlanKey: string | null;
@@ -93,6 +94,7 @@ interface PlannerState {
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
+  setAccentColor: (color: string | null) => void;
   setView: (view: PlannerState['view']) => void;
   setShowRitualPrompt: (show: boolean) => void;
   setShowRitual: (show: boolean) => void;
@@ -154,6 +156,7 @@ export const usePlannerStore = create<PlannerState>()(
     immer((set, get) => ({
       items: {},
       theme: 'light',
+      accentColor: null,
       view: 'timeline' as const,
       activeHashtag: null,
       activeWeekPlanKey: null,
@@ -696,6 +699,9 @@ export const usePlannerStore = create<PlannerState>()(
           state.theme = state.theme === 'light' ? 'dark' : 'light';
         });
       },
+      setAccentColor: (color) => {
+        set((state) => { state.accentColor = color; });
+      },
 
       setView: (view) => {
         set((state) => {
@@ -1037,7 +1043,7 @@ if (typeof window !== 'undefined') {
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed'] as const;
+const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items

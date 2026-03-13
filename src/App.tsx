@@ -9,10 +9,12 @@ import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
 import { LoginPage } from './components/auth/LoginPage';
 import { ToastProvider } from './components/ui/Toast';
+import { applyColorPreset } from './lib/colorThemes';
 
 export default function App() {
   const isMobile = useIsMobile();
   const theme = usePlannerStore((s) => s.theme);
+  const accentColor = usePlannerStore((s) => s.accentColor);
   const { user, loading: authLoading } = useAuthStore();
   const hasAutoMoved = useRef(false);
   const hasSynced = useRef(false);
@@ -205,6 +207,11 @@ export default function App() {
       root.classList.remove('dark');
     }
   }, [theme]);
+
+  // Apply accent color preset CSS overrides
+  useEffect(() => {
+    applyColorPreset(accentColor, theme === 'dark');
+  }, [accentColor, theme]);
 
   // Supabase configured but not logged in — show login
   if (supabase && !authLoading && !user) {

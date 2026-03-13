@@ -5,6 +5,7 @@ import { requestCalendarAccess, clearCalendarToken } from '../../lib/googleCalen
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
+import { COLOR_PRESETS } from '../../lib/colorThemes';
 import type { PlannerItem } from '../../types';
 
 const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -22,6 +23,7 @@ export function SettingsView() {
     weeklyReviewEnabled, weeklyReviewDay, weeklyReviewHour, weeklyReviewMinute,
     setWeeklyPlanningEnabled, setWeeklyPlanningDay, setWeeklyPlanningHour,
     setWeeklyReviewEnabled, setWeeklyReviewDay, setWeeklyReviewHour, setWeeklyReviewMinute,
+    accentColor, setAccentColor,
     googleCalendarConnected, googleCalendarDismissed,
     setGoogleCalendarConnected, setGoogleCalendarDismissed,
   } = usePlannerStore(useShallow((s) => ({
@@ -50,6 +52,8 @@ export function SettingsView() {
     setWeeklyReviewDay: s.setWeeklyReviewDay,
     setWeeklyReviewHour: s.setWeeklyReviewHour,
     setWeeklyReviewMinute: s.setWeeklyReviewMinute,
+    accentColor: s.accentColor,
+    setAccentColor: s.setAccentColor,
     googleCalendarConnected: s.googleCalendarConnected,
     googleCalendarDismissed: s.googleCalendarDismissed,
     setGoogleCalendarConnected: s.setGoogleCalendarConnected,
@@ -359,6 +363,43 @@ export function SettingsView() {
           {/* Features tab */}
           {tab === 'features' && (
             <div className="space-y-6">
+              {/* Appearance card */}
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
+                <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-1">Accent color</h2>
+                <p className="text-sm text-[var(--color-text-muted)] mb-4">Choose a color theme for the app</p>
+                <div className="flex flex-wrap gap-3">
+                  {COLOR_PRESETS.map((preset) => {
+                    const isActive = (accentColor ?? 'default') === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        onClick={() => setAccentColor(preset.id === 'default' ? null : preset.id)}
+                        className={cn(
+                          'flex flex-col items-center gap-1.5 group'
+                        )}
+                        title={preset.label}
+                      >
+                        <div
+                          className={cn(
+                            'w-8 h-8 rounded-full border-2 transition-all',
+                            isActive
+                              ? 'border-[var(--color-text-primary)] scale-110'
+                              : 'border-transparent hover:border-[var(--color-text-muted)] hover:scale-105'
+                          )}
+                          style={{ backgroundColor: preset.swatch }}
+                        />
+                        <span className={cn(
+                          'text-[10px]',
+                          isActive ? 'text-[var(--color-text-primary)] font-medium' : 'text-[var(--color-text-muted)]'
+                        )}>
+                          {preset.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Rituals card */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
                 <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-4">Rituals</h2>
