@@ -213,6 +213,68 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handler);
   }, [setShowCommandPalette]);
 
+  // Cmd+C → copy selected tasks as Markdown bullets
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        // Don't intercept if there's a text selection in the DOM
+        const sel = window.getSelection();
+        if (sel && sel.toString().trim()) return;
+
+        const state = usePlannerStore.getState();
+        const { selectionAnchorId, selectionFocusId, items } = state;
+        if (!selectionFocusId) return;
+
+        const focusItem = items[selectionFocusId];
+        if (!focusItem) return;
+
+        // Build ordered list of sibling items in the same container
+        const containerItems = Object.values(items)
+          .filter((i) => {
+            if (i.parentId) return false;
+            if (focusItem.dayKey !== null) return i.dayKey === focusItem.dayKey && Boolean(i.isLater) === Boolean(focusItem.isLater);
+            return i.dayKey === null && Boolean(i.isLater) === Boolean(focusItem.isLater);
+          })
+          .sort((a, b) => a.order - b.order);
+
+        const ids = containerItems.map((i) => i.id);
+        const focusIdx = ids.indexOf(selectionFocusId);
+        const anchorIdx = selectionAnchorId ? ids.indexOf(selectionAnchorId) : -1;
+        if (focusIdx < 0) return;
+
+        const lo = anchorIdx >= 0 ? Math.min(anchorIdx, focusIdx) : focusIdx;
+        const hi = anchorIdx >= 0 ? Math.max(anchorIdx, focusIdx) : focusIdx;
+        const selectedIds = new Set(ids.slice(lo, hi + 1));
+
+        if (selectedIds.size === 0) return;
+
+        // Build Markdown text with subtasks
+        const lines: string[] = [];
+        for (const id of selectedIds) {
+          const item = items[id];
+          if (!item) continue;
+          const check = item.completed ? '[x]' : '[ ]';
+          lines.push(`- ${check} ${item.text}`);
+          // Include subtasks
+          const subtasks = Object.values(items)
+            .filter((i) => i.parentId === id)
+            .sort((a, b) => a.order - b.order);
+          for (const sub of subtasks) {
+            const subCheck = sub.completed ? '[x]' : '[ ]';
+            lines.push(`  - ${subCheck} ${sub.text}`);
+          }
+        }
+
+        if (lines.length > 0) {
+          e.preventDefault();
+          navigator.clipboard.writeText(lines.join('\n'));
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   const handleCloseCommandPalette = useCallback(() => {
     setShowCommandPalette(false);
     setCommandPaletteAddTask(false);

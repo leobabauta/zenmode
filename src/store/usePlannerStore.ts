@@ -1029,6 +1029,11 @@ export const usePlannerStore = create<PlannerState>()(
   )
 );
 
+// Expose store on window for Electron quick-add integration
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).__ZUSTAND_STORE__ = usePlannerStore;
+}
+
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
