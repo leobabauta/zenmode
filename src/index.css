@@ -81,6 +81,12 @@ body {
   100% { transform: translateY(100vh) translateX(var(--confetti-drift)) rotate(var(--confetti-rot)); opacity: 0; }
 }
 
+@keyframes star-spark {
+  0% { transform: translate(-50%, -50%) translate(0, 0) scale(1.2) rotate(0deg); opacity: 1; }
+  40% { transform: translate(-50%, -50%) translate(var(--spark-x), var(--spark-y)) scale(1) rotate(60deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) translate(calc(var(--spark-x) * 1.4), calc(var(--spark-y) * 1.4 + 12px)) scale(0.3) rotate(140deg); opacity: 0; }
+}
+
 /* ── Scrollbar styling ──────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

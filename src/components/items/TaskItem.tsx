@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectChildItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -56,6 +57,31 @@ export function TaskItem({
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [editText, setEditText] = useState(item.text);
   const [pendingComplete, setPendingComplete] = useState(false);
+  const starRef = useRef<HTMLButtonElement>(null);
+  const [starSparks, setStarSparks] = useState<{ id: number; color: string; angle: number; speed: number; size: number }[]>([]);
+  const [starOrigin, setStarOrigin] = useState({ x: 0, y: 0 });
+  const sparkIdRef = useRef(0);
+
+  const spawnStarSparks = useCallback(() => {
+    if (!starRef.current) return;
+    const rect = starRef.current.getBoundingClientRect();
+    setStarOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    const sparkColor = item.isPriority ? '#fbbf24' : '#60a5fa'; // amber-400 / blue-400
+    const sparks: typeof starSparks = [];
+    const count = 8 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < count; i++) {
+      sparks.push({
+        id: sparkIdRef.current++,
+        color: sparkColor,
+        angle: (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4,
+        speed: 18 + Math.random() * 14,
+        size: 3 + Math.random() * 2,
+      });
+    }
+    setStarSparks(sparks);
+    setTimeout(() => setStarSparks([]), 900);
+  }, [item.isPriority]);
+
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -234,7 +260,12 @@ export function TaskItem({
       <div className="mt-0.5">
         <Checkbox
           checked={item.completed}
-          onPendingChange={setPendingComplete}
+          onPendingChange={(pending) => {
+            setPendingComplete(pending);
+            if (pending && (item.isPriority || item.isMediumPriority)) {
+              setTimeout(spawnStarSparks, 80);
+            }
+          }}
           onChange={(checked) => {
             updateItem(item.id, { completed: checked });
             // Auto-archive inbox/later items on completion
@@ -386,6 +417,7 @@ export function TaskItem({
       </IconButton>
 
       <button
+        ref={starRef}
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -420,6 +452,35 @@ export function TaskItem({
           </svg>
         )}
       </button>
+
+      {starSparks.length > 0 && createPortal(
+        <div className="fixed inset-0 pointer-events-none z-[200]" aria-hidden>
+          {starSparks.map((p) => {
+            const burstX = Math.cos(p.angle) * p.speed;
+            const burstY = Math.sin(p.angle) * p.speed;
+            return (
+              <span
+                key={p.id}
+                className="absolute"
+                style={{
+                  width: p.size,
+                  height: p.size,
+                  left: starOrigin.x,
+                  top: starOrigin.y,
+                  animation: 'star-spark 0.7s ease-out forwards',
+                  '--spark-x': `${burstX}px`,
+                  '--spark-y': `${burstY}px`,
+                } as React.CSSProperties}
+              >
+                <svg viewBox="0 0 24 24" fill={p.color} style={{ width: '100%', height: '100%' }}>
+                  <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+              </span>
+            );
+          })}
+        </div>,
+        document.body
+      )}
 
       <IconButton
         label="Delete task"
