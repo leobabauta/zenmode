@@ -41,6 +41,11 @@ export function LoginPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || !email.trim() || !password) return;
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -234,7 +239,7 @@ export function LoginPage() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          minLength={6}
+                          minLength={8}
                           className="w-full rounded-lg border border-neutral-700 bg-neutral-800/50 px-4 py-3 pr-10 text-sm text-white placeholder-neutral-500 focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"
                         />
                         <button
