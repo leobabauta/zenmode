@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getSupabase } from '../../../shared/lib/supabase';
 import { useAuthStore } from '../../../shared/store/useAuthStore';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
-import * as Linking from 'expo-linking';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { useColors } from '../lib/colors';
-
-WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_WEB_CLIENT_ID = '792674113739-mpggu1759u4q6ue4k0qg5r9j98f5fs9c.apps.googleusercontent.com';
 
@@ -18,22 +18,19 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const colors = useColors();
 
-  const expoReturnUrl = Linking.createURL('auth');
-  const [googleRequest, googleResponse, promptGoogleAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    redirectUri: 'https://zenmode.work/auth/callback',
-    state: expoReturnUrl,
-  });
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+    });
+  }, []);
 
   const handleMagicLink = async () => {
     const supabase = getSupabase();
     if (!supabase || !email.trim()) return;
 
     setLoading(true);
-    const redirectTo = Linking.createURL('/');
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: redirectTo },
     });
     setLoading(false);
 
@@ -61,7 +58,35 @@ export function LoginScreen() {
   };
 
   const handleGoogleSignIn = async () => {
-    await promptGoogleAsync({ showInRecents: true });
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+
+      if (response.type === 'success' && response.data.idToken) {
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.data.idToken,
+        });
+        if (error) {
+          Alert.alert('Sign in failed', error.message);
+        }
+      }
+    } catch (error) {
+      if (isErrorWithCode(error)) {
+        if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+          // User cancelled — do nothing
+        } else if (error.code === statusCodes.IN_PROGRESS) {
+          // Sign in already in progress
+        } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          Alert.alert('Error', 'Google Play services are not available on this device.');
+        } else {
+          Alert.alert('Error', error.message || 'Google sign-in failed');
+        }
+      }
+    }
   };
 
   if (mode === 'magic-sent') {

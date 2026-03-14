@@ -115,13 +115,6 @@ export default function App() {
 
       const params = new URLSearchParams(paramStr);
 
-      // Google ID token flow (from expo-auth-session callback page)
-      const idToken = params.get('id_token');
-      if (idToken) {
-        await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
-        return;
-      }
-
       // Supabase session token flow (magic link, etc.)
       const accessToken = params.get('access_token');
       const refreshToken = params.get('refresh_token');
