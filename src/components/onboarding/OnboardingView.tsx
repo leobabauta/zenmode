@@ -1,14 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
+import { toDayKey } from '../../lib/dates';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
+
+const QUICKSTART_EMBED = 'https://player.vimeo.com/video/1173462430?h=223a25a73a&title=0&byline=0&portrait=0';
 
 export function OnboardingView() {
   const [step, setStep] = useState(1);
   const setView = usePlannerStore((s) => s.setView);
 
   const finish = () => {
-    usePlannerStore.setState({ hasCompletedOnboarding: true });
+    usePlannerStore.setState({
+      hasCompletedOnboarding: true,
+      onboardingCompletedDate: toDayKey(new Date()),
+    });
     setView('today');
   };
 
@@ -319,6 +325,45 @@ export function OnboardingView() {
             <div className="flex justify-between">
               <button
                 onClick={() => setStep(4)}
+                className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => setStep(6)}
+                className="px-5 py-2 rounded-lg bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 6 && (
+          <div>
+            <h2 className="text-xl font-bold text-center mb-2 text-[var(--color-text-primary)]">
+              Quick Start Tutorial
+            </h2>
+            <p className="text-sm text-[var(--color-text-secondary)] text-center mb-6 leading-relaxed">
+              Watch this short video to see zenmode in action. You can always find this and more tutorials in Support.
+            </p>
+
+            <div className="rounded-xl border border-[var(--color-border)] overflow-hidden mb-6">
+              <div style={{ padding: '56.25% 0 0 0', position: 'relative' }}>
+                <iframe
+                  src={QUICKSTART_EMBED}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  title="zenmode Quick Start Tutorial"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <button
+                onClick={() => setStep(5)}
                 className="px-4 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
               >
                 Back

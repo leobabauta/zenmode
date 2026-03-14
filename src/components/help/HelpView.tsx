@@ -14,6 +14,24 @@ interface HelpSection {
   items: HelpItem[];
 }
 
+const VIDEO_TUTORIALS = [
+  {
+    title: 'Quick Start',
+    description: 'Get up and running with zenmode in a few minutes.',
+    embed: 'https://player.vimeo.com/video/1173462430?h=223a25a73a&title=0&byline=0&portrait=0',
+  },
+  {
+    title: 'More Features',
+    description: 'Discover all the ways zenmode helps you stay organized.',
+    embed: 'https://player.vimeo.com/video/1173462404?h=127ea71dd9&title=0&byline=0&portrait=0',
+  },
+  {
+    title: 'Daily Rituals',
+    description: 'Learn how morning planning and evening review rituals can transform your day.',
+    embed: 'https://player.vimeo.com/video/1173462407?h=1e1be28cb7&title=0&byline=0&portrait=0',
+  },
+];
+
 const sections: HelpSection[] = [
   {
     title: 'Getting Started',
@@ -274,11 +292,12 @@ function RichText({ text }: { text: string }) {
 
 export function HelpView() {
   const setShowHelp = usePlannerStore((s) => s.setShowHelp);
-  // null = landing page, otherwise { section, item } for a specific doc
-  const [selected, setSelected] = useState<{ section: number; item: number } | null>(null);
+  // null = landing page, 'videos' = video tutorials, otherwise { section, item } for a specific doc
+  const [selected, setSelected] = useState<{ section: number; item: number } | 'videos' | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<number>>(
     new Set(sections.map((_, i) => i))
   );
+  const [playingVideo, setPlayingVideo] = useState<number | null>(null);
 
   const toggleSection = (idx: number) => {
     setExpandedSections((prev) => {
@@ -294,8 +313,8 @@ export function HelpView() {
     setExpandedSections((prev) => new Set(prev).add(sectionIdx));
   };
 
-  const selectedDoc = selected ? sections[selected.section].items[selected.item] : null;
-  const selectedSection = selected ? sections[selected.section] : null;
+  const selectedDoc = selected && selected !== 'videos' ? sections[selected.section].items[selected.item] : null;
+  const selectedSection = selected && selected !== 'videos' ? sections[selected.section] : null;
 
   return (
     <div className="flex-1 flex overflow-hidden relative">
@@ -330,13 +349,29 @@ export function HelpView() {
         <button
           onClick={() => setSelected(null)}
           className={cn(
-            'w-full text-left px-2 py-2 rounded-md text-base font-medium mb-2 transition-colors',
+            'w-full text-left px-2 py-2 rounded-md text-base font-medium transition-colors',
             selected === null
               ? 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]',
           )}
         >
           Home
+        </button>
+
+        {/* Video Tutorials link */}
+        <button
+          onClick={() => { setSelected('videos'); setPlayingVideo(null); }}
+          className={cn(
+            'w-full text-left px-2 py-2 rounded-md text-base font-medium mb-2 transition-colors flex items-center gap-2',
+            selected === 'videos'
+              ? 'bg-[var(--color-surface)] text-[var(--color-text-primary)]'
+              : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)]',
+          )}
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+          </svg>
+          Video Tutorials
         </button>
 
         {/* Topic sections */}
@@ -369,7 +404,7 @@ export function HelpView() {
                         onClick={() => selectItem(si, ii)}
                         className={cn(
                           'w-full text-left px-2 py-1.5 rounded text-sm leading-snug transition-colors',
-                          selected?.section === si && selected?.item === ii
+                          selected && selected !== 'videos' && selected.section === si && selected.item === ii
                             ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] font-medium'
                             : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]',
                         )}
@@ -387,7 +422,70 @@ export function HelpView() {
 
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
-        {selectedDoc && selectedSection ? (
+        {selected === 'videos' ? (
+          /* Video Tutorials view */
+          <div className="max-w-2xl mx-auto px-8 py-8">
+            <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-muted)] mb-6">
+              <button
+                onClick={() => setSelected(null)}
+                className="hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                Support
+              </button>
+              <span>/</span>
+              <span className="text-[var(--color-text-secondary)]">Video Tutorials</span>
+            </div>
+
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
+              Video Tutorials
+            </h1>
+            <p className="text-base text-[var(--color-text-muted)] mb-8">
+              Short videos to help you get the most out of zenmode.
+            </p>
+
+            <div className="space-y-6">
+              {VIDEO_TUTORIALS.map((video, idx) => (
+                <div key={video.title} className="rounded-xl border border-[var(--color-border)] overflow-hidden">
+                  <button
+                    onClick={() => setPlayingVideo(playingVideo === idx ? null : idx)}
+                    className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-[var(--color-surface)] transition-colors"
+                  >
+                    <span className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                      </svg>
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-medium text-[var(--color-text-primary)]">{video.title}</p>
+                      <p className="text-sm text-[var(--color-text-muted)]">{video.description}</p>
+                    </div>
+                    <svg
+                      className={cn('w-4 h-4 flex-shrink-0 text-[var(--color-text-muted)] transition-transform', playingVideo === idx && 'rotate-90')}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  {playingVideo === idx && (
+                    <div style={{ padding: '56.25% 0 0 0', position: 'relative' }}>
+                      <iframe
+                        src={video.embed}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                        frameBorder="0"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        title={video.title}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : selectedDoc && selectedSection ? (
           /* Individual doc view */
           <div className="max-w-2xl mx-auto px-8 py-8">
             {/* Breadcrumb */}
@@ -425,11 +523,12 @@ export function HelpView() {
               </p>
               <div className="space-y-1">
                 {selectedSection.items.map((item, ii) => {
-                  if (ii === selected!.item) return null;
+                  const sel = selected as { section: number; item: number };
+                  if (ii === sel.item) return null;
                   return (
                     <button
                       key={item.q}
-                      onClick={() => selectItem(selected!.section, ii)}
+                      onClick={() => selectItem(sel.section, ii)}
                       className="w-full text-left px-3 py-2 rounded-lg text-base text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
                     >
                       {item.q}
@@ -448,6 +547,26 @@ export function HelpView() {
             <p className="text-base text-[var(--color-text-muted)] mb-8">
               Everything you need to know about zenmode
             </p>
+
+            {/* Video Tutorials */}
+            <button
+              onClick={() => { setSelected('videos'); setPlayingVideo(null); }}
+              className="w-full text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-5 hover:border-blue-400/40 hover:shadow-sm transition-all group mb-8 flex items-center gap-4"
+            >
+              <span className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-base font-semibold text-[var(--color-text-primary)] group-hover:text-blue-500 transition-colors">
+                  Video Tutorials
+                </p>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  3 short videos to help you get the most out of zenmode
+                </p>
+              </div>
+            </button>
 
             {/* Popular docs grid */}
             <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
