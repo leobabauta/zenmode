@@ -639,6 +639,31 @@ export const usePlannerStore = create<PlannerState>()(
             : -1;
 
           for (const item of pastIncomplete) {
+            // If this is a recurring task and today (or a future day) already has
+            // an instance of the same recurring task, delete the stale past copy
+            // instead of moving it forward (which would create duplicates).
+            if (item.recurrence) {
+              const hasFutureInstance = Object.values(state.items).some(
+                (other) =>
+                  other.id !== item.id &&
+                  other.dayKey !== null &&
+                  other.dayKey >= todayKey &&
+                  other.text === item.text &&
+                  !other.completed &&
+                  other.recurrence &&
+                  other.recurrence.type === item.recurrence!.type &&
+                  other.recurrence.interval === item.recurrence!.interval
+              );
+              if (hasFutureInstance) {
+                // Remove children too
+                Object.values(state.items).forEach((child) => {
+                  if (child.parentId === item.id) delete state.items[child.id];
+                });
+                delete state.items[item.id];
+                continue;
+              }
+            }
+
             const moves = (item.consecutiveMoves ?? 0) + 1;
             if (moves >= 4) {
               // Send to Later Archive
