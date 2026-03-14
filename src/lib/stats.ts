@@ -62,6 +62,7 @@ export function computeDayOfWeekAverages(dailyStats: DailyCompletionEntry[]): Da
 
   for (const entry of dailyStats) {
     const dow = new Date(entry.dayKey + 'T12:00:00').getDay();
+    if (isNaN(dow) || !sums[dow]) continue;
     sums[dow].high += entry.high;
     sums[dow].medium += entry.medium;
     sums[dow].other += entry.other;
