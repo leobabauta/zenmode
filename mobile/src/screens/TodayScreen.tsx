@@ -21,6 +21,7 @@ import { useColors, type Colors } from '../lib/colors';
 import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
 import { parseReminder } from '../../../shared/lib/reminderParser';
 import { scheduleReminderNotification } from '../lib/notifications';
+import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
 const triggerHaptic = () => {
@@ -119,27 +120,59 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
                 );
               })}
             </View>
-          ) : (
-            <View style={[styles.taskRow, { backgroundColor: isActive ? colors.surface : colors.bg }]}>
-              {item.type === 'task' && (
-                <Checkbox
-                  checked={!!item.completed}
-                  onChange={(checked) => updateItem(item.id, { completed: checked })}
-                  colors={colors}
-                />
-              )}
-              <Text
-                style={[
-                  styles.taskText, { color: colors.text },
-                  item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' },
-                ]}
-                numberOfLines={3}
-              >
-                {item.text}
-              </Text>
-              <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
-            </View>
-          )}
+          ) : (() => {
+            const isReminder = !!item.reminderAt;
+            const reminderTime = isReminder ? new Date(item.reminderAt!) : null;
+            const nowMs = Date.now();
+            const isRecentlyFired = isReminder && reminderTime!.getTime() <= nowMs && (nowMs - reminderTime!.getTime()) < 10 * 60 * 1000;
+            const timeStr = reminderTime ? reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null;
+            const bgColor = isRecentlyFired
+              ? (colors.bg === '#FFFFFF' ? '#FFFBEB' : '#2D2A1F')
+              : isActive ? colors.surface : colors.bg;
+
+            return (
+              <View style={[styles.taskRow, { backgroundColor: bgColor }, isRecentlyFired && { borderWidth: 1, borderColor: colors.bg === '#FFFFFF' ? '#FDE68A' : '#5C5330', borderRadius: 10 }]}>
+                {item.type === 'task' && (
+                  isReminder ? (
+                    <Pressable onPress={() => updateItem(item.id, { completed: !item.completed })} style={{ marginRight: 8 }}>
+                      {item.completed ? (
+                        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#FBBF24', alignItems: 'center', justifyContent: 'center' }}>
+                          <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+                            <Path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+                          </Svg>
+                        </View>
+                      ) : (
+                        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                          <Path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke={isRecentlyFired ? '#D97706' : colors.textMuted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                        </Svg>
+                      )}
+                    </Pressable>
+                  ) : (
+                    <Checkbox
+                      checked={!!item.completed}
+                      onChange={(checked) => updateItem(item.id, { completed: checked })}
+                      colors={colors}
+                    />
+                  )
+                )}
+                <Text
+                  style={[
+                    styles.taskText, { color: colors.text },
+                    item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' },
+                  ]}
+                  numberOfLines={3}
+                >
+                  {item.text}
+                  {timeStr && (
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: isRecentlyFired ? '#D97706' : colors.textMuted }}>
+                      {' @'}{timeStr}
+                    </Text>
+                  )}
+                </Text>
+                <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
+              </View>
+            );
+          })()}
         </Pressable>
       </SwipeableRow>
     </ScaleDecorator>

@@ -5,3 +5,8 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const supabase: SupabaseClient | null =
   url && key ? createClient(url, key) : null;
+
+// Expose for Tauri desktop app session restore
+if (supabase) {
+  (window as unknown as Record<string, unknown>).__SUPABASE_CLIENT__ = supabase;
+}

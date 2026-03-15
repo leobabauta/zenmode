@@ -1,0 +1,13 @@
+{
+  "name": "zenmode-desktop-tauri",
+  "version": "1.0.0",
+  "description": "Zenmode — calm task planner (Tauri)",
+  "scripts": {
+    "dev": "cd .. && npm run build && cp -r dist desktop-tauri/dist && cd desktop-tauri && cargo tauri dev",
+    "build": "cd .. && npm run build && cp -r dist desktop-tauri/dist && cargo tauri build",
+    "tauri": "cargo tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -1,0 +1,21 @@
+[package]
+name = "zenmode"
+version = "1.0.0"
+description = "Zenmode — calm task planner"
+authors = ["Leo Babauta"]
+edition = "2021"
+
+[lib]
+name = "zenmode_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
+tauri-plugin-shell = "2"
+tauri-plugin-global-shortcut = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+

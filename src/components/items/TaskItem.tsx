@@ -206,6 +206,15 @@ export function TaskItem({
 
   const isManipulating = isFocused && !isEditing;
 
+  // Reminder state
+  const isReminder = !!item.reminderAt;
+  const reminderTime = isReminder ? new Date(item.reminderAt!) : null;
+  const now = new Date();
+  const isRecentlyFired = isReminder && reminderTime! <= now && (now.getTime() - reminderTime!.getTime()) < 10 * 60 * 1000;
+  const reminderTimeStr = reminderTime
+    ? reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : null;
+
   return (
     <div
       ref={containerRef}
@@ -214,9 +223,11 @@ export function TaskItem({
       className={cn(
         'group flex items-start gap-2 px-3 py-2.5 rounded-lg outline-none -ml-9',
         'transition-colors duration-100',
-        isSelected && !isEditing
-          ? 'bg-[var(--color-accent-tint)] ring-1 ring-[var(--color-accent)]/20'
-          : 'hover:bg-[var(--color-surface)]',
+        isRecentlyFired
+          ? 'bg-amber-50 dark:bg-amber-900/20 ring-1 ring-amber-300/40 dark:ring-amber-600/30'
+          : isSelected && !isEditing
+            ? 'bg-[var(--color-accent-tint)] ring-1 ring-[var(--color-accent)]/20'
+            : 'hover:bg-[var(--color-surface)]',
         isDragging && 'opacity-50',
       )}
     >
@@ -258,36 +269,63 @@ export function TaskItem({
       )}
 
       <div className="mt-0.5">
-        <Checkbox
-          checked={item.completed}
-          onPendingChange={(pending) => {
-            setPendingComplete(pending);
-            if (pending && (item.isPriority || item.isMediumPriority)) {
-              setTimeout(spawnStarSparks, 80);
-            }
-          }}
-          onChange={(checked) => {
-            updateItem(item.id, { completed: checked });
-            // Auto-archive inbox/later items on completion
-            if (checked && !item.dayKey && !item.listId) {
-              const isInboxOrLater = !item.dayKey;
-              if (isInboxOrLater) {
-                setTimeout(() => {
-                  usePlannerStore.setState((state) => {
-                    const it = state.items[item.id];
-                    if (it) {
-                      it.isArchived = true;
-                      it.updatedAt = new Date().toISOString();
-                    }
-                  });
-                  showToast('Moved to Archive', () => {
-                    unarchiveItem(item.id);
-                  });
-                }, 300);
+        {isReminder ? (
+          <button
+            type="button"
+            onClick={() => {
+              updateItem(item.id, { completed: !item.completed });
+            }}
+            className={cn(
+              'flex items-center justify-center w-5 h-5 rounded-full transition-all',
+              item.completed
+                ? 'bg-amber-400 text-white'
+                : isRecentlyFired
+                  ? 'text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                  : 'text-[var(--color-text-muted)] hover:text-amber-500'
+            )}
+            title={item.completed ? 'Mark as not done' : 'Mark as done'}
+          >
+            {item.completed ? (
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+              </svg>
+            )}
+          </button>
+        ) : (
+          <Checkbox
+            checked={item.completed}
+            onPendingChange={(pending) => {
+              setPendingComplete(pending);
+              if (pending && (item.isPriority || item.isMediumPriority)) {
+                setTimeout(spawnStarSparks, 80);
               }
-            }
-          }}
-        />
+            }}
+            onChange={(checked) => {
+              updateItem(item.id, { completed: checked });
+              if (checked && !item.dayKey && !item.listId) {
+                const isInboxOrLater = !item.dayKey;
+                if (isInboxOrLater) {
+                  setTimeout(() => {
+                    usePlannerStore.setState((state) => {
+                      const it = state.items[item.id];
+                      if (it) {
+                        it.isArchived = true;
+                        it.updatedAt = new Date().toISOString();
+                      }
+                    });
+                    showToast('Moved to Archive', () => {
+                      unarchiveItem(item.id);
+                    });
+                  }, 300);
+                }
+              }
+            }}
+          />
+        )}
       </div>
 
       <div className="flex-1 min-w-0 cursor-text" onClick={handleContentClick}>
@@ -360,14 +398,24 @@ export function TaskItem({
         ) : item.text === '' ? (
           <span className="text-sm">&nbsp;</span>
         ) : (
-          <HashtagText
-            text={item.text}
-            onHashtagClick={setHashtagView}
-            className={cn(
-              'text-sm break-words',
-              (item.completed || pendingComplete) ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
+          <span className="inline">
+            <HashtagText
+              text={item.text}
+              onHashtagClick={setHashtagView}
+              className={cn(
+                'text-sm break-words',
+                (item.completed || pendingComplete) ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
+              )}
+            />
+            {reminderTimeStr && (
+              <span className={cn(
+                'text-xs ml-1.5 font-medium',
+                isRecentlyFired ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--color-text-muted)]'
+              )}>
+                @{reminderTimeStr}
+              </span>
             )}
-          />
+          </span>
         )}
       </div>
 
