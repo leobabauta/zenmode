@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, Platform, Vibration,
+  View, Text, Pressable, StyleSheet, Platform, Vibration, RefreshControl,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,8 @@ import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import { EmptyInbox } from '../components/EmptyState';
 import { AddTaskFAB } from '../components/AddTaskFAB';
+import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
+import { parseReminder } from '../../../shared/lib/reminderParser';
 import * as Haptics from 'expo-haptics';
 
 const triggerHaptic = () => {
@@ -65,11 +67,19 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
     show('Moved to tomorrow', () => { moveItem(item.id, prevDayKey, prevIsLater); });
   };
 
+  const handleArchive = () => {
+    const prevDayKey = item.dayKey;
+    const prevIsLater = item.isLater;
+    moveItem(item.id, null, true);
+    show('Archived', () => { moveItem(item.id, prevDayKey, prevIsLater); });
+  };
+
   return (
     <ScaleDecorator>
       <SwipeableRow
         onTomorrow={handleTomorrow}
         onSnooze={() => onRequestSnooze(item.id)}
+        onArchive={handleArchive}
         onDelete={handleDelete}
         enabled={!isActive}
       >
@@ -115,9 +125,33 @@ export function InboxScreen() {
   const { show } = useToast();
 
   const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleAdd = (text: string) => {
-    addItem({ type: 'task', text, dayKey: null });
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await pullFromSupabase();
+      await pullPreferences();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const handleAdd = (text: string, destination: import('../components/AddTaskFAB').AddDestination) => {
+    const reminder = parseReminder(text);
+    if (reminder) {
+      const reminderDate = new Date(reminder.reminderAt);
+      const dayKey = `${reminderDate.getFullYear()}-${String(reminderDate.getMonth() + 1).padStart(2, '0')}-${String(reminderDate.getDate()).padStart(2, '0')}`;
+      addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      return;
+    }
+    if (destination === 'inbox') {
+      addItem({ type: 'task', text, dayKey: null });
+    } else if (destination === 'today') {
+      addItem({ type: 'task', text, dayKey: toDayKey(new Date()) });
+    } else {
+      addItem({ type: 'task', text, dayKey: null, listId: destination.listId });
+    }
   };
 
   const handleSnoozeSelect = (dayKey: string | null, isLater: boolean) => {
@@ -153,10 +187,11 @@ export function InboxScreen() {
         onDragBegin={triggerHapticMedium}
         onPlaceholderIndexChange={triggerHaptic}
         contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
         ListEmptyComponent={<EmptyInbox colors={colors} />}
       />
 
-      <AddTaskFAB colors={colors} placeholder="Add to inbox..." onAdd={handleAdd} />
+      <AddTaskFAB colors={colors} placeholder="Add to inbox..." defaultDestination="inbox" onAdd={handleAdd} />
 
       <SnoozeModal
         visible={!!snoozeItemId}

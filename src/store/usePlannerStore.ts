@@ -76,7 +76,7 @@ interface PlannerState {
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; listId?: string }) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; parentId?: string; isPriority?: boolean; isMediumPriority?: boolean; listId?: string; reminderAt?: string }) => void;
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
   setExpandedTaskFullScreen: (full: boolean) => void;
@@ -228,7 +228,7 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => { state.labelColors[tag.toLowerCase()] = color; });
       },
 
-      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, listId }) => {
+      addItem: ({ type, text, dayKey, isLater = false, parentId, isPriority, isMediumPriority, listId, reminderAt }) => {
         set((state) => {
           let existingItems: PlannerItem[];
           if (parentId) {
@@ -259,6 +259,7 @@ export const usePlannerStore = create<PlannerState>()(
             isPriority,
             isMediumPriority,
             listId,
+            reminderAt,
           };
         });
       },
@@ -1104,9 +1105,13 @@ usePlannerStore.subscribe((state, prevState) => {
 });
 
 // Selectors
+export function isReminderPending(item: PlannerItem): boolean {
+  return !!item.reminderAt && new Date(item.reminderAt) > new Date();
+}
+
 export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: string) {
   return Object.values(items)
-    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived)
+    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived && !isReminderPending(i))
     .sort((a, b) => a.order - b.order);
 }
 
@@ -1145,4 +1150,18 @@ export function selectArchivedItems(items: Record<string, PlannerItem>) {
   return Object.values(items)
     .filter((i) => i.isArchived && !i.parentId)
     .sort((a, b) => a.order - b.order);
+}
+
+export function selectPendingRemindersForDay(items: Record<string, PlannerItem>, dayKey: string) {
+  const now = new Date();
+  return Object.values(items)
+    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived && i.reminderAt && new Date(i.reminderAt) > now)
+    .sort((a, b) => new Date(a.reminderAt!).getTime() - new Date(b.reminderAt!).getTime());
+}
+
+export function selectAllPendingReminders(items: Record<string, PlannerItem>) {
+  const now = new Date();
+  return Object.values(items)
+    .filter((i) => !i.parentId && !i.isArchived && i.reminderAt && new Date(i.reminderAt) > now)
+    .sort((a, b) => new Date(a.reminderAt!).getTime() - new Date(b.reminderAt!).getTime());
 }

@@ -13,7 +13,7 @@ import { setupSync } from './src/lib/syncInit';
 import { getSupabase } from '../shared/lib/supabase';
 import { useAuthStore } from '../shared/store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushChangedNow, flushDeletedNow, flushPreferencesNow } from '../shared/lib/sync';
-import { requestNotificationPermissions } from './src/lib/notifications';
+import { requestNotificationPermissions, syncNotificationSchedules } from './src/lib/notifications';
 import { useColors } from './src/lib/colors';
 
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -25,6 +25,8 @@ import { FocusTimerScreen } from './src/screens/FocusTimerScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { TaskDetailScreen } from './src/screens/TaskDetailScreen';
 import { HelpScreen } from './src/screens/HelpScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { usePlannerStore } from './src/store/usePlannerStore';
 
 // Initialize Supabase and sync
 setupSupabase();
@@ -98,6 +100,7 @@ function MainTabs() {
 
 export default function App() {
   const { user, loading } = useAuthStore();
+  const hasCompletedOnboarding = usePlannerStore((s) => s.hasCompletedOnboarding);
 
   // Handle deep link auth callback (OAuth redirect back to app)
   useEffect(() => {
@@ -152,11 +155,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Pull data on login + request notification permissions
+  // Pull data on login + set up notifications
   useEffect(() => {
     if (!user) return;
     pullFromSupabase().then(() => pullPreferences());
-    requestNotificationPermissions();
+    requestNotificationPermissions().then(() => {
+      const state = usePlannerStore.getState();
+      syncNotificationSchedules({
+        planningRitualEnabled: state.planningRitualEnabled,
+        planningRitualHour: state.planningRitualHour,
+        reviewRitualEnabled: state.reviewRitualEnabled,
+        reviewRitualHour: state.reviewRitualHour,
+      });
+    });
   }, [user]);
 
   // Sync on app state changes (background/foreground)
@@ -181,7 +192,9 @@ export default function App() {
         <ToastProvider>
           <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-              {user ? (
+              {user && !hasCompletedOnboarding ? (
+                <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+              ) : user ? (
                 <>
                   <Stack.Screen name="Main" component={MainTabs} />
                   <Stack.Screen name="Settings" component={SettingsScreen} />

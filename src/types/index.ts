@@ -30,6 +30,7 @@ export interface PlannerItem {
   timerSessions?: Array<{ startedAt: string; duration: number }>;
   isArchived?: boolean;
   notes?: string;
+  reminderAt?: string;  // ISO datetime — hidden until this time, then appears in Today
 }
 
 export interface CustomList {

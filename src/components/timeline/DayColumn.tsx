@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { cn } from '../../lib/utils';
 import { GreetingBanner } from '../ui/GreetingBanner';
-import { usePlannerStore } from '../../store/usePlannerStore';
+import { usePlannerStore, selectPendingRemindersForDay } from '../../store/usePlannerStore';
 import { getWeekKey } from '../../lib/dates';
 import type { DaySlot } from '../../types';
 import { forwardRef } from 'react';
@@ -22,6 +23,10 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
     const { setNodeRef, isOver } = useDroppable({ id: day.key });
     const setView = usePlannerStore((s) => s.setView);
     const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
+    const items = usePlannerStore((s) => s.items);
+    const [showReminders, setShowReminders] = useState(false);
+
+    const pendingReminders = selectPendingRemindersForDay(items, day.key);
 
     // Show "This Week's Plan" at bottom of any Monday that has a plan,
     // except the current week's Monday on Monday itself (show starting Tuesday)
@@ -77,6 +82,19 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
             )}>
               {weekday}
             </span>
+            {/* Pending reminders indicator */}
+            {pendingReminders.length > 0 && (
+              <button
+                onClick={() => setShowReminders(!showReminders)}
+                className="mt-1.5 flex items-center gap-0.5 text-[var(--color-accent)] hover:opacity-80 transition-opacity"
+                title={`${pendingReminders.length} pending reminder${pendingReminders.length > 1 ? 's' : ''}`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+                <span className="text-[10px] font-semibold">{pendingReminders.length}</span>
+              </button>
+            )}
           </div>
 
           {/* Right column: tasks + add form */}
@@ -86,6 +104,28 @@ export const DayColumn = forwardRef<HTMLDivElement, DayColumnProps>(
                 <GreetingBanner />
               </div>
             )}
+
+            {/* Pending reminders popover */}
+            {showReminders && pendingReminders.length > 0 && (
+              <div className="mb-2 ml-[24px] rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5">
+                <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                  </svg>
+                  Upcoming reminders
+                </div>
+                {pendingReminders.map((item) => {
+                  const time = new Date(item.reminderAt!).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                  return (
+                    <div key={item.id} className="flex items-center gap-2 py-1 text-sm">
+                      <span className="text-[var(--color-accent)] text-xs font-medium w-16 flex-shrink-0">{time}</span>
+                      <span className="text-[var(--color-text-primary)] truncate">{item.text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div ref={setNodeRef} className="min-h-[8px]">
               <ItemList items={day.items} onCrossPrev={onCrossPrev} onCrossNext={onCrossNext} />
             </div>

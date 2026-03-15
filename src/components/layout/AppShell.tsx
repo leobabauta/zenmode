@@ -19,6 +19,7 @@ import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
 import { DeleteRecurrenceModal } from '../ui/DeleteRecurrenceModal';
+import { ReminderEngine } from '../ui/ReminderEngine';
 import { UndoDeleteToast } from '../ui/UndoDeleteToast';
 import { QuickCaptureBar } from '../forms/QuickCaptureBar';
 import { RitualPrompt } from '../ritual/RitualPrompt';
@@ -397,6 +398,9 @@ export function AppShell() {
 
       {/* Delete recurrence confirmation modal */}
       <DeleteRecurrenceModal />
+
+      {/* Reminder notification engine */}
+      <ReminderEngine />
 
       {/* Full-screen confetti for day completion */}
       {showFullConfetti && <FullScreenConfetti onDone={dismissConfetti} />}

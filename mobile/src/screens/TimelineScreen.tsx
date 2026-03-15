@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, Pressable, TouchableOpacity, StyleSheet, Keyboard } from 'react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, FlatList, Pressable, TouchableOpacity, StyleSheet, Keyboard, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { usePlannerStore, selectItemsForDay } from '../store/usePlannerStore';
+import { usePlannerStore, selectItemsForDay, selectPendingRemindersForDay } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
 import { addDays, isToday, isTomorrow, format, isPast, startOfDay } from 'date-fns';
 import type { PlannerItem } from '../../../shared/types';
@@ -12,6 +12,8 @@ import { PriorityStar } from '../components/PriorityStar';
 import { SnoozeModal } from '../components/SnoozeModal';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
+import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
+import { parseReminder } from '../../../shared/lib/reminderParser';
 import Svg, { Path } from 'react-native-svg';
 
 function TaskRow({ item, colors, navigation, onRequestSnooze }: {
@@ -93,7 +95,16 @@ function AddTaskRow({ dayKey, colors }: { dayKey: string; colors: Colors }) {
 
   const handleSubmit = () => {
     const trimmed = text.trim();
-    if (trimmed) addItem({ type: 'task', text: trimmed, dayKey });
+    if (trimmed) {
+      const reminder = parseReminder(trimmed);
+      if (reminder) {
+        const rd = new Date(reminder.reminderAt);
+        const rDayKey = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, '0')}-${String(rd.getDate()).padStart(2, '0')}`;
+        addItem({ type: 'task', text: reminder.cleanText, dayKey: rDayKey, reminderAt: reminder.reminderAt });
+      } else {
+        addItem({ type: 'task', text: trimmed, dayKey });
+      }
+    }
     setText('');
     setEditing(false);
     Keyboard.dismiss();
@@ -141,6 +152,10 @@ function DayColumn({ day, colors, navigation, onRequestSnooze }: {
   day: DayData; colors: Colors; navigation: any;
   onRequestSnooze: (itemId: string) => void;
 }) {
+  const allItems = usePlannerStore((s) => s.items);
+  const pendingReminders = selectPendingRemindersForDay(allItems, day.dayKey);
+  const [showReminders, setShowReminders] = useState(false);
+
   const dayNumColor = day.isCurrentDay
     ? colors.accent
     : day.isPastDay
@@ -165,10 +180,34 @@ function DayColumn({ day, colors, navigation, onRequestSnooze }: {
         <View style={styles.dayLabel}>
           <Text style={[styles.dayNum, { color: dayNumColor }]}>{day.dayNum}</Text>
           <Text style={[styles.weekday, { color: weekdayColor }]}>{day.weekday}</Text>
+          {pendingReminders.length > 0 && (
+            <Pressable onPress={() => setShowReminders(!showReminders)} style={styles.reminderBadge}>
+              <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
+                <Path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke={colors.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+              <Text style={[styles.reminderCount, { color: colors.accent }]}>{pendingReminders.length}</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Right: tasks + add task */}
         <View style={styles.dayContent}>
+          {/* Pending reminders popover */}
+          {showReminders && pendingReminders.length > 0 && (
+            <View style={[styles.reminderPopover, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.reminderPopoverTitle, { color: colors.textMuted }]}>Upcoming reminders</Text>
+              {pendingReminders.map((item) => {
+                const time = new Date(item.reminderAt!).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                return (
+                  <View key={item.id} style={styles.reminderRow}>
+                    <Text style={[styles.reminderTime, { color: colors.accent }]}>{time}</Text>
+                    <Text style={[styles.reminderText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
           {day.items.map((item) => (
             <TaskRow
               key={item.id}
@@ -185,6 +224,10 @@ function DayColumn({ day, colors, navigation, onRequestSnooze }: {
   );
 }
 
+const PAST_DAYS = 14;
+const FUTURE_DAYS = 14;
+const TODAY_INDEX = PAST_DAYS;
+
 export function TimelineScreen() {
   const items = usePlannerStore((s) => s.items);
   const moveItem = usePlannerStore((s) => s.moveItem);
@@ -192,13 +235,26 @@ export function TimelineScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { show } = useToast();
+  const flatListRef = useRef<FlatList>(null);
+  const hasScrolledToToday = useRef(false);
 
   const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await pullFromSupabase();
+      await pullPreferences();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const today = new Date();
   const days: DayData[] = [];
 
-  for (let i = 0; i < 14; i++) {
+  for (let i = -PAST_DAYS; i < FUTURE_DAYS; i++) {
     const date = addDays(today, i);
     const dayKey = toDayKey(date);
     const dayItems = selectItemsForDay(items, dayKey);
@@ -216,6 +272,17 @@ export function TimelineScreen() {
     });
   }
 
+  // Scroll to today on first render (past days are above)
+  useEffect(() => {
+    if (!hasScrolledToToday.current && days.length > 0) {
+      hasScrolledToToday.current = true;
+      // Estimate ~90px per day row, scroll to the today index
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: TODAY_INDEX * 90, animated: false });
+      }, 50);
+    }
+  }, []);
+
   const handleSnoozeSelect = (dayKey: string | null, isLater: boolean) => {
     if (!snoozeItemId) return;
     const item = items[snoozeItemId];
@@ -232,6 +299,7 @@ export function TimelineScreen() {
       <Text style={[styles.title, { color: colors.text }]}>Timeline</Text>
 
       <FlatList
+        ref={flatListRef}
         data={days}
         keyExtractor={(day) => day.dayKey}
         renderItem={({ item: day }) => (
@@ -239,6 +307,7 @@ export function TimelineScreen() {
         )}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
       />
 
       <SnoozeModal
@@ -308,4 +377,25 @@ const styles = StyleSheet.create({
     paddingVertical: 8, paddingHorizontal: 4,
   },
   addTaskInput: { fontSize: 15, padding: 0 },
+
+  // Reminder styles
+  reminderBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 2,
+    marginTop: 4,
+  },
+  reminderCount: { fontSize: 10, fontWeight: '700' },
+  reminderPopover: {
+    borderWidth: 1, borderRadius: 10,
+    padding: 10, marginBottom: 6,
+  },
+  reminderPopoverTitle: {
+    fontSize: 10, fontWeight: '600', textTransform: 'uppercase',
+    letterSpacing: 0.5, marginBottom: 4,
+  },
+  reminderRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: 3,
+  },
+  reminderTime: { fontSize: 12, fontWeight: '600', width: 60 },
+  reminderText: { fontSize: 13, flex: 1 },
 });

@@ -30,6 +30,7 @@ interface ItemRow {
   timer_sessions: unknown;
   is_archived: boolean;
   notes: string | null;
+  reminder_at: string | null;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -55,6 +56,7 @@ export function itemToRow(item: PlannerItem, userId: string): ItemRow {
     timer_sessions: item.timerSessions ?? null,
     is_archived: item.isArchived ?? false,
     notes: item.notes ?? null,
+    reminder_at: item.reminderAt ?? null,
   };
 }
 
@@ -79,6 +81,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     timerSessions: (row.timer_sessions as PlannerItem['timerSessions']) ?? undefined,
     isArchived: row.is_archived || undefined,
     notes: row.notes ?? undefined,
+    reminderAt: row.reminder_at ?? undefined,
   };
 }
 

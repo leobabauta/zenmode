@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, Platform, Vibration,
+  View, Text, Pressable, StyleSheet, Platform, Vibration, RefreshControl,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,8 @@ import { AddTaskFAB } from '../components/AddTaskFAB';
 import { SnoozeModal } from '../components/SnoozeModal';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
+import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
+import { parseReminder } from '../../../shared/lib/reminderParser';
 import * as Haptics from 'expo-haptics';
 
 const triggerHaptic = () => {
@@ -157,6 +159,17 @@ export function TodayScreen() {
   const { show } = useToast();
 
   const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await pullFromSupabase();
+      await pullPreferences();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   let totalTasks = 0;
   let doneTasks = 0;
@@ -168,8 +181,21 @@ export function TodayScreen() {
   const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
   const showAllDone = allTasksDone && !showCompletedTasks;
 
-  const handleAdd = (text: string) => {
-    addItem({ type: 'task', text, dayKey: todayKey });
+  const handleAdd = (text: string, destination: import('../components/AddTaskFAB').AddDestination) => {
+    const reminder = parseReminder(text);
+    if (reminder) {
+      const reminderDate = new Date(reminder.reminderAt);
+      const dayKey = `${reminderDate.getFullYear()}-${String(reminderDate.getMonth() + 1).padStart(2, '0')}-${String(reminderDate.getDate()).padStart(2, '0')}`;
+      addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      return;
+    }
+    if (destination === 'today') {
+      addItem({ type: 'task', text, dayKey: todayKey });
+    } else if (destination === 'inbox') {
+      addItem({ type: 'task', text, dayKey: null });
+    } else {
+      addItem({ type: 'task', text, dayKey: null, listId: destination.listId });
+    }
   };
 
   const handleSnoozeSelect = (dayKey: string | null, isLater: boolean) => {
@@ -202,6 +228,7 @@ export function TodayScreen() {
         onPlaceholderIndexChange={triggerHaptic}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
         ListHeaderComponent={
           <View style={{ paddingTop: insets.top + 8 }}>
             <GreetingBanner colors={colors} />
@@ -217,7 +244,7 @@ export function TodayScreen() {
         }
       />
 
-      <AddTaskFAB colors={colors} onAdd={handleAdd} />
+      <AddTaskFAB colors={colors} defaultDestination="today" onAdd={handleAdd} />
 
       <SnoozeModal
         visible={!!snoozeItemId}

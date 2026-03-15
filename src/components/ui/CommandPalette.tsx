@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey, getWeekKey } from '../../lib/dates';
+import { parseReminder } from '../../lib/reminderParser';
 import { cn } from '../../lib/utils';
 
 type PaletteItem =
@@ -261,7 +262,14 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     if (!text) return;
 
     const store = usePlannerStore.getState();
-    if (toToday) {
+    const reminder = parseReminder(text);
+
+    if (reminder) {
+      // Create a reminder task on the reminder's day
+      const reminderDate = new Date(reminder.reminderAt);
+      const dayKey = toDayKey(reminderDate);
+      store.addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+    } else if (toToday) {
       store.addItem({ type: 'task', text, dayKey: toDayKey(new Date()) });
     } else {
       store.addItem({ type: 'task', text, dayKey: null });
@@ -335,7 +343,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
         {/* Add task hint */}
         {isAddTask && (
           <div className="px-4 py-3 text-[11px] text-[var(--color-text-muted)]">
-            <span className="font-medium">Enter</span> to add to Inbox · <span className="font-medium">Shift+Enter</span> to add to Today
+            <span className="font-medium">Enter</span> to add to Inbox · <span className="font-medium">Shift+Enter</span> to add to Today · Use <span className="font-medium">@3pm</span> or <span className="font-medium">@tomorrow 2pm</span> for reminders
           </div>
         )}
 

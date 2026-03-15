@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -10,9 +10,11 @@ import type { PlannerItem } from '../../../shared/types';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { Checkbox } from '../components/Checkbox';
 import { PriorityStar } from '../components/PriorityStar';
-import { AddTaskFAB } from '../components/AddTaskFAB';
+import { AddTaskFAB, type AddDestination } from '../components/AddTaskFAB';
 import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
+import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
+import { parseReminder } from '../../../shared/lib/reminderParser';
 import Svg, { Path, Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
@@ -188,6 +190,17 @@ export function BrowseScreen() {
   const colors = useColors();
   const navigation = useNavigation<any>();
   const isSearching = searchQuery.trim().length > 0;
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await pullFromSupabase();
+      await pullPreferences();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   // Reset sub-view when user taps the Browse tab again
   useEffect(() => {
@@ -200,7 +213,32 @@ export function BrowseScreen() {
   }, [navigation]);
 
   const todayKey = toDayKey(new Date());
-  const handleAdd = (text: string) => { addItem({ type: 'task', text, dayKey: todayKey }); };
+
+  // Determine default destination based on current sub-view
+  const defaultDestination: AddDestination = subView
+    ? subView.kind === 'customList'
+      ? { listId: subView.listId, listName: subView.listName }
+      : subView.kind === 'later'
+        ? 'inbox'
+        : 'today'
+    : 'today';
+
+  const handleAdd = (text: string, destination: AddDestination) => {
+    const reminder = parseReminder(text);
+    if (reminder) {
+      const reminderDate = new Date(reminder.reminderAt);
+      const dayKey = `${reminderDate.getFullYear()}-${String(reminderDate.getMonth() + 1).padStart(2, '0')}-${String(reminderDate.getDate()).padStart(2, '0')}`;
+      addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      return;
+    }
+    if (destination === 'today') {
+      addItem({ type: 'task', text, dayKey: todayKey });
+    } else if (destination === 'inbox') {
+      addItem({ type: 'task', text, dayKey: null });
+    } else {
+      addItem({ type: 'task', text, dayKey: null, listId: destination.listId });
+    }
+  };
 
   const handleDragEnd = useCallback(({ data }: { data: PlannerItem[] }) => {
     reorderItems(data.map((i) => i.id));
@@ -223,9 +261,10 @@ export function BrowseScreen() {
           onDragBegin={triggerHapticMedium}
           onPlaceholderIndexChange={triggerHaptic}
           contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
           ListEmptyComponent={<Text style={[styles.empty, { color: colors.textMuted }]}>No items.</Text>}
         />
-        <AddTaskFAB colors={colors} onAdd={handleAdd} />
+        <AddTaskFAB colors={colors} defaultDestination={defaultDestination} onAdd={handleAdd} />
       </View>
     );
   }
@@ -238,6 +277,7 @@ export function BrowseScreen() {
         renderItem={() => null}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
         ListHeaderComponent={
           <>
             {/* Profile header */}
@@ -327,7 +367,7 @@ export function BrowseScreen() {
           </>
         }
       />
-      <AddTaskFAB colors={colors} onAdd={handleAdd} />
+      <AddTaskFAB colors={colors} defaultDestination={defaultDestination} onAdd={handleAdd} />
     </View>
   );
 }

@@ -1,31 +1,44 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-  View, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, Pressable, Keyboard, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { Colors } from '../lib/colors';
 
+export type AddDestination = 'today' | 'inbox' | { listId: string; listName: string };
+
 interface AddTaskFABProps {
   colors: Colors;
   placeholder?: string;
-  onAdd: (text: string) => void;
+  /** The default destination label shown below the input */
+  defaultDestination?: AddDestination;
+  onAdd: (text: string, destination: AddDestination) => void;
 }
 
-export function AddTaskFAB({ colors, placeholder = 'Add a task...', onAdd }: AddTaskFABProps) {
+function destinationLabel(dest: AddDestination): string {
+  if (dest === 'today') return 'Today';
+  if (dest === 'inbox') return 'Inbox';
+  return dest.listName;
+}
+
+export function AddTaskFAB({ colors, placeholder = 'Add a task...', defaultDestination = 'today', onAdd }: AddTaskFABProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
+  const [destination, setDestination] = useState<AddDestination>(defaultDestination);
+  const [showPicker, setShowPicker] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (open) {
+      setDestination(defaultDestination);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [open]);
+  }, [open, defaultDestination]);
 
   const handleSubmit = () => {
     const trimmed = text.trim();
     if (trimmed) {
-      onAdd(trimmed);
+      onAdd(trimmed, destination);
       setText('');
     }
     setOpen(false);
@@ -34,11 +47,17 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', onAdd }: Add
 
   const handleClose = () => {
     const trimmed = text.trim();
-    if (trimmed) onAdd(trimmed);
+    if (trimmed) onAdd(trimmed, destination);
     setText('');
     setOpen(false);
     Keyboard.dismiss();
   };
+
+  const switchOptions: AddDestination[] = defaultDestination === 'today'
+    ? ['inbox']
+    : defaultDestination === 'inbox'
+      ? ['today']
+      : ['today', 'inbox'];
 
   return (
     <>
@@ -86,6 +105,56 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', onAdd }: Add
                   </View>
                 </TouchableOpacity>
               </View>
+
+              {/* Destination indicator */}
+              <View style={styles.destinationRow}>
+                <Text style={[styles.destinationLabel, { color: colors.textMuted }]}>
+                  Adding to{' '}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowPicker(!showPicker)}
+                  style={[styles.destinationPill, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.destinationText, { color: colors.accent }]}>
+                    {destinationLabel(destination)}
+                  </Text>
+                  <Text style={[styles.destinationChevron, { color: colors.textMuted }]}>
+                    {showPicker ? '\u25B2' : '\u25BC'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Destination picker dropdown */}
+              {showPicker && (
+                <View style={[styles.pickerDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {/* Show current destination as selected */}
+                  <Pressable
+                    style={[styles.pickerOption, { backgroundColor: colors.accent + '18' }]}
+                    onPress={() => setShowPicker(false)}
+                  >
+                    <Text style={[styles.pickerOptionText, { color: colors.accent, fontWeight: '600' }]}>
+                      {destinationLabel(destination)}
+                    </Text>
+                    <Text style={{ color: colors.accent, fontSize: 14 }}>{'\u2713'}</Text>
+                  </Pressable>
+                  {/* Show other options */}
+                  {switchOptions.map((opt) => (
+                    <Pressable
+                      key={typeof opt === 'string' ? opt : opt.listId}
+                      style={styles.pickerOption}
+                      onPress={() => {
+                        setDestination(opt);
+                        setShowPicker(false);
+                      }}
+                    >
+                      <Text style={[styles.pickerOptionText, { color: colors.text }]}>
+                        {destinationLabel(opt)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
             </Pressable>
           </KeyboardAvoidingView>
         </Pressable>
@@ -119,14 +188,13 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   keyboardAvoid: {
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   inputWrapper: {
     paddingHorizontal: 20,
-    paddingBottom: 120,
   },
   inputGroup: {
     flexDirection: 'row',
@@ -157,5 +225,47 @@ const styles = StyleSheet.create({
   submitPlus: {
     width: 22, height: 22,
     alignItems: 'center', justifyContent: 'center',
+  },
+  destinationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  destinationLabel: {
+    fontSize: 13,
+  },
+  destinationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  destinationText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  destinationChevron: {
+    fontSize: 8,
+  },
+  pickerDropdown: {
+    marginTop: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginHorizontal: 4,
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  pickerOptionText: {
+    fontSize: 14,
   },
 });

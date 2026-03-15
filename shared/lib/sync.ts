@@ -48,6 +48,7 @@ interface ItemRow {
   timer_sessions: unknown;
   is_archived: boolean;
   notes: string | null;
+  reminder_at: string | null;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -73,6 +74,7 @@ export function itemToRow(item: PlannerItem, userId: string): ItemRow {
     timer_sessions: item.timerSessions ?? null,
     is_archived: item.isArchived ?? false,
     notes: item.notes ?? null,
+    reminder_at: item.reminderAt ?? null,
   };
 }
 
@@ -97,6 +99,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     timerSessions: (row.timer_sessions as PlannerItem['timerSessions']) ?? undefined,
     isArchived: row.is_archived || undefined,
     notes: row.notes ?? undefined,
+    reminderAt: row.reminder_at ?? undefined,
   };
 }
 
@@ -274,6 +277,7 @@ export function flushDeletedNow(): void {
 interface PrefsRow {
   user_id: string;
   theme: string;
+  accent_color?: string | null;
   view: string;
   active_hashtag: string | null;
   sidebar_collapsed: boolean;
@@ -320,10 +324,11 @@ export async function pullPreferences(): Promise<void> {
     for (const rl of remoteLists) {
       if (!listById.has(rl.id)) listById.set(rl.id, rl);
     }
-    const mergedLists = [...listById.values()].sort((a: CustomList, b: CustomList) => a.order - b.order);
+    const mergedLists = ([...listById.values()] as CustomList[]).sort((a, b) => a.order - b.order);
 
     _setPrefs({
       theme: row.theme,
+      accentColor: row.accent_color ?? null,
       view: row.view,
       activeHashtag: row.active_hashtag,
       sidebarCollapsed: row.sidebar_collapsed,
@@ -368,6 +373,7 @@ async function flushPreferences(): Promise<void> {
   const row: PrefsRow = {
     user_id: user.id,
     theme: s.theme,
+    accent_color: s.accentColor,
     view: s.view,
     active_hashtag: s.activeHashtag,
     sidebar_collapsed: s.sidebarCollapsed,

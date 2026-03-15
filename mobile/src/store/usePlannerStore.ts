@@ -34,9 +34,13 @@ interface PlannerState {
   view: string;
   activeHashtag: string | null;
   sidebarCollapsed: boolean;
+  // Onboarding
+  hasCompletedOnboarding: boolean;
+  // Accent color theme
+  accentColor: string | null;
 
   // Actions
-  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; listId?: string; isPriority?: boolean; isMediumPriority?: boolean }) => void;
+  addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; listId?: string; isPriority?: boolean; isMediumPriority?: boolean; reminderAt?: string }) => void;
   updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'notes'>>) => void;
   deleteItem: (id: string) => void;
   moveItem: (id: string, dayKey: string | null, isLater?: boolean) => void;
@@ -70,6 +74,8 @@ export const usePlannerStore = create<PlannerState>()(
       view: 'today',
       activeHashtag: null,
       sidebarCollapsed: false,
+      hasCompletedOnboarding: false,
+      accentColor: null,
 
       addItem: (payload) => {
         const id = nanoid();
@@ -96,6 +102,7 @@ export const usePlannerStore = create<PlannerState>()(
             listId: payload.listId,
             isPriority: payload.isPriority,
             isMediumPriority: payload.isMediumPriority,
+            reminderAt: payload.reminderAt,
           };
         });
       },
@@ -118,9 +125,12 @@ export const usePlannerStore = create<PlannerState>()(
               return i.dayKey === null && !i.isLater;
             }).sort((a, b) => a.order - b.order);
 
-            const completed = siblings.filter((i) => i.completed);
-            const incomplete = siblings.filter((i) => !i.completed);
-            const sorted = [...completed, ...incomplete];
+            const isReview = (i: PlannerItem) =>
+              i.type === 'note' && (i.text.includes('#dailyreview') || i.text.includes('#weeklyreview'));
+            const reviews = siblings.filter((i) => isReview(i));
+            const completed = siblings.filter((i) => i.completed && !isReview(i));
+            const incomplete = siblings.filter((i) => !i.completed && !isReview(i));
+            const sorted = [...completed, ...incomplete, ...reviews];
             sorted.forEach((s, i) => {
               state.items[s.id].order = i;
             });
@@ -180,6 +190,8 @@ export const usePlannerStore = create<PlannerState>()(
         view: state.view,
         activeHashtag: state.activeHashtag,
         sidebarCollapsed: state.sidebarCollapsed,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+        accentColor: state.accentColor,
       }),
     }
   )
@@ -204,7 +216,7 @@ usePlannerStore.subscribe((state, prevState) => {
   if (deletedIds.length > 0) markDeleted(deletedIds);
 
   // Check pref changes
-  const prefKeys = ['theme', 'labelColors', 'customLists', 'activeListId',
+  const prefKeys = ['theme', 'accentColor', 'labelColors', 'customLists', 'activeListId',
     'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour',
     'reviewRitualEnabled', 'reviewRitualHour', 'lastReviewRitualDate'] as const;
   for (const key of prefKeys) {
@@ -216,10 +228,21 @@ usePlannerStore.subscribe((state, prevState) => {
 });
 
 // Selectors
+export function isReminderPending(item: PlannerItem): boolean {
+  return !!item.reminderAt && new Date(item.reminderAt) > new Date();
+}
+
 export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: string) {
   return Object.values(items)
-    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived)
+    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived && !isReminderPending(i))
     .sort((a, b) => a.order - b.order);
+}
+
+export function selectPendingRemindersForDay(items: Record<string, PlannerItem>, dayKey: string) {
+  const now = new Date();
+  return Object.values(items)
+    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived && i.reminderAt && new Date(i.reminderAt) > now)
+    .sort((a, b) => new Date(a.reminderAt!).getTime() - new Date(b.reminderAt!).getTime());
 }
 
 export function selectInboxItems(items: Record<string, PlannerItem>) {
