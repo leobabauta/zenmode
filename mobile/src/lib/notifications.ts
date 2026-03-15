@@ -137,6 +137,64 @@ export async function cancelFocusTimerNotification(): Promise<void> {
   } catch {}
 }
 
+// --- Reminder notifications ---
+
+export async function scheduleReminderNotification(itemId: string, text: string, reminderAt: string): Promise<void> {
+  try {
+    const N = await getNotifications();
+    if (!N) return;
+    const triggerDate = new Date(reminderAt);
+    const now = new Date();
+    if (triggerDate <= now) return; // Already past
+
+    const secondsUntil = Math.max(1, Math.floor((triggerDate.getTime() - now.getTime()) / 1000));
+    await N.scheduleNotificationAsync({
+      content: {
+        title: 'Reminder',
+        body: text,
+        data: { type: 'reminder', itemId },
+      },
+      trigger: {
+        type: N.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: secondsUntil,
+      },
+      identifier: `reminder-${itemId}`,
+    });
+  } catch {}
+}
+
+export async function cancelReminderNotification(itemId: string): Promise<void> {
+  try {
+    const N = await getNotifications();
+    if (!N) return;
+    await N.cancelScheduledNotificationAsync(`reminder-${itemId}`);
+  } catch {}
+}
+
+export async function syncReminderNotifications(items: Record<string, import('../../../shared/types').PlannerItem>): Promise<void> {
+  try {
+    const N = await getNotifications();
+    if (!N) return;
+
+    // Cancel all existing reminder notifications first
+    const scheduled = await N.getAllScheduledNotificationsAsync();
+    for (const notif of scheduled) {
+      if (notif.identifier.startsWith('reminder-')) {
+        await N.cancelScheduledNotificationAsync(notif.identifier);
+      }
+    }
+
+    // Schedule notifications for all pending reminders
+    const now = new Date();
+    for (const item of Object.values(items)) {
+      if (!item.reminderAt || item.parentId || item.isArchived) continue;
+      const reminderTime = new Date(item.reminderAt);
+      if (reminderTime <= now) continue;
+      await scheduleReminderNotification(item.id, item.text, item.reminderAt);
+    }
+  } catch {}
+}
+
 export async function syncNotificationSchedules(prefs: {
   planningRitualEnabled: boolean;
   planningRitualHour: number;

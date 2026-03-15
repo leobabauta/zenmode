@@ -13,7 +13,7 @@ import { setupSync } from './src/lib/syncInit';
 import { getSupabase } from '../shared/lib/supabase';
 import { useAuthStore } from '../shared/store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushChangedNow, flushDeletedNow, flushPreferencesNow } from '../shared/lib/sync';
-import { requestNotificationPermissions, syncNotificationSchedules } from './src/lib/notifications';
+import { requestNotificationPermissions, syncNotificationSchedules, syncReminderNotifications } from './src/lib/notifications';
 import { useColors } from './src/lib/colors';
 
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -158,7 +158,11 @@ export default function App() {
   // Pull data on login + set up notifications
   useEffect(() => {
     if (!user) return;
-    pullFromSupabase().then(() => pullPreferences());
+    pullFromSupabase().then(() => {
+      pullPreferences();
+      // Schedule reminder notifications after data is pulled
+      syncReminderNotifications(usePlannerStore.getState().items);
+    });
     requestNotificationPermissions().then(() => {
       const state = usePlannerStore.getState();
       syncNotificationSchedules({
@@ -174,7 +178,10 @@ export default function App() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && user) {
-        pullFromSupabase().then(() => pullPreferences());
+        pullFromSupabase().then(() => {
+          pullPreferences();
+          syncReminderNotifications(usePlannerStore.getState().items);
+        });
       } else if (nextState === 'background') {
         flushChangedNow();
         flushDeletedNow();

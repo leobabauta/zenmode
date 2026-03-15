@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nanoid } from 'nanoid/non-secure';
-import type { PlannerItem, ItemType, CustomList } from '../../../shared/types';
+import type { PlannerItem, ItemType, Recurrence, CustomList } from '../../../shared/types';
 import { toDayKey } from '../../../shared/lib/dates';
 import { markChanged, markDeleted, pushPreferences } from '../../../shared/lib/sync';
 
@@ -45,6 +45,7 @@ interface PlannerState {
   deleteItem: (id: string) => void;
   moveItem: (id: string, dayKey: string | null, isLater?: boolean) => void;
   reorderItems: (orderedIds: string[]) => void;
+  setRecurrence: (id: string, recurrence: Recurrence | null) => void;
   toggleTheme: () => void;
 }
 
@@ -163,6 +164,104 @@ export const usePlannerStore = create<PlannerState>()(
               state.items[id].updatedAt = now;
             }
           });
+        });
+      },
+
+      setRecurrence: (id, recurrence) => {
+        set((state) => {
+          const item = state.items[id];
+          if (!item) return;
+          const now = new Date().toISOString();
+
+          if (recurrence) {
+            item.recurrence = recurrence;
+            item.updatedAt = now;
+
+            if (item.dayKey) {
+              const horizon = new Date();
+              horizon.setDate(horizon.getDate() + 365);
+              const horizonStr = `${horizon.getFullYear()}-${String(horizon.getMonth() + 1).padStart(2, '0')}-${String(horizon.getDate()).padStart(2, '0')}`;
+
+              // Compute reminder time-of-day from source item
+              let reminderHour: number | null = null;
+              let reminderMinute: number | null = null;
+              if (item.reminderAt) {
+                const rd = new Date(item.reminderAt);
+                reminderHour = rd.getHours();
+                reminderMinute = rd.getMinutes();
+              }
+
+              const addOccurrence = (dayKey: string) => {
+                const duplicate = Object.values(state.items).find(
+                  (i) => i.dayKey === dayKey && i.text === item.text && i.recurrence &&
+                    i.recurrence.type === recurrence.type && i.recurrence.interval === recurrence.interval
+                );
+                if (duplicate) return;
+
+                const existingItems = Object.values(state.items).filter((i) => i.dayKey === dayKey);
+                const maxOrder = existingItems.length > 0 ? Math.max(...existingItems.map((i) => i.order)) : -1;
+                const newId = nanoid();
+
+                let futureReminderAt: string | undefined;
+                if (reminderHour !== null && reminderMinute !== null) {
+                  const parts = dayKey.split('-');
+                  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), reminderHour, reminderMinute, 0, 0);
+                  futureReminderAt = d.toISOString();
+                }
+
+                state.items[newId] = {
+                  id: newId,
+                  type: item.type,
+                  text: item.text,
+                  completed: false,
+                  dayKey,
+                  order: maxOrder + 1,
+                  createdAt: now,
+                  updatedAt: now,
+                  recurrence,
+                  reminderAt: futureReminderAt,
+                };
+              };
+
+              if (recurrence.type === 'weeks' && recurrence.weekdays?.length) {
+                const weekdaySet = new Set(recurrence.weekdays);
+                const start = new Date(item.dayKey + 'T00:00:00');
+                const candidate = new Date(start);
+                candidate.setDate(candidate.getDate() + 1);
+                while (true) {
+                  const dk = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, '0')}-${String(candidate.getDate()).padStart(2, '0')}`;
+                  if (dk > horizonStr) break;
+                  if (weekdaySet.has(candidate.getDay())) addOccurrence(dk);
+                  candidate.setDate(candidate.getDate() + 1);
+                }
+              } else {
+                // days or fallback: simple interval
+                const start = new Date(item.dayKey + 'T00:00:00');
+                const interval = recurrence.interval || 1;
+                const candidate = new Date(start);
+                candidate.setDate(candidate.getDate() + interval);
+                while (true) {
+                  const dk = `${candidate.getFullYear()}-${String(candidate.getMonth() + 1).padStart(2, '0')}-${String(candidate.getDate()).padStart(2, '0')}`;
+                  if (dk > horizonStr) break;
+                  addOccurrence(dk);
+                  candidate.setDate(candidate.getDate() + interval);
+                }
+              }
+            }
+          } else {
+            // Remove recurrence and delete future copies
+            if (item.dayKey && item.recurrence) {
+              const rec = item.recurrence;
+              Object.values(state.items).forEach((other) => {
+                if (other.id !== id && other.text === item.text && other.dayKey && other.dayKey > item.dayKey! &&
+                    !other.completed && other.recurrence && other.recurrence.type === rec.type && other.recurrence.interval === rec.interval) {
+                  delete state.items[other.id];
+                }
+              });
+            }
+            delete item.recurrence;
+            item.updatedAt = now;
+          }
         });
       },
 

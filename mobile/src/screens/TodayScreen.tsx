@@ -20,6 +20,7 @@ import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
 import { parseReminder } from '../../../shared/lib/reminderParser';
+import { scheduleReminderNotification } from '../lib/notifications';
 import * as Haptics from 'expo-haptics';
 
 const triggerHaptic = () => {
@@ -148,6 +149,7 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
 export function TodayScreen() {
   const items = usePlannerStore((s) => s.items);
   const addItem = usePlannerStore((s) => s.addItem);
+  const setRecurrence = usePlannerStore((s) => s.setRecurrence);
   const moveItem = usePlannerStore((s) => s.moveItem);
   const reorderItems = usePlannerStore((s) => s.reorderItems);
   const navigation = useNavigation<any>();
@@ -187,6 +189,14 @@ export function TodayScreen() {
       const reminderDate = new Date(reminder.reminderAt);
       const dayKey = `${reminderDate.getFullYear()}-${String(reminderDate.getMonth() + 1).padStart(2, '0')}-${String(reminderDate.getDate()).padStart(2, '0')}`;
       addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      if (reminder.recurrence) {
+        const allItems = usePlannerStore.getState().items;
+        const newItem = Object.values(allItems).find(
+          (i) => i.text === reminder.cleanText && i.dayKey === dayKey && i.reminderAt === reminder.reminderAt
+        );
+        if (newItem) setRecurrence(newItem.id, reminder.recurrence);
+      }
+      scheduleReminderNotification(`new-${Date.now()}`, reminder.cleanText, reminder.reminderAt);
       const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
       const recurLabel = reminder.recurrence ? ' (recurring)' : '';
       show(`Reminder set for ${timeStr}${recurLabel}`);

@@ -14,6 +14,7 @@ import { useToast } from '../components/Toast';
 import { useColors, type Colors } from '../lib/colors';
 import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
 import { parseReminder } from '../../../shared/lib/reminderParser';
+import { scheduleReminderNotification } from '../lib/notifications';
 import Svg, { Path } from 'react-native-svg';
 
 function TaskRow({ item, colors, navigation, onRequestSnooze }: {
@@ -101,6 +102,7 @@ function AddTaskRow({ dayKey, colors }: { dayKey: string; colors: Colors }) {
         const rd = new Date(reminder.reminderAt);
         const rDayKey = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, '0')}-${String(rd.getDate()).padStart(2, '0')}`;
         addItem({ type: 'task', text: reminder.cleanText, dayKey: rDayKey, reminderAt: reminder.reminderAt });
+        scheduleReminderNotification(`new-${Date.now()}`, reminder.cleanText, reminder.reminderAt);
       } else {
         addItem({ type: 'task', text: trimmed, dayKey });
       }
