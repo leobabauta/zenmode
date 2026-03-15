@@ -66,6 +66,7 @@ interface PlannerState {
   labelColors: Record<string, string>;
   deleteConfirmItemId: string | null;
   lastDeletedItems: PlannerItem[] | null;
+  reminderToast: string | null;
   navOrder: string[];
   labelOrder: string[];
   googleCalendarConnected: boolean;
@@ -207,6 +208,7 @@ export const usePlannerStore = create<PlannerState>()(
       labelColors: {},
       deleteConfirmItemId: null,
       lastDeletedItems: null,
+      reminderToast: null,
       navOrder: ['timeline', 'inbox', 'today', 'later', 'archive'],
       labelOrder: [],
       googleCalendarConnected: false,

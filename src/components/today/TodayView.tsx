@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
+import { usePlannerStore, selectItemsForDay, selectPendingRemindersForDay } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
@@ -20,6 +20,8 @@ export function TodayView() {
   const today = new Date();
   const dayKey = toDayKey(today);
   const todayItems = selectItemsForDay(items, dayKey);
+  const pendingReminders = selectPendingRemindersForDay(items, dayKey);
+  const [showReminders, setShowReminders] = useState(false);
   const startSelection = usePlannerStore((s) => s.startSelection);
 
   // Auto-select first incomplete task on mount
@@ -68,6 +70,32 @@ export function TodayView() {
           <div className="mr-[34px]">
             <GreetingBanner />
           </div>
+          {pendingReminders.length > 0 && (
+            <div className="mb-2">
+              <button
+                onClick={() => setShowReminders(!showReminders)}
+                className="flex items-center gap-1.5 text-xs text-[var(--color-accent)] hover:opacity-80 transition-opacity"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+                <span className="font-medium">{pendingReminders.length} upcoming reminder{pendingReminders.length > 1 ? 's' : ''}</span>
+              </button>
+              {showReminders && (
+                <div className="mt-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5">
+                  {pendingReminders.map((item) => {
+                    const time = new Date(item.reminderAt!).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    return (
+                      <div key={item.id} className="flex items-center gap-2 py-1 text-sm">
+                        <span className="text-[var(--color-accent)] text-xs font-medium w-16 flex-shrink-0">{time}</span>
+                        <span className="text-[var(--color-text-primary)] truncate">{item.text}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           {showReviewButton && (
             <button
               onClick={() => setView('review')}

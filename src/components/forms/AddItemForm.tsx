@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
+import { parseReminder } from '../../lib/reminderParser';
+import { toDayKey } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 
 interface AddItemFormProps {
@@ -39,7 +41,17 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
     if (mode === 'note') {
       addItem({ type: 'note', text: trimmed, dayKey, isLater, listId });
     } else {
-      addItem({ type: 'task', text: trimmed, dayKey, isLater, listId });
+      const reminder = parseReminder(trimmed);
+      if (reminder) {
+        const reminderDate = new Date(reminder.reminderAt);
+        const reminderDayKey = toDayKey(reminderDate);
+        addItem({ type: 'task', text: reminder.cleanText, dayKey: reminderDayKey, reminderAt: reminder.reminderAt });
+        // Show confirmation toast
+        const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}` });
+      } else {
+        addItem({ type: 'task', text: trimmed, dayKey, isLater, listId });
+      }
     }
   };
 

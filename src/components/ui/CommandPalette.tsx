@@ -265,10 +265,11 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     const reminder = parseReminder(text);
 
     if (reminder) {
-      // Create a reminder task on the reminder's day
       const reminderDate = new Date(reminder.reminderAt);
       const dayKey = toDayKey(reminderDate);
       store.addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}` });
     } else if (toToday) {
       store.addItem({ type: 'task', text, dayKey: toDayKey(new Date()) });
     } else {

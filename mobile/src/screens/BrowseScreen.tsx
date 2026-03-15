@@ -189,6 +189,7 @@ export function BrowseScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const navigation = useNavigation<any>();
+  const { show } = useToast();
   const isSearching = searchQuery.trim().length > 0;
   const [refreshing, setRefreshing] = useState(false);
 
@@ -229,6 +230,8 @@ export function BrowseScreen() {
       const reminderDate = new Date(reminder.reminderAt);
       const dayKey = `${reminderDate.getFullYear()}-${String(reminderDate.getMonth() + 1).padStart(2, '0')}-${String(reminderDate.getDate()).padStart(2, '0')}`;
       addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      show(`Reminder set for ${timeStr}`);
       return;
     }
     if (destination === 'today') {
