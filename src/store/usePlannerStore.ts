@@ -349,9 +349,12 @@ export const usePlannerStore = create<PlannerState>()(
               return i.dayKey === null && !i.isLater;
             }).sort((a, b) => a.order - b.order);
 
-            const incomplete = siblings.filter((i) => !i.completed);
-            const completed = siblings.filter((i) => i.completed);
-            const sorted = [...completed, ...incomplete];
+            const isReview = (i: PlannerItem) =>
+              i.type === 'note' && (i.text.includes('#dailyreview') || i.text.includes('#weeklyreview'));
+            const reviews = siblings.filter((i) => isReview(i));
+            const incomplete = siblings.filter((i) => !i.completed && !isReview(i));
+            const completed = siblings.filter((i) => i.completed && !isReview(i));
+            const sorted = [...completed, ...incomplete, ...reviews];
             sorted.forEach((s, i) => {
               state.items[s.id].order = i;
             });
