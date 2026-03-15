@@ -210,7 +210,7 @@ export function TaskItem({
   const isReminder = !!item.reminderAt;
   const reminderTime = isReminder ? new Date(item.reminderAt!) : null;
   const now = new Date();
-  const isRecentlyFired = isReminder && reminderTime! <= now && (now.getTime() - reminderTime!.getTime()) < 10 * 60 * 1000;
+  const isRecentlyFired = isReminder && !item.completed && reminderTime! <= now && (now.getTime() - reminderTime!.getTime()) < 10 * 60 * 1000;
   const reminderTimeStr = reminderTime
     ? reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
     : null;
@@ -278,7 +278,7 @@ export function TaskItem({
             className={cn(
               'flex items-center justify-center w-5 h-5 rounded-full transition-all',
               item.completed
-                ? 'bg-amber-400 text-white'
+                ? 'bg-green-500 text-white'
                 : isRecentlyFired
                   ? 'text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40'
                   : 'text-[var(--color-text-muted)] hover:text-amber-500'

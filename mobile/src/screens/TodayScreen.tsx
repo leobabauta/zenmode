@@ -124,7 +124,7 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
             const isReminder = !!item.reminderAt;
             const reminderTime = isReminder ? new Date(item.reminderAt!) : null;
             const nowMs = Date.now();
-            const isRecentlyFired = isReminder && reminderTime!.getTime() <= nowMs && (nowMs - reminderTime!.getTime()) < 10 * 60 * 1000;
+            const isRecentlyFired = isReminder && !item.completed && reminderTime!.getTime() <= nowMs && (nowMs - reminderTime!.getTime()) < 10 * 60 * 1000;
             const timeStr = reminderTime ? reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null;
             const bgColor = isRecentlyFired
               ? (colors.bg === '#FFFFFF' ? '#FFFBEB' : '#2D2A1F')
@@ -136,7 +136,7 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
                   isReminder ? (
                     <Pressable onPress={() => updateItem(item.id, { completed: !item.completed })} style={{ marginRight: 8 }}>
                       {item.completed ? (
-                        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#FBBF24', alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center' }}>
                           <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
                             <Path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
                           </Svg>
