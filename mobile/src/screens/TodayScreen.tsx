@@ -188,7 +188,8 @@ export function TodayScreen() {
       const dayKey = `${reminderDate.getFullYear()}-${String(reminderDate.getMonth() + 1).padStart(2, '0')}-${String(reminderDate.getDate()).padStart(2, '0')}`;
       addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
       const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-      show(`Reminder set for ${timeStr}`);
+      const recurLabel = reminder.recurrence ? ' (recurring)' : '';
+      show(`Reminder set for ${timeStr}${recurLabel}`);
       return;
     }
     if (destination === 'today') {

@@ -153,6 +153,7 @@ function DayColumn({ day, colors, navigation, onRequestSnooze }: {
   onRequestSnooze: (itemId: string) => void;
 }) {
   const allItems = usePlannerStore((s) => s.items);
+  const deleteItem = usePlannerStore((s) => s.deleteItem);
   const pendingReminders = selectPendingRemindersForDay(allItems, day.dayKey);
   const [showReminders, setShowReminders] = useState(false);
 
@@ -202,6 +203,11 @@ function DayColumn({ day, colors, navigation, onRequestSnooze }: {
                   <View key={item.id} style={styles.reminderRow}>
                     <Text style={[styles.reminderTime, { color: colors.accent }]}>{time}</Text>
                     <Text style={[styles.reminderText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+                    <Pressable onPress={() => deleteItem(item.id)} hitSlop={8}>
+                      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+                        <Path d="M6 18L18 6M6 6l12 12" stroke={colors.textMuted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+                      </Svg>
+                    </Pressable>
                   </View>
                 );
               })}

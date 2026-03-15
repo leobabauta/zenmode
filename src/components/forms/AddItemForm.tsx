@@ -15,6 +15,7 @@ type EditMode = 'idle' | 'task' | 'note';
 
 export function AddItemForm({ dayKey, isLater = false, className, listId }: AddItemFormProps) {
   const addItem = usePlannerStore((s) => s.addItem);
+  const setRecurrence = usePlannerStore((s) => s.setRecurrence);
   const [mode, setMode] = useState<EditMode>('idle');
   const [text, setText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,9 +47,17 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
         const reminderDate = new Date(reminder.reminderAt);
         const reminderDayKey = toDayKey(reminderDate);
         addItem({ type: 'task', text: reminder.cleanText, dayKey: reminderDayKey, reminderAt: reminder.reminderAt });
-        // Show confirmation toast
+        // If recurring, find the just-created item and set recurrence
+        if (reminder.recurrence) {
+          const items = usePlannerStore.getState().items;
+          const newItem = Object.values(items).find(
+            (i) => i.text === reminder.cleanText && i.dayKey === reminderDayKey && i.reminderAt === reminder.reminderAt
+          );
+          if (newItem) setRecurrence(newItem.id, reminder.recurrence);
+        }
         const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-        usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}` });
+        const recurLabel = reminder.recurrence ? ' (recurring)' : '';
+        usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}${recurLabel}` });
       } else {
         addItem({ type: 'task', text: trimmed, dayKey, isLater, listId });
       }

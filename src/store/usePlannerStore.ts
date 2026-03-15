@@ -391,6 +391,16 @@ export const usePlannerStore = create<PlannerState>()(
               horizon.setDate(horizon.getDate() + 365);
               const horizonStr = `${horizon.getFullYear()}-${String(horizon.getMonth() + 1).padStart(2, '0')}-${String(horizon.getDate()).padStart(2, '0')}`;
 
+              // If the source item has a reminderAt, compute the time-of-day
+              // so future copies get reminderAt set to the same time on their day.
+              let reminderHour: number | null = null;
+              let reminderMinute: number | null = null;
+              if (item.reminderAt) {
+                const rd = new Date(item.reminderAt);
+                reminderHour = rd.getHours();
+                reminderMinute = rd.getMinutes();
+              }
+
               const addOccurrence = (dayKey: string) => {
                 // Skip if an identical recurring task already exists on this day
                 const duplicate = Object.values(state.items).find(
@@ -406,6 +416,15 @@ export const usePlannerStore = create<PlannerState>()(
                   ? Math.max(...existingItems.map((i) => i.order))
                   : -1;
                 const newId = nanoid();
+
+                // Compute reminderAt for this day if source had one
+                let futureReminderAt: string | undefined;
+                if (reminderHour !== null && reminderMinute !== null) {
+                  const parts = dayKey.split('-');
+                  const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), reminderHour, reminderMinute, 0, 0);
+                  futureReminderAt = d.toISOString();
+                }
+
                 state.items[newId] = {
                   id: newId,
                   type: item.type,
@@ -416,6 +435,7 @@ export const usePlannerStore = create<PlannerState>()(
                   createdAt: now,
                   updatedAt: now,
                   recurrence,
+                  reminderAt: futureReminderAt,
                 };
               };
 

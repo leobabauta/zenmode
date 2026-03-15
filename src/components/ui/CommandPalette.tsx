@@ -268,8 +268,16 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
       const reminderDate = new Date(reminder.reminderAt);
       const dayKey = toDayKey(reminderDate);
       store.addItem({ type: 'task', text: reminder.cleanText, dayKey, reminderAt: reminder.reminderAt });
+      if (reminder.recurrence) {
+        const items = usePlannerStore.getState().items;
+        const newItem = Object.values(items).find(
+          (i) => i.text === reminder.cleanText && i.dayKey === dayKey && i.reminderAt === reminder.reminderAt
+        );
+        if (newItem) store.setRecurrence(newItem.id, reminder.recurrence);
+      }
       const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-      usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}` });
+      const recurLabel = reminder.recurrence ? ' (recurring)' : '';
+      usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}${recurLabel}` });
     } else if (toToday) {
       store.addItem({ type: 'task', text, dayKey: toDayKey(new Date()) });
     } else {

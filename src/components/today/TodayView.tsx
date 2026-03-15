@@ -22,6 +22,7 @@ export function TodayView() {
   const todayItems = selectItemsForDay(items, dayKey);
   const pendingReminders = selectPendingRemindersForDay(items, dayKey);
   const [showReminders, setShowReminders] = useState(false);
+  const deleteItem = usePlannerStore((s) => s.deleteItem);
   const startSelection = usePlannerStore((s) => s.startSelection);
 
   // Auto-select first incomplete task on mount
@@ -86,9 +87,18 @@ export function TodayView() {
                   {pendingReminders.map((item) => {
                     const time = new Date(item.reminderAt!).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                     return (
-                      <div key={item.id} className="flex items-center gap-2 py-1 text-sm">
+                      <div key={item.id} className="flex items-center gap-2 py-1 text-sm group">
                         <span className="text-[var(--color-accent)] text-xs font-medium w-16 flex-shrink-0">{time}</span>
-                        <span className="text-[var(--color-text-primary)] truncate">{item.text}</span>
+                        <span className="text-[var(--color-text-primary)] truncate flex-1">{item.text}</span>
+                        <button
+                          onClick={() => deleteItem(item.id)}
+                          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-[var(--color-text-muted)] hover:text-red-500 transition-all"
+                          title="Delete reminder"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
                       </div>
                     );
                   })}

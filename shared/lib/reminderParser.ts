@@ -1,5 +1,8 @@
 // Natural language time parser for reminders.
 // Parses @-prefixed patterns like @3pm, @tomorrow 3pm, @mon 3pm, @mar 20 3pm, etc.
+// Also parses "every day @3pm", "every monday @4pm" for recurring reminders.
+
+import type { Recurrence } from '../types';
 
 const DAY_NAMES: Record<string, number> = {
   sun: 0, sunday: 0,
@@ -53,38 +56,33 @@ function parseTime(s: string): { hours: number; minutes: number } | null {
 const DEFAULT_HOUR = 9;
 const DEFAULT_MINUTE = 0;
 
-export function parseReminder(text: string): { cleanText: string; reminderAt: string } | null {
-  // Match @... pattern. We capture everything after @ until we hit something that
-  // can't be part of the reminder spec. The pattern can appear anywhere in the text.
-  // We'll try several specific regexes in order of specificity.
+export interface ReminderParseResult {
+  cleanText: string;
+  reminderAt: string;
+  recurrence?: Recurrence;
+}
 
-  let match: RegExpMatchArray | null = null;
-  let date: Date | null = null;
-
+export function parseReminder(text: string): ReminderParseResult | null {
   const now = new Date();
 
-  // Helper: set time on a date, return new Date
   function setTime(d: Date, hours: number, minutes: number): Date {
     const result = new Date(d);
     result.setHours(hours, minutes, 0, 0);
     return result;
   }
 
-  // Helper: get today at midnight
   function today(): Date {
     const d = new Date(now);
     d.setHours(0, 0, 0, 0);
     return d;
   }
 
-  // Helper: get tomorrow at midnight
   function tomorrow(): Date {
     const d = today();
     d.setDate(d.getDate() + 1);
     return d;
   }
 
-  // Helper: get next occurrence of a weekday (always in the future)
   function nextWeekday(dayNum: number): Date {
     const d = today();
     const current = d.getDay();
@@ -93,6 +91,82 @@ export function parseReminder(text: string): { cleanText: string; reminderAt: st
     d.setDate(d.getDate() + diff);
     return d;
   }
+
+  // --- Try recurring patterns first: "every day @3pm", "every monday @4pm" ---
+
+  // "every day @3pm" or "every day @15:00"
+  const everyDayMatch = text.match(/every\s+day\s+@(\d{1,2}(?::\d{2})?(?:am|pm)|\d{1,2}:\d{2})/i);
+  if (everyDayMatch) {
+    const t = parseTime(everyDayMatch[1]);
+    if (t) {
+      let d = setTime(today(), t.hours, t.minutes);
+      if (d <= now) d = setTime(tomorrow(), t.hours, t.minutes);
+      const cleanText = text
+        .slice(0, everyDayMatch.index!)
+        .concat(text.slice(everyDayMatch.index! + everyDayMatch[0].length))
+        .replace(/\s{2,}/g, ' ').trim();
+      return {
+        cleanText,
+        reminderAt: d.toISOString(),
+        recurrence: { type: 'days', interval: 1 },
+      };
+    }
+  }
+
+  // "every weekday @3pm" (Mon-Fri)
+  const everyWeekdayMatch = text.match(/every\s+weekday\s+@(\d{1,2}(?::\d{2})?(?:am|pm)|\d{1,2}:\d{2})/i);
+  if (everyWeekdayMatch) {
+    const t = parseTime(everyWeekdayMatch[1]);
+    if (t) {
+      // Find next weekday
+      let d = setTime(today(), t.hours, t.minutes);
+      if (d <= now || d.getDay() === 0 || d.getDay() === 6) {
+        d = setTime(tomorrow(), t.hours, t.minutes);
+        while (d.getDay() === 0 || d.getDay() === 6) {
+          d.setDate(d.getDate() + 1);
+          d = setTime(d, t.hours, t.minutes);
+        }
+      }
+      const cleanText = text
+        .slice(0, everyWeekdayMatch.index!)
+        .concat(text.slice(everyWeekdayMatch.index! + everyWeekdayMatch[0].length))
+        .replace(/\s{2,}/g, ' ').trim();
+      return {
+        cleanText,
+        reminderAt: d.toISOString(),
+        recurrence: { type: 'weeks', interval: 1, weekdays: [1, 2, 3, 4, 5] },
+      };
+    }
+  }
+
+  // "every monday @3pm", "every mon @15:00", "every tuesday @4pm"
+  const dayPattern = Object.keys(DAY_NAMES).join('|');
+  const everyDayOfWeekRe = new RegExp(
+    `every\\s+(${dayPattern})\\s+@(\\d{1,2}(?::\\d{2})?(?:am|pm)|\\d{1,2}:\\d{2})`,
+    'i'
+  );
+  const everyDowMatch = text.match(everyDayOfWeekRe);
+  if (everyDowMatch) {
+    const dayNum = DAY_NAMES[everyDowMatch[1].toLowerCase()];
+    const t = parseTime(everyDowMatch[2]);
+    if (dayNum !== undefined && t) {
+      const d = setTime(nextWeekday(dayNum), t.hours, t.minutes);
+      const cleanText = text
+        .slice(0, everyDowMatch.index!)
+        .concat(text.slice(everyDowMatch.index! + everyDowMatch[0].length))
+        .replace(/\s{2,}/g, ' ').trim();
+      return {
+        cleanText,
+        reminderAt: d.toISOString(),
+        recurrence: { type: 'weeks', interval: 1, weekdays: [dayNum] },
+      };
+    }
+  }
+
+  // --- Non-recurring patterns (existing logic) ---
+
+  let match: RegExpMatchArray | null = null;
+  let date: Date | null = null;
 
   // 1. ISO-ish: @2026-03-20 15:00 or @2026-03-20
   match = text.match(/@(\d{4}-\d{2}-\d{2})(?:\s+(\d{1,2}(?::\d{2})?(?:am|pm)?|\d{1,2}:\d{2}))?/i);
@@ -121,7 +195,6 @@ export function parseReminder(text: string): { cleanText: string; reminderAt: st
       const day = parseInt(match[2], 10);
       if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
         const d = new Date(now.getFullYear(), month, day);
-        // If the date has passed this year, use next year
         if (d < today()) {
           d.setFullYear(d.getFullYear() + 1);
         }
@@ -171,7 +244,6 @@ export function parseReminder(text: string): { cleanText: string; reminderAt: st
 
   // 4. Day of week: @mon 3pm, @monday, etc.
   if (!date) {
-    const dayPattern = Object.keys(DAY_NAMES).join('|');
     const re = new RegExp(
       `@(${dayPattern})(?:\\s+(\\d{1,2}(?::\\d{2})?(?:am|pm)?|\\d{1,2}:\\d{2}))?`,
       'i'
@@ -220,7 +292,6 @@ export function parseReminder(text: string): { cleanText: string; reminderAt: st
       const t = parseTime(match[1]);
       if (t) {
         let d = setTime(today(), t.hours, t.minutes);
-        // If the time has already passed today, use tomorrow
         if (d <= now) {
           d = setTime(tomorrow(), t.hours, t.minutes);
         }
@@ -231,7 +302,6 @@ export function parseReminder(text: string): { cleanText: string; reminderAt: st
 
   if (!date || !match) return null;
 
-  // Remove the matched @pattern from the text and clean up whitespace
   const cleanText = text
     .slice(0, match.index!)
     .concat(text.slice(match.index! + match[0].length))
