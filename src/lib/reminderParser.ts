@@ -29,14 +29,14 @@ const MONTH_NAMES: Record<string, number> = {
   dec: 11, december: 11,
 };
 
-/** Parse "3pm", "3:30pm", "15:00" into { hours, minutes } or null. */
+/** Parse "3pm", "3p", "3:30pm", "15:00" into { hours, minutes } or null. */
 function parseTime(s: string): { hours: number; minutes: number } | null {
-  // 12-hour: 3pm, 3:30pm, 12:00am
-  const m12 = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i);
+  // 12-hour: 3pm, 3p, 3:30pm, 12:00am, 4a
+  const m12 = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am?|pm?)$/i);
   if (m12) {
     let hours = parseInt(m12[1], 10);
     const minutes = m12[2] ? parseInt(m12[2], 10) : 0;
-    const period = m12[3].toLowerCase();
+    const period = m12[3].toLowerCase().startsWith('a') ? 'am' : 'pm';
     if (hours < 1 || hours > 12 || minutes > 59) return null;
     if (period === 'am' && hours === 12) hours = 0;
     else if (period === 'pm' && hours !== 12) hours += 12;
@@ -95,7 +95,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
   // --- Try recurring patterns first: "every day @3pm", "every monday @4pm" ---
 
   // "every day @3pm" or "every day @15:00"
-  const everyDayMatch = text.match(/every\s+day\s+@(\d{1,2}(?::\d{2})?(?:am|pm)|\d{1,2}:\d{2})/i);
+  const everyDayMatch = text.match(/every\s+day\s+@(\d{1,2}(?::\d{2})?(?:am?|pm?)|\d{1,2}:\d{2})/i);
   if (everyDayMatch) {
     const t = parseTime(everyDayMatch[1]);
     if (t) {
@@ -114,7 +114,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
   }
 
   // "every weekday @3pm" (Mon-Fri)
-  const everyWeekdayMatch = text.match(/every\s+weekday\s+@(\d{1,2}(?::\d{2})?(?:am|pm)|\d{1,2}:\d{2})/i);
+  const everyWeekdayMatch = text.match(/every\s+weekday\s+@(\d{1,2}(?::\d{2})?(?:am?|pm?)|\d{1,2}:\d{2})/i);
   if (everyWeekdayMatch) {
     const t = parseTime(everyWeekdayMatch[1]);
     if (t) {
@@ -142,7 +142,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
   // "every monday @3pm", "every mon @15:00", "every tuesday @4pm"
   const dayPattern = Object.keys(DAY_NAMES).join('|');
   const everyDayOfWeekRe = new RegExp(
-    `every\\s+(${dayPattern})\\s+@(\\d{1,2}(?::\\d{2})?(?:am|pm)|\\d{1,2}:\\d{2})`,
+    `every\\s+(${dayPattern})\\s+@(\\d{1,2}(?::\\d{2})?(?:am?|pm?)|\\d{1,2}:\\d{2})`,
     'i'
   );
   const everyDowMatch = text.match(everyDayOfWeekRe);
@@ -169,7 +169,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
   let date: Date | null = null;
 
   // 1. ISO-ish: @2026-03-20 15:00 or @2026-03-20
-  match = text.match(/@(\d{4}-\d{2}-\d{2})(?:\s+(\d{1,2}(?::\d{2})?(?:am|pm)?|\d{1,2}:\d{2}))?/i);
+  match = text.match(/@(\d{4}-\d{2}-\d{2})(?:\s+(\d{1,2}(?::\d{2})?(?:am?|pm?)?|\d{1,2}:\d{2}))?/i);
   if (match) {
     const parts = match[1].split('-');
     const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -189,7 +189,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
 
   // 2. Numeric date: @3/20 3pm or @3/20
   if (!date) {
-    match = text.match(/@(\d{1,2})\/(\d{1,2})(?:\s+(\d{1,2}(?::\d{2})?(?:am|pm)?|\d{1,2}:\d{2}))?/i);
+    match = text.match(/@(\d{1,2})\/(\d{1,2})(?:\s+(\d{1,2}(?::\d{2})?(?:am?|pm?)?|\d{1,2}:\d{2}))?/i);
     if (match) {
       const month = parseInt(match[1], 10) - 1;
       const day = parseInt(match[2], 10);
@@ -216,7 +216,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
   if (!date) {
     const monthPattern = Object.keys(MONTH_NAMES).join('|');
     const re = new RegExp(
-      `@(${monthPattern})\\s+(\\d{1,2})(?:\\s+(\\d{1,2}(?::\\d{2})?(?:am|pm)?|\\d{1,2}:\\d{2}))?`,
+      `@(${monthPattern})\\s+(\\d{1,2})(?:\\s+(\\d{1,2}(?::\\d{2})?(?:am?|pm?)?|\\d{1,2}:\\d{2}))?`,
       'i'
     );
     match = text.match(re);
@@ -245,7 +245,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
   // 4. Day of week: @mon 3pm, @monday, etc.
   if (!date) {
     const re = new RegExp(
-      `@(${dayPattern})(?:\\s+(\\d{1,2}(?::\\d{2})?(?:am|pm)?|\\d{1,2}:\\d{2}))?`,
+      `@(${dayPattern})(?:\\s+(\\d{1,2}(?::\\d{2})?(?:am?|pm?)?|\\d{1,2}:\\d{2}))?`,
       'i'
     );
     match = text.match(re);
@@ -269,7 +269,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
 
   // 5. Tomorrow: @tomorrow 3pm, @tomorrow
   if (!date) {
-    match = text.match(/@tomorrow(?:\s+(\d{1,2}(?::\d{2})?(?:am|pm)?|\d{1,2}:\d{2}))?/i);
+    match = text.match(/@tomorrow(?:\s+(\d{1,2}(?::\d{2})?(?:am?|pm?)?|\d{1,2}:\d{2}))?/i);
     if (match) {
       const d = tomorrow();
       if (match[1]) {
@@ -287,7 +287,7 @@ export function parseReminder(text: string): ReminderParseResult | null {
 
   // 6. Time only: @3pm, @3:30pm, @15:00
   if (!date) {
-    match = text.match(/@(\d{1,2}(?::\d{2})?(?:am|pm)|\d{1,2}:\d{2})/i);
+    match = text.match(/@(\d{1,2}(?::\d{2})?(?:am?|pm?)|\d{1,2}:\d{2})/i);
     if (match) {
       const t = parseTime(match[1]);
       if (t) {
