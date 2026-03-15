@@ -46,6 +46,8 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
   const addItem = usePlannerStore((s) => s.addItem);
   const { show } = useToast();
 
+  const isReviewNote = item.type === 'note' && (item.text.includes('#dailyreview') || item.text.includes('#weeklyreview'));
+
   const handleDelete = () => {
     const snapshot = { ...item };
     deleteItem(item.id);
@@ -87,25 +89,54 @@ function TaskRow({ item, colors, navigation, drag, isActive, onRequestSnooze }: 
           onLongPress={drag}
           disabled={isActive}
         >
-          <View style={[styles.taskRow, { backgroundColor: isActive ? colors.surface : colors.bg }]}>
-            {item.type === 'task' && (
-              <Checkbox
-                checked={!!item.completed}
-                onChange={(checked) => updateItem(item.id, { completed: checked })}
-                colors={colors}
-              />
-            )}
-            <Text
-              style={[
-                styles.taskText, { color: colors.text },
-                item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' },
-              ]}
-              numberOfLines={3}
-            >
-              {item.text}
-            </Text>
-            <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
-          </View>
+          {isReviewNote ? (
+            <View style={[
+              styles.reviewNoteRow,
+              {
+                backgroundColor: isActive ? colors.surface : (colors.bg === '#FFFFFF' ? '#FFFBEB' : '#2D2A1F'),
+                borderColor: colors.bg === '#FFFFFF' ? '#FDE68A' : '#5C5330',
+              },
+            ]}>
+              <View style={styles.reviewHeader}>
+                <Text style={[styles.reviewStar, { color: colors.bg === '#FFFFFF' ? '#92400E' : '#D4A84B' }]}>★</Text>
+                <Text style={[styles.reviewLabel, { color: colors.bg === '#FFFFFF' ? '#92400E' : '#D4A84B' }]}>
+                  {item.text.includes('#weeklyreview') ? 'Weekly Review' : 'Daily Review'}
+                </Text>
+              </View>
+              {item.text.split('\n').filter((line: string) => !line.startsWith('#')).map((line: string, i: number) => {
+                const parts = line.split(/(\*\*.*?\*\*)/);
+                return (
+                  <Text key={i} style={[styles.reviewText, { color: colors.bg === '#FFFFFF' ? '#78350F' : '#E8D5A0' }]}>
+                    {parts.map((part: string, j: number) =>
+                      part.startsWith('**') && part.endsWith('**')
+                        ? <Text key={j} style={{ fontWeight: '700' }}>{part.slice(2, -2)}</Text>
+                        : part
+                    )}
+                  </Text>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={[styles.taskRow, { backgroundColor: isActive ? colors.surface : colors.bg }]}>
+              {item.type === 'task' && (
+                <Checkbox
+                  checked={!!item.completed}
+                  onChange={(checked) => updateItem(item.id, { completed: checked })}
+                  colors={colors}
+                />
+              )}
+              <Text
+                style={[
+                  styles.taskText, { color: colors.text },
+                  item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' },
+                ]}
+                numberOfLines={3}
+              >
+                {item.text}
+              </Text>
+              <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
+            </View>
+          )}
         </Pressable>
       </SwipeableRow>
     </ScaleDecorator>
@@ -208,4 +239,20 @@ const styles = StyleSheet.create({
     borderRadius: 10, marginVertical: 1,
   },
   taskText: { flex: 1, fontSize: 15, lineHeight: 21 },
+  reviewNoteRow: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginVertical: 4,
+    marginHorizontal: 4,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+  },
+  reviewStar: { fontSize: 12 },
+  reviewLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  reviewText: { fontSize: 14, lineHeight: 20 },
 });
