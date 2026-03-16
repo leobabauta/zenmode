@@ -300,6 +300,7 @@ export function LoginPage() {
         </div>
         <div className="flex items-center gap-6">
           <a href="/manifesto" className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">Manifesto</a>
+          <a href="/downloads" className="text-sm font-medium text-stone-700 hover:text-stone-900 transition-colors">Downloads</a>
           <button
             onClick={() => goTo('signin')}
             className="text-sm font-medium text-stone-700 hover:text-stone-900 transition-colors"
@@ -456,6 +457,7 @@ export function LoginPage() {
       <footer className="border-t border-stone-200 py-8 text-center flex items-center justify-center gap-6">
         <a href="/about" className="text-base text-stone-500 hover:text-stone-700 transition-colors">About</a>
         <a href="/manifesto" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Manifesto</a>
+        <a href="/downloads" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Downloads</a>
         <a href="/privacy" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Privacy Policy</a>
         <a href="/changelog" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Changelog & Roadmap</a>
       </footer>
