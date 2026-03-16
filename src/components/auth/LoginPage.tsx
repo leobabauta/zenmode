@@ -459,7 +459,7 @@ export function LoginPage() {
         <a href="/manifesto" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Manifesto</a>
         <a href="/downloads" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Downloads</a>
         <a href="/privacy" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Privacy Policy</a>
-        <a href="/changelog" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Changelog & Roadmap</a>
+        <a href="/changelog" className="text-base text-stone-500 hover:text-stone-700 transition-colors">Changelog</a>
       </footer>
     </div>
   );
