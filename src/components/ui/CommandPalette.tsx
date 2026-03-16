@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { toDayKey, getWeekKey } from '../../lib/dates';
-import { parseReminder } from '../../lib/reminderParser';
+import { parseReminder, detectPossibleReminder } from '../../lib/reminderParser';
 import { cn } from '../../lib/utils';
 
 type PaletteItem =
@@ -50,6 +50,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(0);
   const [isAddTask] = useState(addTaskMode);
+  const [showReminderConfirm, setShowReminderConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -156,9 +157,18 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     [sections],
   );
 
-  // Reset highlight when query changes
+  // Detect possible reminder (trailing time without @)
+  const detectedReminder = useMemo(() => {
+    if (!isAddTask || !query.trim()) return null;
+    // Don't detect if parseReminder already handles it (has @)
+    if (parseReminder(query.trim())) return null;
+    return detectPossibleReminder(query.trim());
+  }, [query, isAddTask]);
+
+  // Reset highlight and reminder confirm when query changes
   useEffect(() => {
     setHighlightIndex(0);
+    setShowReminderConfirm(false);
   }, [query]);
 
   // Auto-focus input
@@ -257,6 +267,18 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     onClose();
   }, [onClose, ritualDone]);
 
+  const acceptDetectedReminder = useCallback(() => {
+    if (!detectedReminder) return;
+    const store = usePlannerStore.getState();
+    const reminderDate = new Date(detectedReminder.reminderAt);
+    const dayKey = toDayKey(reminderDate);
+    store.addItem({ type: 'task', text: detectedReminder.cleanText, dayKey, reminderAt: detectedReminder.reminderAt });
+    const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}` });
+    setQuery('');
+    onClose();
+  }, [detectedReminder, onClose]);
+
   const handleAddTask = useCallback((toToday: boolean) => {
     const text = query.trim();
     if (!text) return;
@@ -295,8 +317,27 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
     }
 
     if (isAddTask) {
+      // If confirmation is showing, Y accepts, N/Escape dismisses
+      if (showReminderConfirm && detectedReminder) {
+        if (e.key === 'y' || e.key === 'Y') {
+          e.preventDefault();
+          acceptDetectedReminder();
+          return;
+        }
+        if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          setShowReminderConfirm(false);
+          return;
+        }
+      }
+
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
+        // If there's a detected reminder (no @), ask for confirmation first
+        if (detectedReminder && !showReminderConfirm) {
+          setShowReminderConfirm(true);
+          return;
+        }
         handleAddTask(false); // Add to Inbox
       } else if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault();
@@ -349,8 +390,30 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
 
         <div className="border-t border-[var(--color-border)]" />
 
-        {/* Add task hint */}
-        {isAddTask && (
+        {/* Add task hint / reminder confirmation */}
+        {isAddTask && showReminderConfirm && detectedReminder && (
+          <div className="px-4 py-3 flex items-center gap-2 text-[12px]">
+            <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+            </svg>
+            <span className="text-[var(--color-text-primary)]">
+              Set reminder for {new Date(detectedReminder.reminderAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}?
+            </span>
+            <button
+              onClick={acceptDetectedReminder}
+              className="ml-auto px-2.5 py-1 text-[11px] font-semibold rounded-md bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+            >
+              Yes <kbd className="ml-1 opacity-70">Y</kbd>
+            </button>
+            <button
+              onClick={() => setShowReminderConfirm(false)}
+              className="px-2.5 py-1 text-[11px] font-medium rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] transition-colors"
+            >
+              No <kbd className="ml-1 opacity-70">N</kbd>
+            </button>
+          </div>
+        )}
+        {isAddTask && !showReminderConfirm && (
           <div className="px-4 py-3 text-[11px] text-[var(--color-text-muted)]">
             <span className="font-medium">Enter</span> to add to Inbox · <span className="font-medium">Shift+Enter</span> to add to Today · Use <span className="font-medium">@3pm</span> or <span className="font-medium">@tomorrow 2pm</span> for reminders
           </div>

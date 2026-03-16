@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePlannerStore } from '../../store/usePlannerStore';
-import { parseReminder } from '../../lib/reminderParser';
+import { parseReminder, detectPossibleReminder } from '../../lib/reminderParser';
 import { toDayKey } from '../../lib/dates';
 import { cn } from '../../lib/utils';
 
@@ -18,6 +18,7 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
   const setRecurrence = usePlannerStore((s) => s.setRecurrence);
   const [mode, setMode] = useState<EditMode>('idle');
   const [text, setText] = useState('');
+  const [showReminderConfirm, setShowReminderConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const open = () => {
@@ -64,7 +65,29 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
     }
   };
 
+  const detectedReminder = mode === 'task' && text.trim() && !parseReminder(text.trim())
+    ? detectPossibleReminder(text.trim())
+    : null;
+
+  const acceptDetectedReminder = () => {
+    if (!detectedReminder) return;
+    const reminderDate = new Date(detectedReminder.reminderAt);
+    const reminderDayKey = toDayKey(reminderDate);
+    addItem({ type: 'task', text: detectedReminder.cleanText, dayKey: reminderDayKey, reminderAt: detectedReminder.reminderAt });
+    const timeStr = reminderDate.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    usePlannerStore.setState({ reminderToast: `Reminder set for ${timeStr}` });
+    setText('');
+    setShowReminderConfirm(false);
+    inputRef.current?.focus();
+  };
+
   const submit = () => {
+    // If there's a detected reminder (no @), ask for confirmation first
+    if (detectedReminder && !showReminderConfirm) {
+      setShowReminderConfirm(true);
+      return;
+    }
+    setShowReminderConfirm(false);
     submitLine(text);
     setText('');
     setMode('task');
@@ -106,7 +129,7 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
   }
 
   return (
-    <div className={cn('flex items-center gap-2 px-3 py-2 -ml-9', className)}>
+    <div className={cn('relative flex items-center gap-2 px-3 py-2 -ml-9', className)}>
       {/* Invisible spacer matching drag handle width */}
       <span className="w-4 flex-shrink-0" />
 
@@ -128,25 +151,36 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
       <input
         ref={inputRef}
         value={text}
-        onChange={(e) => setText(e.target.value)}
         onPaste={handlePaste}
         onKeyDown={(e) => {
+          // Handle Y/N when reminder confirmation is showing
+          if (showReminderConfirm && detectedReminder) {
+            if (e.key === 'y' || e.key === 'Y') {
+              e.preventDefault();
+              acceptDetectedReminder();
+              return;
+            }
+            if (e.key === 'n' || e.key === 'N') {
+              e.preventDefault();
+              setShowReminderConfirm(false);
+              return;
+            }
+          }
           if ((e.key === 'Backspace' || e.key === 'Delete') && text === '' && (inputRef.current?.selectionStart ?? 0) === 0) {
             e.preventDefault();
             if (mode === 'task') {
-              // Convert to note
               setMode('note');
             } else {
-              // Already a note — close
               close();
             }
             return;
           }
           if (e.key === 'Enter') { submit(); return; }
-          if (e.key === 'Escape') { close(); return; }
+          if (e.key === 'Escape') { setShowReminderConfirm(false); close(); return; }
         }}
+        onChange={(e) => { setText(e.target.value); setShowReminderConfirm(false); }}
         onBlur={() => {
-          if (!text.trim()) close();
+          if (!text.trim()) { setShowReminderConfirm(false); close(); }
         }}
         placeholder={mode === 'task' ? 'Task' : 'Note'}
         className={cn(
@@ -155,6 +189,28 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
           'outline-none',
         )}
       />
+      {showReminderConfirm && detectedReminder && (
+        <div className="absolute left-0 right-0 top-full mt-1 ml-9 flex items-center gap-2 text-[11px] z-10">
+          <svg className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+          </svg>
+          <span className="text-[var(--color-text-secondary)]">
+            Reminder for {new Date(detectedReminder.reminderAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}?
+          </span>
+          <button
+            onMouseDown={(e) => { e.preventDefault(); acceptDetectedReminder(); }}
+            className="px-2 py-0.5 font-semibold rounded bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+          >
+            Y
+          </button>
+          <button
+            onMouseDown={(e) => { e.preventDefault(); setShowReminderConfirm(false); }}
+            className="px-2 py-0.5 font-medium rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)] transition-colors"
+          >
+            N
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -313,3 +313,57 @@ export function parseReminder(text: string): ReminderParseResult | null {
     reminderAt: date.toISOString(),
   };
 }
+
+/**
+ * Detect a possible time at the end of text (without @).
+ * Returns the suggested reminder result if found, or null.
+ * Used to prompt the user "Set reminder for X?" before creating.
+ */
+export function detectPossibleReminder(text: string): ReminderParseResult | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+
+  // Don't suggest if there's already an @ (parseReminder handles that)
+  if (trimmed.includes('@')) return null;
+
+  const now = new Date();
+
+  function setTime(d: Date, hours: number, minutes: number): Date {
+    const result = new Date(d);
+    result.setHours(hours, minutes, 0, 0);
+    return result;
+  }
+
+  function today(): Date {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function tomorrow(): Date {
+    const d = today();
+    d.setDate(d.getDate() + 1);
+    return d;
+  }
+
+  // Match a trailing time like "3pm", "4:30p", "15:00" at the end of the string
+  // preceded by a space (so "buy 3p screws" won't match but "be cool 3p" will)
+  const trailingMatch = trimmed.match(/\s(\d{1,2}(?::\d{2})?(?:am?|pm?))\s*$/i);
+  if (!trailingMatch) return null;
+
+  const t = parseTime(trailingMatch[1]);
+  if (!t) return null;
+
+  let d = setTime(today(), t.hours, t.minutes);
+  if (d <= now) {
+    d = setTime(tomorrow(), t.hours, t.minutes);
+  }
+
+  const cleanText = trimmed.slice(0, trailingMatch.index!).trim();
+  if (!cleanText) return null;
+
+  return {
+    cleanText,
+    reminderAt: d.toISOString(),
+  };
+}

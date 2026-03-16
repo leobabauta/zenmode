@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, Pressable, Keyboard, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { Colors } from '../lib/colors';
+import { parseReminder, detectPossibleReminder } from '../../../shared/lib/reminderParser';
 
 export type AddDestination = 'today' | 'inbox' | { listId: string; listName: string };
 
@@ -26,7 +27,14 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', defaultDesti
   const [text, setText] = useState('');
   const [destination, setDestination] = useState<AddDestination>(defaultDestination);
   const [showPicker, setShowPicker] = useState(false);
+  const [showReminderConfirm, setShowReminderConfirm] = useState(false);
   const inputRef = useRef<TextInput>(null);
+
+  const detectedReminder = useMemo(() => {
+    const trimmed = text.trim();
+    if (!trimmed || parseReminder(trimmed)) return null;
+    return detectPossibleReminder(trimmed);
+  }, [text]);
 
   useEffect(() => {
     if (open) {
@@ -37,10 +45,33 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', defaultDesti
 
   const handleSubmit = () => {
     const trimmed = text.trim();
-    if (trimmed) {
-      onAdd(trimmed, destination);
-      setText('');
+    if (!trimmed) { setOpen(false); Keyboard.dismiss(); return; }
+
+    // If there's a detected reminder without @, ask for confirmation
+    if (detectedReminder && !showReminderConfirm) {
+      setShowReminderConfirm(true);
+      return;
     }
+
+    setShowReminderConfirm(false);
+    onAdd(trimmed, destination);
+    setText('');
+    setOpen(false);
+    Keyboard.dismiss();
+  };
+
+  const acceptDetectedReminder = () => {
+    if (!detectedReminder) return;
+    // Call onAdd with the @ prefix so the screen's handleAdd parses it as a reminder
+    const withAt = detectedReminder.cleanText + ' @' + new Date(detectedReminder.reminderAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: false });
+    // Actually, just format with the reminderAt info directly — pass the original text with @ inserted
+    const reminderDate = new Date(detectedReminder.reminderAt);
+    const h = reminderDate.getHours();
+    const m = reminderDate.getMinutes();
+    const timeTag = m > 0 ? `@${h}:${String(m).padStart(2, '0')}` : `@${h > 12 ? h - 12 : h}${h >= 12 ? 'pm' : 'am'}`;
+    onAdd(detectedReminder.cleanText + ' ' + timeTag, destination);
+    setText('');
+    setShowReminderConfirm(false);
     setOpen(false);
     Keyboard.dismiss();
   };
@@ -89,7 +120,7 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', defaultDesti
                     placeholder={placeholder}
                     placeholderTextColor={colors.textMuted}
                     value={text}
-                    onChangeText={setText}
+                    onChangeText={(t) => { setText(t); setShowReminderConfirm(false); }}
                     onSubmitEditing={handleSubmit}
                     returnKeyType="done"
                   />
@@ -105,6 +136,37 @@ export function AddTaskFAB({ colors, placeholder = 'Add a task...', defaultDesti
                   </View>
                 </TouchableOpacity>
               </View>
+
+              {/* Reminder confirmation */}
+              {showReminderConfirm && detectedReminder && (
+                <View style={[styles.reminderConfirm, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Text style={[styles.reminderConfirmText, { color: colors.text }]}>
+                    Set reminder for {new Date(detectedReminder.reminderAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}?
+                  </Text>
+                  <View style={styles.reminderConfirmButtons}>
+                    <TouchableOpacity
+                      onPress={acceptDetectedReminder}
+                      style={[styles.reminderConfirmYes]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.reminderConfirmYesText}>Yes</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowReminderConfirm(false);
+                        onAdd(text.trim(), destination);
+                        setText('');
+                        setOpen(false);
+                        Keyboard.dismiss();
+                      }}
+                      style={[styles.reminderConfirmNo, { borderColor: colors.border }]}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.reminderConfirmNoText, { color: colors.textMuted }]}>No</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
               {/* Destination indicator */}
               <View style={styles.destinationRow}>
@@ -267,5 +329,44 @@ const styles = StyleSheet.create({
   },
   pickerOptionText: {
     fontSize: 14,
+  },
+  reminderConfirm: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  reminderConfirmText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  reminderConfirmButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  reminderConfirmYes: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  reminderConfirmYesText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  reminderConfirmNo: {
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  reminderConfirmNoText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
