@@ -248,61 +248,59 @@
     <!-- Changelog -->
     <h2>Changelog</h2>
 
-    <h3><span class="version">v0.7</span> &mdash; Current Release</h3>
+    <h3><span class="version">v0.9</span> &mdash; Current Release</h3>
     <ul>
-      <li><strong>Accent Color Themes</strong> &mdash; Choose from 10 color presets (Slate, Cream, Sky, Sage, Coral, Teal, Forest, Plum, Berry, Mint) in Settings</li>
+      <li><strong>Reminders</strong> &mdash; Type <code>@3pm</code>, <code>@tomorrow 2pm</code>, or <code>@mon 9am</code> to schedule a reminder. Hidden until the time arrives, then pops into Today with a notification</li>
+      <li><strong>Recurring Reminders</strong> &mdash; Type <code>every day @3pm</code> or <code>every monday @4pm</code> to create recurring reminders</li>
+      <li><strong>Smart Time Detection</strong> &mdash; Type a time at the end of a task (e.g. "Call dentist 3pm") and you'll be asked if you want to set a reminder. Supports shorthand like <code>3p</code>, <code>4:30a</code></li>
+      <li><strong>Reminder Bell Icon</strong> &mdash; Reminders show a bell instead of a checkbox (green checkmark when done), with the time shown inline</li>
+      <li><strong>Recently-Fired Highlight</strong> &mdash; Reminders glow amber for 10 minutes after firing, then return to normal</li>
+      <li><strong>Pending Reminders View</strong> &mdash; Bell icon on each day in Timeline and Today shows upcoming reminders with delete button</li>
+      <li><strong>Desktop App (Tauri)</strong> &mdash; Lightweight native app for macOS and Windows (13 MB vs 236 MB Electron). Global quick-add hotkey, system tray, persistent login</li>
+      <li><strong>Ritual Snooze Sync</strong> &mdash; Snoozing or skipping a ritual prompt now syncs across all browsers and devices</li>
+    </ul>
+
+    <h3><span class="version">v0.8</span></h3>
+    <ul>
+      <li><strong>Mobile App (Android)</strong> &mdash; Native React Native app with all core features: Today, Timeline, Inbox, Lists, Focus Timer, Settings</li>
+      <li><strong>Pull-to-Refresh</strong> &mdash; Pull down on any mobile screen to force sync</li>
+      <li><strong>Context-Aware Add Task</strong> &mdash; The add button shows where a task will be added (Today, Inbox, or current list) with a dropdown to switch</li>
+      <li><strong>Timeline Past Days</strong> &mdash; Scroll back 14 days in the mobile timeline to see previous tasks</li>
+      <li><strong>Morning Nudge Notification</strong> &mdash; Configurable daily reminder to review your plan, with time picker in Settings</li>
+      <li><strong>Focus Timer Notification</strong> &mdash; Push notification when your focus timer completes, even if the app is backgrounded</li>
+      <li><strong>Mobile Reminder Notifications</strong> &mdash; Push notifications for reminders on mobile, scheduled via expo-notifications</li>
+    </ul>
+
+    <h3><span class="version">v0.7</span></h3>
+    <ul>
+      <li><strong>Accent Color Themes</strong> &mdash; Choose from 10 color presets in Settings</li>
       <li><strong>Email + Password Auth</strong> &mdash; Sign up and sign in with email and password, alongside Google OAuth</li>
-      <li><strong>Redesigned Sign-In Flow</strong> &mdash; Separate sign-up, sign-in, and forgot password pages with a clean dark theme</li>
-      <li><strong>Priority Star Sparks</strong> &mdash; Completing a priority task triggers an explosion of star-shaped sparks (amber for high, blue for medium)</li>
-      <li><strong>Copy Tasks as Markdown</strong> &mdash; Select one or more tasks and press Cmd+C to copy as Markdown-formatted bulleted text with subtasks</li>
-      <li><strong>Mac Desktop App</strong> &mdash; Electron-based desktop app with global quick-add hotkey (Cmd+Shift+N)</li>
+      <li><strong>Priority Star Sparks</strong> &mdash; Completing a priority task triggers an explosion of star-shaped sparks</li>
+      <li><strong>Copy Tasks as Markdown</strong> &mdash; Select tasks and press Cmd+C to copy as formatted Markdown</li>
       <li><strong>Today View Improvements</strong> &mdash; Violet glow card, auto-select first incomplete task, greeting inside card</li>
-      <li><strong>Task Focus Mode</strong> &mdash; Click background to close, glowing Focus Timer button, Markdown-rendered notes</li>
+      <li><strong>Task Focus Mode</strong> &mdash; Full-screen task view with Markdown-rendered notes</li>
       <li><strong>Smart Sidebar</strong> &mdash; Today auto-collapses sidebar, other views follow your preference</li>
-      <li><strong>Tip Persistence</strong> &mdash; Dismissed daily tips stay dismissed across page refreshes</li>
-      <li><strong>Theme Toggle Fix</strong> &mdash; Dark/light mode no longer snaps back when syncing preferences</li>
-      <li><strong>Recurring Task Fix</strong> &mdash; Duplicate occurrences no longer appear on upcoming days</li>
     </ul>
 
     <h3><span class="version">v0.6</span></h3>
     <ul>
       <li><strong>Email-to-Task</strong> &mdash; Forward emails to create tasks in your Inbox automatically</li>
-      <li><strong>Subtasks</strong> &mdash; Option+drag a task onto another to nest it as a subtask, with collapsible display</li>
-      <li><strong>Clickable Priority Stars</strong> &mdash; Click to cycle between no priority, medium (blue), and high (yellow)</li>
-      <li><strong>Drag to Sidebar</strong> &mdash; Drag tasks to Inbox, Later, Archive, custom lists, or labels in the sidebar</li>
-      <li><strong>Daily Review Notes</strong> &mdash; Review notes now have a golden highlight and show completed priority stars</li>
-      <li><strong>Move Modal Improvements</strong> &mdash; Type a custom list name to highlight and select it</li>
-      <li><strong>Label View Add Items</strong> &mdash; New items created in a label view automatically get the hashtag</li>
-      <li><strong>Sidebar Reordering</strong> &mdash; Drag to reorder nav items and labels in the sidebar</li>
-      <li><strong>View Persistence</strong> &mdash; Your current view and sidebar state are remembered across page refreshes</li>
+      <li><strong>Subtasks</strong> &mdash; Option+drag to nest tasks, with collapsible display</li>
+      <li><strong>Drag to Sidebar</strong> &mdash; Drag tasks to Inbox, Later, Archive, custom lists, or labels</li>
       <li><strong>Command Palette</strong> &mdash; Quick access to navigation and task creation with Cmd+K</li>
-      <li><strong>Completion Confetti</strong> &mdash; Full-screen celebration when you complete all tasks for the day</li>
+      <li><strong>Sidebar Reordering</strong> &mdash; Drag to reorder nav items and labels</li>
+      <li><strong>Completion Confetti</strong> &mdash; Full-screen celebration when all tasks are done</li>
     </ul>
 
     <h3><span class="version">v0.5</span></h3>
     <ul>
-      <li><strong>Daily Planning Ritual</strong> &mdash; A guided 3-step morning workflow to set intentions, choose a practice, and plan your day</li>
-      <li><strong>Daily Review Ritual</strong> &mdash; Evening reflection prompt to review your day</li>
-      <li><strong>Weekly Planning & Review Rituals</strong> &mdash; Configurable weekly rituals with day and time settings</li>
-      <li><strong>Focus Timer</strong> &mdash; Built-in Pomodoro timer with draggable dial, session tracking, and task completion</li>
-      <li><strong>Timeline View</strong> &mdash; See your week at a glance with drag-and-drop between days</li>
-      <li><strong>Inbox & Later</strong> &mdash; Quick capture without breaking focus, and park tasks for the future</li>
-      <li><strong>Custom Lists</strong> &mdash; Create your own lists to organize tasks however you like</li>
-      <li><strong>Labels</strong> &mdash; Use #hashtags to categorize tasks, with custom colors</li>
-      <li><strong>Stats</strong> &mdash; Track task completion rates and focus timer sessions over time</li>
-      <li><strong>Google Calendar Integration</strong> &mdash; Optionally connect your calendar to see today's events during planning</li>
-      <li><strong>Cross-Device Sync</strong> &mdash; Sign in and your tasks sync across all your devices</li>
-      <li><strong>Dark Mode</strong> &mdash; Toggle between light and dark themes</li>
-      <li><strong>Keyboard Shortcuts</strong> &mdash; Fast navigation and task management from the keyboard</li>
-      <li><strong>Drag-and-Drop Reordering</strong> &mdash; Reorder tasks, sidebar items, and move tasks between days</li>
-      <li><strong>Recurring Tasks</strong> &mdash; Set tasks to repeat on a schedule</li>
-      <li><strong>Task Priority</strong> &mdash; Mark tasks as high or medium priority</li>
-      <li><strong>Export & Import</strong> &mdash; Export all data as Markdown, import from Markdown files</li>
-      <li><strong>PWA Support</strong> &mdash; Install zenmode as an app on Android</li>
-      <li><strong>Mobile Layout</strong> &mdash; Dedicated mobile UI with bottom navigation and quick add</li>
-      <li><strong>Account Management</strong> &mdash; Log out and delete your account and data from Settings</li>
-      <li><strong>Auto-Move Incomplete Tasks</strong> &mdash; Unfinished tasks automatically carry forward to today</li>
-      <li><strong>Archive</strong> &mdash; Archive completed tasks to keep your lists clean</li>
+      <li><strong>Daily Planning & Review Rituals</strong> &mdash; Guided morning workflow and evening reflection</li>
+      <li><strong>Weekly Planning & Review</strong> &mdash; Configurable weekly rituals with day and time settings</li>
+      <li><strong>Focus Timer</strong> &mdash; Built-in Pomodoro timer with analog dial and session tracking</li>
+      <li><strong>Timeline View</strong> &mdash; Week at a glance with drag-and-drop between days</li>
+      <li><strong>Inbox, Later, Custom Lists, Labels</strong> &mdash; Full task organization system</li>
+      <li><strong>Cross-Device Sync</strong> &mdash; Real-time sync across all devices via Supabase</li>
+      <li><strong>Dark Mode, Keyboard Shortcuts, Recurring Tasks, Stats</strong></li>
     </ul>
 
     <hr class="divider">
@@ -312,11 +310,9 @@
     <p>Planned features &mdash; no timeline, but these are on our list.</p>
 
     <div style="margin-top: 1rem;">
-      <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> Android app <span class="roadmap-status">(in progress)</span></div>
-      <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> Mac desktop app <span class="roadmap-status">(in progress)</span></div>
-      <div class="roadmap-item"><span class="roadmap-dot up-next"></span> iOS app <span class="roadmap-status">(up next)</span></div>
+      <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> iOS app <span class="roadmap-status">(up next)</span></div>
+      <div class="roadmap-item"><span class="roadmap-dot"></span> Mobile widgets (quick capture + today view)</div>
       <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add browser extension</div>
-      <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add desktop extension</div>
       <div class="roadmap-item"><span class="roadmap-dot"></span> Show progress towards longer-term goals</div>
     </div>
 
