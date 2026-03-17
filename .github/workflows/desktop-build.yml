@@ -72,9 +72,9 @@ jobs:
           security import /tmp/certificate.p12 -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -k "" "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
-          # Also import Apple intermediate cert
+          # Also import Apple intermediate cert (ignore if already exists)
           curl -sL "https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer" -o /tmp/DeveloperIDG2CA.cer
-          security import /tmp/DeveloperIDG2CA.cer -k "$KEYCHAIN_PATH"
+          security import /tmp/DeveloperIDG2CA.cer -k "$KEYCHAIN_PATH" || true
 
       - name: Build Tauri app
         working-directory: desktop-tauri
