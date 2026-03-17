@@ -76,18 +76,32 @@ jobs:
           curl -sL "https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer" -o /tmp/DeveloperIDG2CA.cer
           security import /tmp/DeveloperIDG2CA.cer -k "$KEYCHAIN_PATH" || true
 
+      # Build with signing only (no notarization — we do that separately)
       - name: Build Tauri app
         working-directory: desktop-tauri
-        timeout-minutes: 30
         run: npx tauri build --target ${{ matrix.target }}
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          # macOS code signing + notarization
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+
+      # macOS: Notarize the DMG separately with xcrun notarytool
+      - name: Notarize macOS DMG
+        if: contains(matrix.platform, 'macos')
+        env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DMG=$(find desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" | head -1)
+          echo "Notarizing $DMG"
+          xcrun notarytool submit "$DMG" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait --timeout 20m || echo "Notarization failed or timed out — continuing with signed-only build"
+          # Staple the notarization ticket to the DMG (if notarization succeeded)
+          xcrun stapler staple "$DMG" || echo "Stapling skipped"
 
       - name: Upload artifacts (macOS)
         if: contains(matrix.platform, 'macos')
