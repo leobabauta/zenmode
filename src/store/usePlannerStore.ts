@@ -318,27 +318,36 @@ export const usePlannerStore = create<PlannerState>()(
           }
 
           // Auto-create next occurrence when completing a recurring item
+          // (only if one doesn't already exist — setRecurrence pre-generates future copies)
           if (patch.completed === true && item.recurrence && item.dayKey) {
             const nextDayKey = computeNextOccurrence(item.dayKey, item.recurrence);
-            const nextItems = Object.values(state.items).filter(
-              (i) => i.dayKey === nextDayKey
+            const alreadyExists = Object.values(state.items).some(
+              (i) => i.dayKey === nextDayKey && i.text === item.text &&
+                !i.completed && i.recurrence &&
+                i.recurrence.type === item.recurrence!.type &&
+                i.recurrence.interval === item.recurrence!.interval
             );
-            const maxOrder = nextItems.length > 0
-              ? Math.max(...nextItems.map((i) => i.order))
-              : -1;
-            const newId = nanoid();
-            const now = new Date().toISOString();
-            state.items[newId] = {
-              id: newId,
-              type: item.type,
-              text: item.text,
-              completed: false,
-              dayKey: nextDayKey,
-              order: maxOrder + 1,
-              createdAt: now,
-              updatedAt: now,
-              recurrence: item.recurrence,
-            };
+            if (!alreadyExists) {
+              const nextItems = Object.values(state.items).filter(
+                (i) => i.dayKey === nextDayKey
+              );
+              const maxOrder = nextItems.length > 0
+                ? Math.max(...nextItems.map((i) => i.order))
+                : -1;
+              const newId = nanoid();
+              const now = new Date().toISOString();
+              state.items[newId] = {
+                id: newId,
+                type: item.type,
+                text: item.text,
+                completed: false,
+                dayKey: nextDayKey,
+                order: maxOrder + 1,
+                createdAt: now,
+                updatedAt: now,
+                recurrence: item.recurrence,
+              };
+            }
           }
 
           // Auto-sort: move completed items below incomplete, uncompleted items above completed
@@ -637,6 +646,20 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => {
           state.lastAutoMoveDate = todayKey;
           const now = new Date().toISOString();
+
+          // Deduplicate recurring tasks: if multiple incomplete copies of the same
+          // recurring task exist on the same day, keep only the first one
+          const seen = new Map<string, string>(); // "dayKey|text|recType|recInterval" → id
+          Object.values(state.items).forEach((item) => {
+            if (!item.recurrence || !item.dayKey || item.completed || item.parentId) return;
+            const key = `${item.dayKey}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
+            if (seen.has(key)) {
+              // Duplicate — delete this one
+              delete state.items[item.id];
+            } else {
+              seen.set(key, item.id);
+            }
+          });
 
           // Clear stale priority flags from past days (keep on completed items for stats)
           Object.values(state.items).forEach((item) => {
