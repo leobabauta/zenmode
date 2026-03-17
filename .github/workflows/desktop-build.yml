@@ -78,13 +78,16 @@ jobs:
 
       - name: Build Tauri app
         working-directory: desktop-tauri
+        timeout-minutes: 30
         run: npx tauri build --target ${{ matrix.target }}
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          # macOS code signing (without notarization for now — notarization
-          # can hang in CI; signing alone fixes the "damaged" Gatekeeper error)
+          # macOS code signing + notarization
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload artifacts (macOS)
         if: contains(matrix.platform, 'macos')
