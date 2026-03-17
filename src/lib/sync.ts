@@ -290,6 +290,10 @@ interface PrefsRow {
   review_ritual_enabled: boolean;
   review_ritual_hour: number;
   last_review_ritual_date: string | null;
+  planning_ritual_snoozed_until: number | null;
+  review_ritual_snoozed_until: number | null;
+  weekly_planning_snoozed_until: number | null;
+  weekly_review_snoozed_until: number | null;
   custom_lists: unknown[];
   active_list_id: string | null;
   updated_at: string;
@@ -347,6 +351,11 @@ export async function pullPreferences(): Promise<void> {
       reviewRitualEnabled: row.review_ritual_enabled ?? true,
       reviewRitualHour: row.review_ritual_hour ?? 17,
       lastReviewRitualDate: bestReviewDate,
+      // Snooze: keep whichever is later (local or remote) so snooze isn't lost
+      planningRitualSnoozedUntil: Math.max(local.planningRitualSnoozedUntil ?? 0, row.planning_ritual_snoozed_until ?? 0) || null,
+      reviewRitualSnoozedUntil: Math.max(local.reviewRitualSnoozedUntil ?? 0, row.review_ritual_snoozed_until ?? 0) || null,
+      weeklyPlanningSnoozedUntil: Math.max(local.weeklyPlanningSnoozedUntil ?? 0, row.weekly_planning_snoozed_until ?? 0) || null,
+      weeklyReviewSnoozedUntil: Math.max(local.weeklyReviewSnoozedUntil ?? 0, row.weekly_review_snoozed_until ?? 0) || null,
       customLists: mergedLists,
     });
   }
@@ -389,6 +398,10 @@ async function flushPreferences(): Promise<void> {
     review_ritual_enabled: s.reviewRitualEnabled,
     review_ritual_hour: s.reviewRitualHour,
     last_review_ritual_date: s.lastReviewRitualDate,
+    planning_ritual_snoozed_until: s.planningRitualSnoozedUntil,
+    review_ritual_snoozed_until: s.reviewRitualSnoozedUntil,
+    weekly_planning_snoozed_until: s.weeklyPlanningSnoozedUntil,
+    weekly_review_snoozed_until: s.weeklyReviewSnoozedUntil,
     custom_lists: s.customLists,
     active_list_id: s.activeListId,
     updated_at: new Date().toISOString(),
