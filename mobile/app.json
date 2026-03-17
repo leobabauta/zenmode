@@ -14,9 +14,20 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "net.zenhabits.zenmode"
+      "bundleIdentifier": "net.zenhabits.zenmode",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.792674113739-43i08tn8gf2a4c2f24h0it3h6c8gg0nt"
+            ]
+          }
+        ]
+      }
     },
     "android": {
+      "versionCode": 4,
       "package": "net.zenhabits.zenmode",
       "adaptiveIcon": {
         "backgroundColor": "#fafaf9",
