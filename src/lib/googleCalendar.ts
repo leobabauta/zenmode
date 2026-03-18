@@ -74,26 +74,60 @@ export function requestCalendarAccess(): Promise<string> {
       return;
     }
 
+    const handleCallback = (response: { access_token?: string; error?: string; expires_in?: number }) => {
+      if (response.error) {
+        reject(new Error(response.error));
+        return;
+      }
+      if (response.access_token) {
+        accessToken = response.access_token;
+        saveCachedToken(response.access_token, response.expires_in ?? 3600);
+        resolve(response.access_token);
+      } else {
+        reject(new Error('No access token received'));
+      }
+    };
+
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
-      callback: (response) => {
-        if (response.error) {
-          reject(new Error(response.error));
-          return;
-        }
-        if (response.access_token) {
-          accessToken = response.access_token;
-          saveCachedToken(response.access_token, response.expires_in ?? 3600);
-          resolve(response.access_token);
-        } else {
-          reject(new Error('No access token received'));
-        }
-      },
+      callback: handleCallback,
     });
 
-    client.requestAccessToken();
+    // Try silent re-auth first (no popup if user previously granted consent)
+    try {
+      (client as any).requestAccessToken({ prompt: '' });
+    } catch {
+      // Fall back to interactive prompt
+      client.requestAccessToken();
+    }
   });
+}
+
+/**
+ * Try to silently refresh the token in the background.
+ * Call this on app load to keep the token fresh without user interaction.
+ */
+export function silentRefreshCalendarToken(): void {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  if (!clientId || !window.google?.accounts?.oauth2) return;
+
+  const client = window.google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
+    callback: (response) => {
+      if (response.access_token) {
+        accessToken = response.access_token;
+        saveCachedToken(response.access_token, response.expires_in ?? 3600);
+      }
+    },
+  });
+
+  try {
+    (client as any).requestAccessToken({ prompt: '' });
+  } catch {
+    // Silent refresh failed — user will be prompted when they next use calendar
+  }
 }
 
 export async function fetchTodayEvents(): Promise<CalendarEvent[]> {

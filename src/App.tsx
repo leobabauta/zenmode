@@ -7,6 +7,7 @@ import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
+import { silentRefreshCalendarToken } from './lib/googleCalendar';
 import { LoginPage } from './components/auth/LoginPage';
 import { ToastProvider } from './components/ui/Toast';
 import { applyColorPreset } from './lib/colorThemes';
@@ -115,6 +116,11 @@ export default function App() {
     checkReviewRitual();
     checkWeeklyPlanningRitual();
     checkWeeklyReviewRitual();
+
+    // Silently refresh Google Calendar token if previously connected
+    if (state.googleCalendarConnected) {
+      silentRefreshCalendarToken();
+    }
   };
 
   // After store hydration: pull from Supabase first (if available), THEN auto-move + ritual checks.
@@ -182,6 +188,10 @@ export default function App() {
     const handler = () => {
       if (document.visibilityState === 'visible') {
         pullFromSupabase().then(() => pullPreferences());
+        // Refresh calendar token silently if connected
+        if (usePlannerStore.getState().googleCalendarConnected) {
+          silentRefreshCalendarToken();
+        }
       }
     };
     document.addEventListener('visibilitychange', handler);
