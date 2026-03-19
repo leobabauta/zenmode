@@ -27,16 +27,34 @@ export default function App() {
       return;
     }
 
-    // Listen for auth changes first (catches session restore from storage)
+    // Listen for auth changes — but guard against spurious SIGNED_OUT events
+    // by attempting a session refresh before actually logging the user out
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
+        if (event === 'SIGNED_OUT' && !session) {
+          // Before accepting sign-out, try refreshing the session one more time
+          // (covers cases where the token expired but refresh token is still valid)
+          const { data } = await supabase!.auth.refreshSession();
+          if (data.session) {
+            // Refresh succeeded — stay signed in
+            useAuthStore.getState().setAuth(data.session.user, data.session);
+            return;
+          }
+        }
         useAuthStore.getState().setAuth(session?.user ?? null, session);
       }
     );
 
-    // Then check existing session (triggers INITIAL_SESSION event above)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // Only set if still loading (onAuthStateChange may have already fired)
+    // Check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        // No session found — try refreshing in case there's a valid refresh token
+        const { data } = await supabase!.auth.refreshSession();
+        if (data.session) {
+          useAuthStore.getState().setAuth(data.session.user, data.session);
+          return;
+        }
+      }
       if (useAuthStore.getState().loading) {
         useAuthStore.getState().setAuth(session?.user ?? null, session);
       }
