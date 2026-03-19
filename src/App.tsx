@@ -7,7 +7,7 @@ import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
-import { silentRefreshCalendarToken } from './lib/googleCalendar';
+// import { silentRefreshCalendarToken } from './lib/googleCalendar';
 import { LoginPage } from './components/auth/LoginPage';
 import { ToastProvider } from './components/ui/Toast';
 import { applyColorPreset } from './lib/colorThemes';
@@ -27,38 +27,18 @@ export default function App() {
       return;
     }
 
-    // Listen for auth changes — but guard against spurious SIGNED_OUT events
-    // by attempting a session refresh before actually logging the user out
+    // Check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[auth] getSession result:', session ? 'has session' : 'no session');
+      useAuthStore.getState().setAuth(session?.user ?? null, session);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT' && !session) {
-          // Before accepting sign-out, try refreshing the session one more time
-          // (covers cases where the token expired but refresh token is still valid)
-          const { data } = await supabase!.auth.refreshSession();
-          if (data.session) {
-            // Refresh succeeded — stay signed in
-            useAuthStore.getState().setAuth(data.session.user, data.session);
-            return;
-          }
-        }
+      (event, session) => {
+        console.log('[auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
         useAuthStore.getState().setAuth(session?.user ?? null, session);
       }
     );
-
-    // Check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        // No session found — try refreshing in case there's a valid refresh token
-        const { data } = await supabase!.auth.refreshSession();
-        if (data.session) {
-          useAuthStore.getState().setAuth(data.session.user, data.session);
-          return;
-        }
-      }
-      if (useAuthStore.getState().loading) {
-        useAuthStore.getState().setAuth(session?.user ?? null, session);
-      }
-    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -139,10 +119,10 @@ export default function App() {
     checkWeeklyPlanningRitual();
     checkWeeklyReviewRitual();
 
-    // Silently refresh Google Calendar token if previously connected
-    if (state.googleCalendarConnected) {
-      silentRefreshCalendarToken();
-    }
+    // Calendar token refresh disabled — was causing Google popups
+    // if (state.googleCalendarConnected) {
+    //   silentRefreshCalendarToken();
+    // }
   };
 
   // After store hydration: pull from Supabase first (if available), THEN auto-move + ritual checks.
@@ -210,10 +190,10 @@ export default function App() {
     const handler = () => {
       if (document.visibilityState === 'visible') {
         pullFromSupabase().then(() => pullPreferences());
-        // Refresh calendar token silently if connected
-        if (usePlannerStore.getState().googleCalendarConnected) {
-          silentRefreshCalendarToken();
-        }
+        // Calendar token refresh disabled
+        // if (usePlannerStore.getState().googleCalendarConnected) {
+        //   silentRefreshCalendarToken();
+        // }
       }
     };
     document.addEventListener('visibilitychange', handler);
