@@ -27,16 +27,20 @@ export default function App() {
       return;
     }
 
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      useAuthStore.getState().setAuth(session?.user ?? null, session);
-    });
-
+    // Listen for auth changes first (catches session restore from storage)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         useAuthStore.getState().setAuth(session?.user ?? null, session);
       }
     );
+
+    // Then check existing session (triggers INITIAL_SESSION event above)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      // Only set if still loading (onAuthStateChange may have already fired)
+      if (useAuthStore.getState().loading) {
+        useAuthStore.getState().setAuth(session?.user ?? null, session);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
