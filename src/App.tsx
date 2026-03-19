@@ -29,13 +29,11 @@ export default function App() {
 
     // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[auth] getSession result:', session ? 'has session' : 'no session');
       useAuthStore.getState().setAuth(session?.user ?? null, session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('[auth] onAuthStateChange:', event, session ? 'has session' : 'no session');
+      (_event, session) => {
         useAuthStore.getState().setAuth(session?.user ?? null, session);
       }
     );
