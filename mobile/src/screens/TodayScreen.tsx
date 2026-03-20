@@ -21,6 +21,8 @@ import { useColors, type Colors } from '../lib/colors';
 import { pullFromSupabase, pullPreferences } from '../../../shared/lib/sync';
 import { parseReminder } from '../../../shared/lib/reminderParser';
 import { scheduleReminderNotification } from '../lib/notifications';
+import { PlanningRitualCard } from '../components/PlanningRitualCard';
+import { ReviewRitualCard } from '../components/ReviewRitualCard';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
@@ -196,6 +198,29 @@ export function TodayScreen() {
   const [snoozeItemId, setSnoozeItemId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Ritual state
+  const planningRitualEnabled = usePlannerStore((s) => s.planningRitualEnabled);
+  const planningRitualHour = usePlannerStore((s) => s.planningRitualHour);
+  const lastRitualDate = usePlannerStore((s) => s.lastRitualDate);
+  const planningRitualSnoozedUntil = usePlannerStore((s) => s.planningRitualSnoozedUntil);
+  const reviewRitualEnabled = usePlannerStore((s) => s.reviewRitualEnabled);
+  const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
+  const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
+  const reviewRitualSnoozedUntil = usePlannerStore((s) => s.reviewRitualSnoozedUntil);
+
+  const [ritualDismissed, setRitualDismissed] = useState(false);
+  const [reviewDismissed, setReviewDismissed] = useState(false);
+
+  const hour = new Date().getHours();
+  const showPlanningRitual = planningRitualEnabled && !ritualDismissed
+    && lastRitualDate !== todayKey
+    && hour >= planningRitualHour
+    && (!planningRitualSnoozedUntil || Date.now() >= planningRitualSnoozedUntil);
+  const showReviewRitual = reviewRitualEnabled && !reviewDismissed && !showPlanningRitual
+    && lastReviewRitualDate !== todayKey
+    && hour >= reviewRitualHour
+    && (!reviewRitualSnoozedUntil || Date.now() >= reviewRitualSnoozedUntil);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -283,6 +308,12 @@ export function TodayScreen() {
         ListHeaderComponent={
           <View style={{ paddingTop: insets.top + 8 }}>
             <GreetingBanner colors={colors} />
+            {showPlanningRitual && (
+              <PlanningRitualCard colors={colors} onDismiss={() => setRitualDismissed(true)} />
+            )}
+            {showReviewRitual && (
+              <ReviewRitualCard colors={colors} onDismiss={() => setReviewDismissed(true)} />
+            )}
             {showAllDone && (
               <AllDoneToday colors={colors} onShowCompleted={() => setShowCompletedTasks(true)} />
             )}

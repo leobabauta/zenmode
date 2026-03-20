@@ -20,6 +20,8 @@ interface PlannerState {
   reviewRitualHour: number;
   lastRitualDate: string | null;
   lastReviewRitualDate: string | null;
+  planningRitualSnoozedUntil: number | null;
+  reviewRitualSnoozedUntil: number | null;
   // Weekly
   weeklyPlanningEnabled: boolean;
   weeklyPlanningDay: number;
@@ -63,6 +65,8 @@ export const usePlannerStore = create<PlannerState>()(
       reviewRitualHour: 17,
       lastRitualDate: null,
       lastReviewRitualDate: null,
+      planningRitualSnoozedUntil: null,
+      reviewRitualSnoozedUntil: null,
       weeklyPlanningEnabled: false,
       weeklyPlanningDay: 1,
       weeklyPlanningHour: 9,
