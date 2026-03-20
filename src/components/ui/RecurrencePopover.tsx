@@ -88,7 +88,7 @@ export function RecurrencePopover({ recurrence, dayKey, taskName, onSave, onClea
         rec = { type: 'weeks', interval: 1, weekdays };
         break;
       case 'months':
-        rec = { type: 'months', interval: 1, dayOfMonth };
+        rec = { type: 'months', interval, dayOfMonth };
         break;
       default:
         rec = { type: 'days', interval: 1 };
@@ -188,16 +188,30 @@ export function RecurrencePopover({ recurrence, dayKey, taskName, onSave, onClea
             )}
 
             {mode === 'months' && (
-              <div className="flex items-center gap-2 rounded-lg bg-[var(--color-surface)] px-3 py-2">
-                <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap">Day of month</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={31}
-                  value={dayOfMonth}
-                  onChange={(e) => setDayOfMonth(Math.max(1, Math.min(31, parseInt(e.target.value) || 1)))}
-                  className="w-12 text-center text-sm font-medium bg-transparent text-[var(--color-text-primary)] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 rounded-lg bg-[var(--color-surface)] px-3 py-2">
+                  <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap">Repeat every</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={interval}
+                    onChange={(e) => setInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-12 text-center text-sm font-medium bg-transparent text-[var(--color-text-primary)] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="text-xs text-[var(--color-text-secondary)]">month{interval !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg bg-[var(--color-surface)] px-3 py-2">
+                  <span className="text-xs text-[var(--color-text-secondary)] whitespace-nowrap">on day</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={dayOfMonth}
+                    onChange={(e) => setDayOfMonth(Math.max(1, Math.min(31, parseInt(e.target.value) || 1)))}
+                    className="w-12 text-center text-sm font-medium bg-transparent text-[var(--color-text-primary)] outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
               </div>
             )}
           </div>

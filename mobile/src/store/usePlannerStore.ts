@@ -238,6 +238,18 @@ export const usePlannerStore = create<PlannerState>()(
                   if (weekdaySet.has(candidate.getDay())) addOccurrence(dk);
                   candidate.setDate(candidate.getDate() + 1);
                 }
+              } else if (recurrence.type === 'months' && recurrence.dayOfMonth) {
+                // Iterate by interval months up to 24 months
+                const intervalMonths = recurrence.interval || 1;
+                const start = new Date(item.dayKey + 'T00:00:00');
+                for (let m = intervalMonths; m <= 24; m += intervalMonths) {
+                  const nextMonth = new Date(start.getFullYear(), start.getMonth() + m, 1);
+                  const lastDay = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+                  const clampedDay = Math.min(recurrence.dayOfMonth, lastDay);
+                  const dk = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`;
+                  if (dk > horizonStr) break;
+                  addOccurrence(dk);
+                }
               } else {
                 // days or fallback: simple interval
                 const start = new Date(item.dayKey + 'T00:00:00');

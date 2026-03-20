@@ -41,7 +41,8 @@ export function computeNextOccurrence(currentDayKey: string, recurrence: Recurre
     }
     case 'months': {
       const dayOfMonth = recurrence.dayOfMonth ?? current.getDate();
-      const nextMonth = addMonths(current, 1);
+      const intervalMonths = recurrence.interval || 1;
+      const nextMonth = addMonths(current, intervalMonths);
       // Clamp to month length
       const lastDay = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
       const clampedDay = Math.min(dayOfMonth, lastDay);
@@ -77,7 +78,9 @@ export function describeRecurrence(rec: Recurrence): string {
     case 'months': {
       const day = rec.dayOfMonth ?? 1;
       const suffix = day === 1 || day === 21 || day === 31 ? 'st' : day === 2 || day === 22 ? 'nd' : day === 3 || day === 23 ? 'rd' : 'th';
-      return `Every month on the ${day}${suffix}`;
+      const intervalMonths = rec.interval || 1;
+      if (intervalMonths === 1) return `Every month on the ${day}${suffix}`;
+      return `Every ${intervalMonths} months on the ${day}${suffix}`;
     }
     case 'weekday':
       return rec.weekday != null ? `Every week on ${DAY_NAMES[rec.weekday]}` : 'Every week';

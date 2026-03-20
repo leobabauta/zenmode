@@ -463,9 +463,10 @@ export const usePlannerStore = create<PlannerState>()(
                   candidate.setDate(candidate.getDate() + 1);
                 }
               } else if (recurrence.type === 'months' && recurrence.dayOfMonth) {
-                // Iterate month-by-month for 12 months
+                // Iterate by interval months up to 24 months
+                const intervalMonths = recurrence.interval || 1;
                 const start = new Date(item.dayKey + 'T00:00:00');
-                for (let m = 1; m <= 12; m++) {
+                for (let m = intervalMonths; m <= 24; m += intervalMonths) {
                   const nextMonth = new Date(start.getFullYear(), start.getMonth() + m, 1);
                   const lastDay = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
                   const clampedDay = Math.min(recurrence.dayOfMonth, lastDay);
