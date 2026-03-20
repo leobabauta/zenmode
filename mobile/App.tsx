@@ -142,15 +142,19 @@ export default function App() {
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      useAuthStore.getState().setAuth(session?.user ?? null, session);
-    });
-
+    // Register listener FIRST so it catches the INITIAL_SESSION event
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         useAuthStore.getState().setAuth(session?.user ?? null, session);
       }
     );
+
+    // Fallback: if listener doesn't fire (older client), getSession() will set auth
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (useAuthStore.getState().loading) {
+        useAuthStore.getState().setAuth(session?.user ?? null, session);
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
