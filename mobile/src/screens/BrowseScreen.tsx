@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl, ScrollView } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -267,6 +267,11 @@ export function BrowseScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.bg }]}>
         <Text style={[styles.subViewTitle, { color: colors.text }]}>{subViewTitle(subView)}</Text>
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
         <DraggableFlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
@@ -275,9 +280,10 @@ export function BrowseScreen() {
           onDragBegin={triggerHapticMedium}
           onPlaceholderIndexChange={triggerHaptic}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
+          scrollEnabled={false}
           ListEmptyComponent={<Text style={[styles.empty, { color: colors.textMuted }]}>No items.</Text>}
         />
+        </ScrollView>
         <AddTaskFAB colors={colors} defaultDestination={defaultDestination} onAdd={handleAdd} />
       </View>
     );

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, Platform, Vibration, RefreshControl,
+  View, Text, Pressable, StyleSheet, Platform, Vibration, RefreshControl, ScrollView,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -265,6 +265,11 @@ export function TodayScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
       <DraggableFlatList
         data={showAllDone ? [] : todayItems}
         keyExtractor={(item) => item.id}
@@ -274,7 +279,7 @@ export function TodayScreen() {
         onPlaceholderIndexChange={triggerHaptic}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
+        scrollEnabled={false}
         ListHeaderComponent={
           <View style={{ paddingTop: insets.top + 8 }}>
             <GreetingBanner colors={colors} />
@@ -289,6 +294,7 @@ export function TodayScreen() {
           )
         }
       />
+      </ScrollView>
 
       <AddTaskFAB colors={colors} defaultDestination="today" onAdd={handleAdd} />
 
