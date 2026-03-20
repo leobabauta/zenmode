@@ -1157,7 +1157,7 @@ export function isReminderPending(item: PlannerItem): boolean {
 
 export function selectItemsForDay(items: Record<string, PlannerItem>, dayKey: string) {
   return Object.values(items)
-    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived && !isReminderPending(i))
+    .filter((i) => i.dayKey === dayKey && !i.parentId && !i.isArchived)
     .sort((a, b) => a.order - b.order);
 }
 
