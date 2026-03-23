@@ -187,11 +187,10 @@ export default function App() {
     if (!supabase || !user) return;
     const handler = () => {
       if (document.visibilityState === 'visible') {
-        pullFromSupabase().then(() => pullPreferences());
-        // Calendar token refresh disabled
-        // if (usePlannerStore.getState().googleCalendarConnected) {
-        //   silentRefreshCalendarToken();
-        // }
+        pullFromSupabase().then(() => pullPreferences()).then(() => {
+          // Re-run auto-move in case the day changed while the tab was hidden
+          usePlannerStore.getState().autoMoveIncompleteItems();
+        });
       }
     };
     document.addEventListener('visibilitychange', handler);
@@ -201,6 +200,8 @@ export default function App() {
   // 60-second interval to check if review ritual should trigger mid-session
   useEffect(() => {
     const interval = setInterval(() => {
+      // Re-run auto-move in case midnight passed while the tab stayed open
+      usePlannerStore.getState().autoMoveIncompleteItems();
       checkReviewRitual();
       checkWeeklyPlanningRitual();
       checkWeeklyReviewRitual();

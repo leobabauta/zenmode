@@ -296,6 +296,8 @@ interface PrefsRow {
   weekly_review_snoozed_until: number | null;
   custom_lists: unknown[];
   active_list_id: string | null;
+  timezone: string | null;
+  last_auto_move_date: string | null;
   updated_at: string;
 }
 
@@ -343,6 +345,11 @@ export async function pullPreferences(): Promise<void> {
     // — these are session-local and already persisted via zustand local storage.
     // Don't overwrite theme — it's persisted locally and overwriting causes
     // the toggle to snap back when a pull races with the push.
+    // Sync lastAutoMoveDate: keep whichever is more recent so neither
+    // server nor client re-runs auto-move the other already completed.
+    const bestAutoMoveDate = [local.lastAutoMoveDate, row.last_auto_move_date]
+      .filter(Boolean).sort().pop() ?? null;
+
     usePlannerStore.setState({
       labelColors: row.label_colors,
       lastRitualDate: bestRitualDate,
@@ -357,6 +364,7 @@ export async function pullPreferences(): Promise<void> {
       weeklyPlanningSnoozedUntil: Math.max(local.weeklyPlanningSnoozedUntil ?? 0, row.weekly_planning_snoozed_until ?? 0) || null,
       weeklyReviewSnoozedUntil: Math.max(local.weeklyReviewSnoozedUntil ?? 0, row.weekly_review_snoozed_until ?? 0) || null,
       customLists: mergedLists,
+      lastAutoMoveDate: bestAutoMoveDate,
     });
   }
   prefsPullDone = true;
@@ -404,6 +412,8 @@ async function flushPreferences(): Promise<void> {
     weekly_review_snoozed_until: s.weeklyReviewSnoozedUntil,
     custom_lists: s.customLists,
     active_list_id: s.activeListId,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    last_auto_move_date: s.lastAutoMoveDate,
     updated_at: new Date().toISOString(),
   };
 

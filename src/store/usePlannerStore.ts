@@ -1120,7 +1120,7 @@ if (typeof window !== 'undefined') {
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed'] as const;
+const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed', 'lastAutoMoveDate'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items
