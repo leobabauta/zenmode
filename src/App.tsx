@@ -7,7 +7,7 @@ import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
-// import { silentRefreshCalendarToken } from './lib/googleCalendar';
+import { silentRefreshCalendarToken } from './lib/googleCalendar';
 import { LoginPage } from './components/auth/LoginPage';
 import { ToastProvider } from './components/ui/Toast';
 import { applyColorPreset } from './lib/colorThemes';
@@ -117,10 +117,12 @@ export default function App() {
     checkWeeklyPlanningRitual();
     checkWeeklyReviewRitual();
 
-    // Calendar token refresh disabled — was causing Google popups
-    // if (state.googleCalendarConnected) {
-    //   silentRefreshCalendarToken();
-    // }
+    // Silently refresh Google Calendar token so events auto-load in the ritual.
+    // Uses prompt: '' which never shows a popup — if it fails, user just
+    // gets a "Sign in" button in the ritual instead.
+    if (state.googleCalendarConnected) {
+      silentRefreshCalendarToken();
+    }
   };
 
   // After store hydration: pull from Supabase first (if available), THEN auto-move + ritual checks.
@@ -191,6 +193,10 @@ export default function App() {
           // Re-run auto-move in case the day changed while the tab was hidden
           usePlannerStore.getState().autoMoveIncompleteItems();
         });
+        // Silently refresh calendar token so it's ready when user opens the ritual
+        if (usePlannerStore.getState().googleCalendarConnected) {
+          silentRefreshCalendarToken();
+        }
       }
     };
     document.addEventListener('visibilitychange', handler);

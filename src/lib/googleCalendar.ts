@@ -52,6 +52,12 @@ export function clearCalendarToken() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+/** Returns true if we have a non-expired cached token (safe to fetch without popup) */
+export function hasCachedCalendarToken(): boolean {
+  if (!accessToken) accessToken = loadCachedToken();
+  return !!accessToken;
+}
+
 export function requestCalendarAccess(): Promise<string> {
   return new Promise((resolve, reject) => {
     // Check in-memory token first, then localStorage

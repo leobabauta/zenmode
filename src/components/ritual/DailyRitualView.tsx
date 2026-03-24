@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
-import { fetchTodayEvents, formatEventAsTask, requestCalendarAccess } from '../../lib/googleCalendar';
+import { fetchTodayEvents, formatEventAsTask, requestCalendarAccess, hasCachedCalendarToken } from '../../lib/googleCalendar';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { Checkbox } from '../ui/Checkbox';
@@ -200,7 +200,12 @@ export function DailyRitualView() {
     }
   }, []);
 
-  // Don't auto-fetch calendar events — wait for explicit user action to avoid surprise popups
+  // Auto-fetch calendar events if we have a valid cached token (no popup risk)
+  useEffect(() => {
+    if (googleCalendarConnected && hasCachedCalendarToken() && calEvents.length === 0 && !calLoading) {
+      loadCalendarEvents();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleConnectCalendar = async () => {
     setCalConnecting(true);
@@ -378,11 +383,14 @@ export function DailyRitualView() {
                     )}
                     {!calLoading && !calError && calEvents.length === 0 && googleCalendarConnected && (
                       <div className="flex flex-col items-center py-3 gap-2">
+                        <p className="text-xs text-[var(--color-text-muted)] text-center">
+                          {hasCachedCalendarToken() ? 'No events today' : 'Session expired'}
+                        </p>
                         <button
                           onClick={loadCalendarEvents}
                           className="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-500 text-xs font-medium hover:bg-blue-500/20 transition-colors"
                         >
-                          Load today's events
+                          {hasCachedCalendarToken() ? 'Refresh' : 'Sign in to load events'}
                         </button>
                       </div>
                     )}
