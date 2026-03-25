@@ -1,19 +1,4 @@
-// Google Identity Services types
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        oauth2: {
-          initTokenClient: (config: {
-            client_id: string;
-            scope: string;
-            callback: (response: { access_token?: string; error?: string; expires_in?: number }) => void;
-          }) => { requestAccessToken: () => void };
-        };
-      };
-    };
-  }
-}
+import { supabase } from './supabase';
 
 interface CalendarEvent {
   id: string;
@@ -39,10 +24,11 @@ function loadCachedToken(): string | null {
   return null;
 }
 
-function saveCachedToken(token: string, expiresIn: number) {
+export function saveCachedToken(token: string, expiresIn: number) {
   // Subtract 60s buffer so we don't use a token right at expiry
   const expiresAt = Date.now() + (expiresIn - 60) * 1000;
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, expiresAt }));
+  accessToken = token;
 }
 
 let accessToken: string | null = loadCachedToken();
@@ -58,82 +44,41 @@ export function hasCachedCalendarToken(): boolean {
   return !!accessToken;
 }
 
-export function requestCalendarAccess(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // Check in-memory token first, then localStorage
-    if (!accessToken) {
-      accessToken = loadCachedToken();
-    }
-    if (accessToken) {
-      resolve(accessToken);
-      return;
-    }
-
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      reject(new Error('Google Client ID not configured'));
-      return;
-    }
-
-    if (!window.google?.accounts?.oauth2) {
-      reject(new Error('Google Identity Services not loaded'));
-      return;
-    }
-
-    const handleCallback = (response: { access_token?: string; error?: string; expires_in?: number }) => {
-      if (response.error) {
-        reject(new Error(response.error));
-        return;
-      }
-      if (response.access_token) {
-        accessToken = response.access_token;
-        saveCachedToken(response.access_token, response.expires_in ?? 3600);
-        resolve(response.access_token);
-      } else {
-        reject(new Error('No access token received'));
-      }
-    };
-
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
-      callback: handleCallback,
-    });
-
-    // Try silent re-auth first (no popup if user previously granted consent)
-    try {
-      (client as any).requestAccessToken({ prompt: '' });
-    } catch {
-      // Fall back to interactive prompt
-      client.requestAccessToken();
-    }
-  });
-}
-
 /**
- * Try to silently refresh the token in the background.
- * Call this on app load to keep the token fresh without user interaction.
+ * Get a valid Google Calendar access token.
+ * First checks the local cache, then tries to refresh via the Edge Function
+ * (using the stored Google refresh token — no popup needed).
  */
-export function silentRefreshCalendarToken(): void {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  if (!clientId || !window.google?.accounts?.oauth2) return;
+export async function requestCalendarAccess(): Promise<string> {
+  // Check cached token first
+  if (!accessToken) accessToken = loadCachedToken();
+  if (accessToken) return accessToken;
 
-  const client = window.google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: 'https://www.googleapis.com/auth/calendar.events.readonly',
-    callback: (response) => {
-      if (response.access_token) {
-        accessToken = response.access_token;
-        saveCachedToken(response.access_token, response.expires_in ?? 3600);
-      }
-    },
-  });
+  // No cached token — try refreshing via the Edge Function
+  if (!supabase) throw new Error('Supabase not configured');
 
-  try {
-    (client as any).requestAccessToken({ prompt: '' });
-  } catch {
-    // Silent refresh failed — user will be prompted when they next use calendar
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in');
+
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refresh-google-token`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to refresh calendar token');
   }
+
+  const data = await res.json();
+  saveCachedToken(data.access_token, data.expires_in ?? 3600);
+  return data.access_token;
 }
 
 export async function fetchTodayEvents(): Promise<CalendarEvent[]> {
@@ -156,7 +101,7 @@ export async function fetchTodayEvents(): Promise<CalendarEvent[]> {
   );
 
   if (res.status === 401) {
-    // Token expired — clear cached token and retry once
+    // Token expired — clear cached token and retry via Edge Function
     clearCalendarToken();
     const newToken = await requestCalendarAccess();
     const retry = await fetch(

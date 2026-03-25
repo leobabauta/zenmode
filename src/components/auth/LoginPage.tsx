@@ -33,6 +33,12 @@ export function LoginPage() {
       provider,
       options: {
         redirectTo: window.location.origin + window.location.pathname,
+        // Request calendar scope + offline access so we get a refresh token
+        // for server-side token renewal (no more popup conflicts)
+        ...(provider === 'google' ? {
+          scopes: 'https://www.googleapis.com/auth/calendar.events.readonly',
+          queryParams: { access_type: 'offline', prompt: 'consent' },
+        } : {}),
       },
     });
     if (authError) setError(authError.message);
