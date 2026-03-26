@@ -28,7 +28,7 @@
       }
     },
     "android": {
-      "versionCode": 6,
+      "versionCode": 7,
       "package": "net.zenhabits.zenmode",
       "adaptiveIcon": {
         "backgroundColor": "#fafaf9",
