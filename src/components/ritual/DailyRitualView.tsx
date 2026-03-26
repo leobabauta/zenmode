@@ -371,15 +371,14 @@ export function DailyRitualView() {
                     {calError && (
                       <div className="text-center py-3">
                         <p className="text-xs text-red-500 mb-1">{calError}</p>
-                        {calError.includes('refresh token') || calError.includes('Failed to refresh') ? (
-                          <button onClick={handleConnectCalendar} disabled={calConnecting} className="text-xs text-[var(--color-accent)] hover:underline">
-                            {calConnecting ? 'Reconnecting...' : 'Reconnect Google Calendar'}
-                          </button>
-                        ) : (
+                        <div className="flex items-center justify-center gap-3">
                           <button onClick={loadCalendarEvents} className="text-xs text-[var(--color-accent)] hover:underline">
                             Try again
                           </button>
-                        )}
+                          <button onClick={handleConnectCalendar} disabled={calConnecting} className="text-xs text-[var(--color-accent)] hover:underline">
+                            {calConnecting ? 'Reconnecting...' : 'Reconnect'}
+                          </button>
+                        </div>
                       </div>
                     )}
                     {!calLoading && !calError && calEvents.length === 0 && !googleCalendarConnected && hasGoogleClientId && !googleCalendarDismissed && (
