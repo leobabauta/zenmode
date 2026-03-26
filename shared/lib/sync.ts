@@ -148,6 +148,14 @@ export async function pullFromSupabase(): Promise<void> {
       } else if (pendingLocalIds.has(remote.id)) {
         // Item was modified locally during the pull — keep local version
         localNewer.push(local);
+      } else if (remote.completed && !local.completed) {
+        // Completed wins: if one side completed the task, always accept it.
+        // This prevents auto-move (which updates updatedAt on incomplete tasks)
+        // from overwriting a completion made on another device.
+        merged[remote.id] = remote;
+      } else if (local.completed && !remote.completed) {
+        // Local has the completion — push it back
+        localNewer.push(local);
       } else if (new Date(remote.updatedAt) > new Date(local.updatedAt)) {
         merged[remote.id] = remote;
       } else if (new Date(local.updatedAt) > new Date(remote.updatedAt)) {

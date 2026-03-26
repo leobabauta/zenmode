@@ -4,6 +4,7 @@ import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../stor
 import { toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
 import { fetchTodayEvents, formatEventAsTask, requestCalendarAccess } from '../../lib/googleCalendar';
+import { supabase } from '../../lib/supabase';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { Checkbox } from '../ui/Checkbox';
@@ -211,9 +212,23 @@ export function DailyRitualView() {
     setCalConnecting(true);
     setCalError(null);
     try {
+      // Re-trigger Google OAuth with consent to get a fresh refresh token
+      if (supabase) {
+        localStorage.removeItem('zenmode-gcal-consented');
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + window.location.pathname,
+            scopes: 'https://www.googleapis.com/auth/calendar.events.readonly',
+            queryParams: { access_type: 'offline', prompt: 'consent' },
+          },
+        });
+        if (error) throw error;
+        // Page will redirect to Google — no need to continue
+        return;
+      }
       await requestCalendarAccess();
       setGoogleCalendarConnected(true);
-      // Events will auto-load via the useEffect
     } catch (err) {
       setCalError(err instanceof Error ? err.message : 'Failed to connect');
     } finally {
@@ -356,9 +371,15 @@ export function DailyRitualView() {
                     {calError && (
                       <div className="text-center py-3">
                         <p className="text-xs text-red-500 mb-1">{calError}</p>
-                        <button onClick={loadCalendarEvents} className="text-xs text-[var(--color-accent)] hover:underline">
-                          Try again
-                        </button>
+                        {calError.includes('refresh token') || calError.includes('Failed to refresh') ? (
+                          <button onClick={handleConnectCalendar} disabled={calConnecting} className="text-xs text-[var(--color-accent)] hover:underline">
+                            {calConnecting ? 'Reconnecting...' : 'Reconnect Google Calendar'}
+                          </button>
+                        ) : (
+                          <button onClick={loadCalendarEvents} className="text-xs text-[var(--color-accent)] hover:underline">
+                            Try again
+                          </button>
+                        )}
                       </div>
                     )}
                     {!calLoading && !calError && calEvents.length === 0 && !googleCalendarConnected && hasGoogleClientId && !googleCalendarDismissed && (
