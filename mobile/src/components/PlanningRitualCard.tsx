@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
 import type { Colors } from '../lib/colors';
@@ -60,52 +60,56 @@ export function PlanningRitualCard({ colors, onDismiss }: PlanningRitualCardProp
 
   const visibleInbox = inboxItems.filter((i) => !movedIds.has(i.id));
 
+  const maxHeight = Dimensions.get('window').height * 0.65;
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, maxHeight }]}>
       <Text style={[styles.title, { color: colors.text }]}>Plan your day</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         What matters most today? Tap stars to set priorities.
       </Text>
 
-      {/* Today's tasks with priority toggles */}
-      {todayItems.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>TODAY</Text>
-          {todayItems.map((item) => (
-            <View key={item.id} style={styles.taskRow}>
-              <Pressable onPress={() => handleTogglePriority(item)} style={styles.starBtn}>
-                <Text style={{
-                  fontSize: 16,
-                  color: item.isPriority ? '#FBBF24' : item.isMediumPriority ? '#60A5FA' : colors.border,
-                }}>
-                  {item.isPriority || item.isMediumPriority ? '\u2605' : '\u2606'}
-                </Text>
-              </Pressable>
-              <Text style={[styles.taskText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
+        {/* Today's tasks with priority toggles */}
+        {todayItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>TODAY</Text>
+            {todayItems.map((item) => (
+              <View key={item.id} style={styles.taskRow}>
+                <Pressable onPress={() => handleTogglePriority(item)} style={styles.starBtn}>
+                  <Text style={{
+                    fontSize: 16,
+                    color: item.isPriority ? '#FBBF24' : item.isMediumPriority ? '#60A5FA' : colors.border,
+                  }}>
+                    {item.isPriority || item.isMediumPriority ? '\u2605' : '\u2606'}
+                  </Text>
+                </Pressable>
+                <Text style={[styles.taskText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
-      {/* Inbox items to pull in */}
-      {visibleInbox.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>FROM INBOX</Text>
-          {visibleInbox.map((item) => (
-            <View key={item.id} style={styles.taskRow}>
-              <TouchableOpacity
-                onPress={() => handleMoveToToday(item)}
-                style={[styles.addBtn, { borderColor: colors.accent }]}
-              >
-                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>+</Text>
-              </TouchableOpacity>
-              <Text style={[styles.taskText, { color: colors.textMuted }]} numberOfLines={1}>{item.text}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+        {/* Inbox items to pull in */}
+        {visibleInbox.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>FROM INBOX</Text>
+            {visibleInbox.map((item) => (
+              <View key={item.id} style={styles.taskRow}>
+                <TouchableOpacity
+                  onPress={() => handleMoveToToday(item)}
+                  style={[styles.addBtn, { borderColor: colors.accent }]}
+                >
+                  <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>+</Text>
+                </TouchableOpacity>
+                <Text style={[styles.taskText, { color: colors.textMuted }]} numberOfLines={1}>{item.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
-      {/* Action buttons */}
+      {/* Action buttons — always visible at the bottom */}
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={handleComplete}
@@ -131,6 +135,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 20,
+    overflow: 'hidden',
+  },
+  scrollArea: {
+    flexGrow: 0,
   },
   title: {
     fontSize: 22,
