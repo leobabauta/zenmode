@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
 import { usePlannerStore, selectItemsForDay } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
 import { addDays } from 'date-fns';
@@ -76,67 +76,71 @@ export function ReviewRitualCard({ colors, onDismiss }: ReviewRitualCardProps) {
 
   const dayLabel = isMorning ? 'yesterday' : 'today';
 
+  const maxHeight = Dimensions.get('window').height * 0.65;
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, maxHeight }]}>
       <Text style={[styles.title, { color: colors.text }]}>Daily Review</Text>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>
         How did {dayLabel} go?
       </Text>
 
-      {/* Completed tasks */}
-      {completedTasks.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-            COMPLETED ({completedTasks.length})
-          </Text>
-          {completedTasks.map((item) => (
-            <View key={item.id} style={styles.taskRow}>
-              <Text style={{ color: '#22C55E', fontSize: 14 }}>{'\u2713'}</Text>
-              <Text style={[styles.taskText, { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={1}>
-                {item.text}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Incomplete tasks to move */}
-      {incompleteTasks.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
-            MOVE TO {isMorning ? 'TODAY' : 'TOMORROW'}?
-          </Text>
-          {incompleteTasks.map((item) => (
-            <Pressable key={item.id} onPress={() => toggleMove(item.id)} style={styles.taskRow}>
-              <View style={[
-                styles.checkbox,
-                { borderColor: colors.border },
-                selectedToMove.has(item.id) && { backgroundColor: colors.accent, borderColor: colors.accent },
-              ]}>
-                {selectedToMove.has(item.id) && (
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{'\u2713'}</Text>
-                )}
+      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
+        {/* Completed tasks */}
+        {completedTasks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+              COMPLETED ({completedTasks.length})
+            </Text>
+            {completedTasks.map((item) => (
+              <View key={item.id} style={styles.taskRow}>
+                <Text style={{ color: '#22C55E', fontSize: 14 }}>{'\u2713'}</Text>
+                <Text style={[styles.taskText, { color: colors.textMuted, textDecorationLine: 'line-through' }]} numberOfLines={1}>
+                  {item.text}
+                </Text>
               </View>
-              <Text style={[styles.taskText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
-            </Pressable>
-          ))}
+            ))}
+          </View>
+        )}
+
+        {/* Incomplete tasks to move */}
+        {incompleteTasks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
+              MOVE TO {isMorning ? 'TODAY' : 'TOMORROW'}?
+            </Text>
+            {incompleteTasks.map((item) => (
+              <Pressable key={item.id} onPress={() => toggleMove(item.id)} style={styles.taskRow}>
+                <View style={[
+                  styles.checkbox,
+                  { borderColor: colors.border },
+                  selectedToMove.has(item.id) && { backgroundColor: colors.accent, borderColor: colors.accent },
+                ]}>
+                  {selectedToMove.has(item.id) && (
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{'\u2713'}</Text>
+                  )}
+                </View>
+                <Text style={[styles.taskText, { color: colors.text }]} numberOfLines={1}>{item.text}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {/* Reflection */}
+        <View style={styles.section}>
+          <TextInput
+            style={[styles.reflectionInput, { color: colors.text, borderColor: colors.border }]}
+            placeholder="Any reflections? (optional)"
+            placeholderTextColor={colors.textMuted}
+            value={reflection}
+            onChangeText={setReflection}
+            multiline
+            textAlignVertical="top"
+          />
         </View>
-      )}
+      </ScrollView>
 
-      {/* Reflection */}
-      <View style={styles.section}>
-        <TextInput
-          style={[styles.reflectionInput, { color: colors.text, borderColor: colors.border }]}
-          placeholder="Any reflections? (optional)"
-          placeholderTextColor={colors.textMuted}
-          value={reflection}
-          onChangeText={setReflection}
-          multiline
-          textAlignVertical="top"
-        />
-      </View>
-
-      {/* Action buttons */}
+      {/* Action buttons — always visible at the bottom */}
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={handleComplete}
@@ -162,6 +166,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 20,
+    overflow: 'hidden',
+  },
+  scrollArea: {
+    flexGrow: 0,
   },
   title: {
     fontSize: 22,
