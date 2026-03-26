@@ -8,12 +8,13 @@ interface SwipeableRowProps {
   onTomorrow?: () => void;
   onSnooze?: () => void;
   onMoveToInbox?: () => void;
+  onArchive?: () => void;
   onDelete?: () => void;
   enabled?: boolean;
 }
 
-const SHORT_THRESHOLD = 80;
-const LONG_THRESHOLD = 160;
+const SHORT_THRESHOLD = 60;
+const LONG_THRESHOLD = 130;
 
 // Clock icon
 function ClockIcon() {
@@ -42,6 +43,15 @@ function InboxIcon() {
   );
 }
 
+// Archive icon
+function ArchiveIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" stroke="#fff" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 // Trash icon
 function TrashIcon() {
   return (
@@ -51,16 +61,17 @@ function TrashIcon() {
   );
 }
 
-export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, onDelete, enabled = true }: SwipeableRowProps) {
+export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, onArchive, onDelete, enabled = true }: SwipeableRowProps) {
   const translateX = useSharedValue(0);
   // 0 = none, 1 = tomorrow (short right), 2 = snooze (long right)
   const rightZone = useSharedValue(0);
-  // 0 = none, 1 = inbox (short left), 2 = delete (long left)
+  // 0 = none, 1 = inbox/archive (short left), 2 = delete (long left)
   const leftZone = useSharedValue(0);
 
   const hasRightShort = !!onTomorrow;
   const hasRightLong = !!onSnooze;
-  const hasLeftShort = !!onMoveToInbox;
+  const onLeftShort = onMoveToInbox || onArchive;
+  const hasLeftShort = !!onLeftShort;
   const hasLeftLong = !!onDelete;
 
   const maxRight = hasRightLong ? 220 : (hasRightShort ? 120 : 0);
@@ -68,8 +79,8 @@ export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, on
 
   const panGesture = Gesture.Pan()
     .enabled(enabled)
-    .activeOffsetX([-10, 10])
-    .failOffsetY([-20, 20])
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-40, 40])
     .onUpdate((event) => {
       'worklet';
       translateX.value = Math.max(-maxLeft, Math.min(maxRight, event.translationX));
@@ -101,16 +112,23 @@ export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, on
     })
     .onEnd((event) => {
       'worklet';
+      const tx = event.translationX;
+      const vx = event.velocityX;
+      // Allow fast swipes to trigger at a shorter distance
+      const VELOCITY_BOOST = 800; // px/s — if swiping this fast, lower thresholds
+      const shortT = Math.abs(vx) > VELOCITY_BOOST ? SHORT_THRESHOLD * 0.6 : SHORT_THRESHOLD;
+      const longT = Math.abs(vx) > VELOCITY_BOOST ? LONG_THRESHOLD * 0.6 : LONG_THRESHOLD;
+
       // Right swipe actions
-      if (event.translationX > 0) {
-        if (hasRightLong && event.translationX > LONG_THRESHOLD && onSnooze) {
+      if (tx > 0) {
+        if (hasRightLong && tx > longT && onSnooze) {
           translateX.value = withTiming(400, { duration: 200 }, () => {
             runOnJS(onSnooze)();
             translateX.value = 0;
           });
           return;
         }
-        if (hasRightShort && event.translationX > SHORT_THRESHOLD && onTomorrow) {
+        if (hasRightShort && tx > shortT && onTomorrow) {
           translateX.value = withTiming(400, { duration: 200 }, () => {
             runOnJS(onTomorrow)();
             translateX.value = 0;
@@ -119,23 +137,23 @@ export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, on
         }
       }
       // Left swipe actions
-      if (event.translationX < 0) {
-        if (hasLeftLong && event.translationX < -LONG_THRESHOLD && onDelete) {
+      if (tx < 0) {
+        if (hasLeftLong && tx < -longT && onDelete) {
           translateX.value = withTiming(-400, { duration: 200 }, () => {
             runOnJS(onDelete)();
             translateX.value = 0;
           });
           return;
         }
-        if (hasLeftShort && event.translationX < -SHORT_THRESHOLD && onMoveToInbox) {
+        if (hasLeftShort && tx < -shortT && onLeftShort) {
           translateX.value = withTiming(-400, { duration: 200 }, () => {
-            runOnJS(onMoveToInbox)();
+            runOnJS(onLeftShort)();
             translateX.value = 0;
           });
           return;
         }
         // If no short left but has long left, trigger delete at short threshold
-        if (!hasLeftShort && hasLeftLong && event.translationX < -SHORT_THRESHOLD && onDelete) {
+        if (!hasLeftShort && hasLeftLong && tx < -shortT && onDelete) {
           translateX.value = withTiming(-400, { duration: 200 }, () => {
             runOnJS(onDelete)();
             translateX.value = 0;
@@ -176,9 +194,9 @@ export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, on
         <RightSwipeContent rightZone={rightZone} hasLong={hasRightLong} />
       </Animated.View>
 
-      {/* Left swipe actions (Inbox / Delete) */}
+      {/* Left swipe actions (Inbox/Archive / Delete) */}
       <Animated.View style={[styles.rightAction, rightActionStyle, rightBgStyle]}>
-        <LeftSwipeContent leftZone={leftZone} hasShort={hasLeftShort} />
+        <LeftSwipeContent leftZone={leftZone} hasShort={hasLeftShort} shortLabel={onArchive ? 'Archive' : 'Inbox'} shortIcon={onArchive ? 'archive' : 'inbox'} />
       </Animated.View>
 
       <GestureDetector gesture={panGesture}>
@@ -223,7 +241,7 @@ function RightSwipeContent({ rightZone, hasLong }: { rightZone: { value: number 
   );
 }
 
-function LeftSwipeContent({ leftZone, hasShort }: { leftZone: { value: number }; hasShort: boolean }) {
+function LeftSwipeContent({ leftZone, hasShort, shortLabel, shortIcon }: { leftZone: { value: number }; hasShort: boolean; shortLabel: string; shortIcon: string }) {
   if (!hasShort) {
     return (
       <View style={styles.actionContent}>
@@ -233,7 +251,7 @@ function LeftSwipeContent({ leftZone, hasShort }: { leftZone: { value: number };
     );
   }
 
-  const inboxStyle = useAnimatedStyle(() => ({
+  const shortStyle = useAnimatedStyle(() => ({
     opacity: leftZone.value === 2 ? 0 : 1,
     position: 'absolute' as const,
   }));
@@ -242,11 +260,13 @@ function LeftSwipeContent({ leftZone, hasShort }: { leftZone: { value: number };
     position: 'absolute' as const,
   }));
 
+  const ShortIcon = shortIcon === 'archive' ? ArchiveIcon : InboxIcon;
+
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', minWidth: 80 }}>
-      <Animated.View style={[{ alignItems: 'center' }, inboxStyle]}>
-        <InboxIcon />
-        <Text style={styles.actionLabel}>Inbox</Text>
+      <Animated.View style={[{ alignItems: 'center' }, shortStyle]}>
+        <ShortIcon />
+        <Text style={styles.actionLabel}>{shortLabel}</Text>
       </Animated.View>
       <Animated.View style={[{ alignItems: 'center' }, deleteStyle]}>
         <TrashIcon />

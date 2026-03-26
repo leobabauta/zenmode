@@ -3,18 +3,22 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
-// Watch the shared directory outside the mobile project root
-const sharedDir = path.resolve(__dirname, '../shared');
-config.watchFolders = [sharedDir];
+const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, '..');
+const mobileModules = path.resolve(projectRoot, 'node_modules');
 
-// Make sure Metro can resolve modules in the shared directory
-config.resolver.nodeModulesPaths = [
-  path.resolve(__dirname, 'node_modules'),
+// Watch only the shared directory
+config.watchFolders = [path.resolve(monorepoRoot, 'shared')];
+
+// Only resolve from mobile's node_modules
+config.resolver.nodeModulesPaths = [mobileModules];
+
+// Block the parent's node_modules and src from being resolved
+const parentNodeModules = path.resolve(monorepoRoot, 'node_modules');
+const parentSrc = path.resolve(monorepoRoot, 'src');
+config.resolver.blockList = [
+  new RegExp(parentNodeModules.replace(/[/\\]/g, '[/\\\\]') + '.*'),
+  new RegExp(parentSrc.replace(/[/\\]/g, '[/\\\\]') + '.*'),
 ];
-
-// Map shared imports to the shared directory
-config.resolver.extraNodeModules = {
-  '@shared': sharedDir,
-};
 
 module.exports = config;

@@ -40,6 +40,8 @@ interface PlannerState {
   hasCompletedOnboarding: boolean;
   // Accent color theme
   accentColor: string | null;
+  // Google Calendar
+  googleCalendarConnected: boolean;
 
   // Actions
   addItem: (payload: { type: ItemType; text: string; dayKey: string | null; isLater?: boolean; listId?: string; isPriority?: boolean; isMediumPriority?: boolean; reminderAt?: string }) => void;
@@ -49,6 +51,7 @@ interface PlannerState {
   reorderItems: (orderedIds: string[]) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
   toggleTheme: () => void;
+  setGoogleCalendarConnected: (v: boolean) => void;
 }
 
 export const usePlannerStore = create<PlannerState>()(
@@ -81,6 +84,7 @@ export const usePlannerStore = create<PlannerState>()(
       sidebarCollapsed: false,
       hasCompletedOnboarding: false,
       accentColor: null,
+      googleCalendarConnected: false,
 
       addItem: (payload) => {
         const id = nanoid();
@@ -285,6 +289,10 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => {
           state.theme = state.theme === 'light' ? 'dark' : 'light';
         });
+      },
+
+      setGoogleCalendarConnected: (v) => {
+        set((state) => { state.googleCalendarConnected = v; });
       },
     })),
     {

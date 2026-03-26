@@ -29,15 +29,21 @@ export function LoginPage() {
   const handleOAuth = async (provider: Provider) => {
     if (!supabase) return;
     setError('');
+
+    // Only force consent prompt on first Google sign-in to obtain the refresh
+    // token. On subsequent sign-ins, skip it so the user isn't re-prompted.
+    const hasConsented = localStorage.getItem('zenmode-gcal-consented') === '1';
+
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: window.location.origin + window.location.pathname,
-        // Request calendar scope + offline access so we get a refresh token
-        // for server-side token renewal (no more popup conflicts)
         ...(provider === 'google' ? {
           scopes: 'https://www.googleapis.com/auth/calendar.events.readonly',
-          queryParams: { access_type: 'offline', prompt: 'consent' },
+          queryParams: {
+            access_type: 'offline',
+            ...(hasConsented ? {} : { prompt: 'consent' }),
+          },
         } : {}),
       },
     });

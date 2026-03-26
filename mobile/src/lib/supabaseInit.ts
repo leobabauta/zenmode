@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initSupabase } from '../../shared/lib/supabase';
+import { initSupabase } from '../../../shared/lib/supabase';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://hlyxiyvqmfupyqjgfajj.supabase.co';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_Q55FjkRQddqOTdoqqsr-7w_I8G-CMHN';
 
 export function setupSupabase() {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {

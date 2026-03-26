@@ -9,6 +9,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
 import { saveCachedToken as saveCalendarToken } from './lib/googleCalendar';
 import { LoginPage } from './components/auth/LoginPage';
+import { SetPasswordPage } from './components/auth/SetPasswordPage';
 import { ToastProvider } from './components/ui/Toast';
 import { applyColorPreset } from './lib/colorThemes';
 
@@ -16,7 +17,7 @@ export default function App() {
   const isMobile = useIsMobile();
   const theme = usePlannerStore((s) => s.theme);
   const accentColor = usePlannerStore((s) => s.accentColor);
-  const { user, loading: authLoading } = useAuthStore();
+  const { user, loading: authLoading, passwordRecovery } = useAuthStore();
   const hasAutoMoved = useRef(false);
   const hasSynced = useRef(false);
 
@@ -33,8 +34,12 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         useAuthStore.getState().setAuth(session?.user ?? null, session);
+
+        if (event === 'PASSWORD_RECOVERY') {
+          useAuthStore.getState().setPasswordRecovery(true);
+        }
 
         // On Google sign-in, capture the provider token for Calendar API access
         // and store the refresh token server-side for silent renewal
@@ -50,6 +55,7 @@ export default function App() {
               .eq('user_id', session.user.id)
               .then(({ error }) => {
                 if (error) console.error('Failed to store Google refresh token:', error);
+                else localStorage.setItem('zenmode-gcal-consented', '1');
               });
           }
         }
@@ -239,6 +245,11 @@ export default function App() {
   useEffect(() => {
     applyColorPreset(accentColor, theme === 'dark');
   }, [accentColor, theme]);
+
+  // Password recovery flow — user clicked a reset link, let them set a new password
+  if (supabase && passwordRecovery && user) {
+    return <SetPasswordPage />;
+  }
 
   // Supabase configured but not logged in — show login
   if (supabase && !authLoading && !user) {

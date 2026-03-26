@@ -1,4 +1,4 @@
-import { registerStoreAccessors } from '../../shared/lib/sync';
+import { registerStoreAccessors } from '../../../shared/lib/sync';
 import { usePlannerStore } from '../store/usePlannerStore';
 
 export function setupSync() {

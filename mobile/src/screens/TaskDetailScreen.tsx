@@ -7,28 +7,45 @@ import { Checkbox } from '../components/Checkbox';
 import { PriorityStar } from '../components/PriorityStar';
 import { useColors } from '../lib/colors';
 import type { PlannerItem } from '../../../shared/types';
-import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
+import Svg, { Path, Circle as SvgCircle, Line } from 'react-native-svg';
 
-// --- Inline Focus Timer ---
+// --- Inline Focus Timer (analog clock style) ---
 type TimerState = 'idle' | 'running' | 'paused';
 const DURATION_PRESETS = [15, 25, 45];
-const CIRCLE_SIZE = 180;
-const RADIUS = CIRCLE_SIZE / 2;
-const CENTER = CIRCLE_SIZE / 2;
+const DIAL_SIZE = 180;
+const DIAL_CX = DIAL_SIZE / 2;
+const DIAL_CY = DIAL_SIZE / 2;
+const INNER_R = 50;
+const TICK_R = 66;
+const TICK_OUTER = TICK_R + 8;
+const TICK_INNER_MAJOR = TICK_R - 4;
+const TICK_INNER_MINOR = TICK_R;
+const NEEDLE_LEN = INNER_R + 12;
 
-function describeArc(fraction: number): string {
-  if (fraction <= 0) return '';
-  if (fraction >= 1) {
-    const r = RADIUS + 1;
-    return `M ${CENTER} ${CENTER - r} A ${r} ${r} 0 1 0 ${CENTER + 0.001} ${CENTER - r} L ${CENTER} ${CENTER} Z`;
-  }
-  // Counterclockwise: sweep from top going left
-  const angle = fraction * 2 * Math.PI;
-  const endX = CENTER - RADIUS * Math.sin(angle);
-  const endY = CENTER - RADIUS * Math.cos(angle);
-  const largeArc = fraction > 0.5 ? 1 : 0;
-  return `M ${CENTER} ${CENTER} L ${CENTER} ${CENTER - RADIUS} A ${RADIUS} ${RADIUS} 0 ${largeArc} 0 ${endX} ${endY} Z`;
+function inlinePieWedge(endAngleDeg: number, r: number): string {
+  if (endAngleDeg <= -90) return '';
+  const sweepDeg = endAngleDeg - (-90);
+  if (sweepDeg <= 0) return '';
+  const largeArc = sweepDeg > 180 ? 1 : 0;
+  const endR = (endAngleDeg * Math.PI) / 180;
+  return `M ${DIAL_CX} ${DIAL_CY} L ${DIAL_CX} ${DIAL_CY - r} A ${r} ${r} 0 ${largeArc} 1 ${DIAL_CX + r * Math.cos(endR)} ${DIAL_CY + r * Math.sin(endR)} Z`;
 }
+
+const INLINE_TICKS = (() => {
+  const ticks = [];
+  for (let i = 0; i < 60; i++) {
+    const angle = (i / 60) * 360 - 90;
+    const rad = (angle * Math.PI) / 180;
+    const isMajor = i % 5 === 0;
+    const inner = isMajor ? TICK_INNER_MAJOR : TICK_INNER_MINOR;
+    ticks.push({
+      x1: DIAL_CX + inner * Math.cos(rad), y1: DIAL_CY + inner * Math.sin(rad),
+      x2: DIAL_CX + TICK_OUTER * Math.cos(rad), y2: DIAL_CY + TICK_OUTER * Math.sin(rad),
+      isMajor,
+    });
+  }
+  return ticks;
+})();
 
 function InlineFocusTimer({ colors, onComplete }: { colors: any; onComplete: () => void }) {
   const [durationMinutes, setDurationMinutes] = useState(25);
@@ -36,9 +53,6 @@ function InlineFocusTimer({ colors, onComplete }: { colors: any; onComplete: () 
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [completed, setCompleted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const totalSeconds = durationMinutes * 60;
-  const fraction = totalSeconds > 0 ? remainingSeconds / totalSeconds : 1;
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
@@ -77,6 +91,11 @@ function InlineFocusTimer({ colors, onComplete }: { colors: any; onComplete: () 
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const remainingMinutes = remainingSeconds / 60;
+  const handAngleDeg = -90 + remainingMinutes * 6;
+  const handRad = (handAngleDeg * Math.PI) / 180;
+  const darkPiePath = inlinePieWedge(handAngleDeg, INNER_R);
+
   return (
     <View style={timerStyles.container}>
       {/* Duration presets */}
@@ -94,58 +113,66 @@ function InlineFocusTimer({ colors, onComplete }: { colors: any; onComplete: () 
         </View>
       )}
 
-      {/* Timer circle */}
-      <View style={timerStyles.timerWrapper}>
-        <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
-          <SvgCircle cx={CENTER} cy={CENTER} r={RADIUS} fill={colors.accent} />
-          {fraction < 1 && <Path d={describeArc(1 - fraction)} fill={colors.bg} />}
+      {/* Analog clock dial */}
+      <View style={timerStyles.dialWrapper}>
+        <Svg width={DIAL_SIZE} height={DIAL_SIZE} viewBox={`0 0 ${DIAL_SIZE} ${DIAL_SIZE}`}>
+          <SvgCircle cx={DIAL_CX} cy={DIAL_CY} r={INNER_R} fill={colors.accentTint} opacity={0.5} />
+          {darkPiePath ? <Path d={darkPiePath} fill={colors.accent} opacity={0.55} /> : null}
+          {INLINE_TICKS.map((t, i) => (
+            <Line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+              stroke={colors.textMuted} strokeWidth={t.isMajor ? 2 : 1} opacity={t.isMajor ? 0.5 : 0.25} />
+          ))}
+          <Line x1={DIAL_CX} y1={DIAL_CY}
+            x2={DIAL_CX + NEEDLE_LEN * Math.cos(handRad)} y2={DIAL_CY + NEEDLE_LEN * Math.sin(handRad)}
+            stroke={colors.accent} strokeWidth={6} strokeLinecap="round" />
+          <SvgCircle cx={DIAL_CX} cy={DIAL_CY} r={6} fill="white" stroke={colors.accentTint} strokeWidth={1} />
         </Svg>
-        <View style={timerStyles.timerTextOverlay}>
-          {completed ? (
-            <>
-              <Text style={[timerStyles.completedText, { color: colors.text }]}>Done!</Text>
-              <Text style={timerStyles.confettiEmoji}>🎊</Text>
-            </>
-          ) : (
-            <Text style={[timerStyles.timerText, { color: fraction > 0.1 ? '#fff' : colors.text }]}>{formatTime(remainingSeconds)}</Text>
-          )}
-        </View>
       </View>
+
+      {/* Time display below dial */}
+      {completed ? (
+        <View style={timerStyles.completedArea}>
+          <Text style={[timerStyles.completedText, { color: colors.text }]}>Done!</Text>
+          <Text style={timerStyles.confettiEmoji}>🎊</Text>
+        </View>
+      ) : (
+        <Text style={[timerStyles.timeDisplay, { color: colors.textMuted }]}>{formatTime(remainingSeconds)}</Text>
+      )}
 
       {/* Buttons */}
       <View style={timerStyles.buttonsRow}>
         {timerState === 'idle' && !completed && (
           <TouchableOpacity style={[timerStyles.primaryBtn, { backgroundColor: colors.accent }]} onPress={startTimer}>
-            <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>Start</Text>
+            <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>START</Text>
           </TouchableOpacity>
         )}
         {timerState === 'running' && (
           <>
             <TouchableOpacity style={[timerStyles.primaryBtn, { backgroundColor: colors.accent }]} onPress={pauseTimer}>
-              <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>Pause</Text>
+              <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>PAUSE</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[timerStyles.secondaryBtn, { borderColor: colors.accent }]} onPress={onComplete}>
-              <Text style={[timerStyles.secondaryBtnText, { color: colors.accent }]}>Complete</Text>
+            <TouchableOpacity style={[timerStyles.completeBtn]} onPress={onComplete}>
+              <Text style={timerStyles.completeBtnText}>COMPLETE</Text>
             </TouchableOpacity>
           </>
         )}
         {timerState === 'paused' && (
           <>
             <TouchableOpacity style={[timerStyles.primaryBtn, { backgroundColor: colors.accent }]} onPress={resumeTimer}>
-              <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>Resume</Text>
+              <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>RESUME</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[timerStyles.secondaryBtn, { borderColor: colors.accent }]} onPress={onComplete}>
-              <Text style={[timerStyles.secondaryBtnText, { color: colors.accent }]}>Complete</Text>
+            <TouchableOpacity style={[timerStyles.completeBtn]} onPress={onComplete}>
+              <Text style={timerStyles.completeBtnText}>COMPLETE</Text>
             </TouchableOpacity>
           </>
         )}
         {completed && (
           <>
             <TouchableOpacity style={[timerStyles.primaryBtn, { backgroundColor: colors.accent }]} onPress={onComplete}>
-              <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>Complete Task</Text>
+              <Text style={[timerStyles.primaryBtnText, { color: colors.accentText }]}>COMPLETE TASK</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[timerStyles.secondaryBtn, { borderColor: colors.accent }]} onPress={resetTimer}>
-              <Text style={[timerStyles.secondaryBtnText, { color: colors.accent }]}>Reset</Text>
+            <TouchableOpacity style={[timerStyles.resetBtn, { borderColor: colors.border }]} onPress={resetTimer}>
+              <Text style={[timerStyles.resetBtnText, { color: colors.textMuted }]}>Reset</Text>
             </TouchableOpacity>
           </>
         )}
@@ -156,19 +183,21 @@ function InlineFocusTimer({ colors, onComplete }: { colors: any; onComplete: () 
 
 const timerStyles = StyleSheet.create({
   container: { alignItems: 'center', paddingTop: 16, paddingBottom: 24 },
-  presetsRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+  presetsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   presetPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   presetText: { fontSize: 14, fontWeight: '500' },
-  timerWrapper: { width: CIRCLE_SIZE, height: CIRCLE_SIZE, alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
-  timerTextOverlay: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  timerText: { fontSize: 36, fontWeight: '300' },
+  dialWrapper: { width: DIAL_SIZE, height: DIAL_SIZE, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  completedArea: { alignItems: 'center', marginBottom: 16 },
   completedText: { fontSize: 20, fontWeight: '600' },
   confettiEmoji: { fontSize: 28, marginTop: 4 },
-  buttonsRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  primaryBtn: { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 24 },
-  primaryBtnText: { fontSize: 15, fontWeight: '600' },
-  secondaryBtn: { borderWidth: 1.5, paddingHorizontal: 20, paddingVertical: 11, borderRadius: 24 },
-  secondaryBtnText: { fontSize: 15, fontWeight: '600' },
+  timeDisplay: { fontSize: 20, fontWeight: '300', letterSpacing: 3, marginBottom: 20 },
+  buttonsRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  primaryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 24 },
+  primaryBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5 },
+  completeBtn: { backgroundColor: '#059669', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 24 },
+  completeBtnText: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, color: '#fff' },
+  resetBtn: { borderWidth: 1.5, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 24 },
+  resetBtnText: { fontSize: 13, fontWeight: '500' },
 });
 
 // --- Task Detail Screen ---
@@ -187,6 +216,8 @@ export function TaskDetailScreen() {
   const [notesText, setNotesText] = useState(item?.notes ?? '');
   const [editingNotes, setEditingNotes] = useState(false);
   const [showTimer, setShowTimer] = useState(false);
+
+  const isReviewNote = item?.type === 'note' && (item.text.includes('#dailyreview') || item.text.includes('#weeklyreview'));
 
   if (!item) {
     return (
@@ -236,76 +267,108 @@ export function TaskDetailScreen() {
       </View>
 
       <ScrollView style={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Checkbox + title + priority */}
-        <View style={styles.taskHeader}>
-          <Checkbox
-            checked={!!item.completed}
-            onChange={(checked) => updateItem(item.id, { completed: checked })}
-            colors={colors}
-          />
-          {editingTitle ? (
-            <TextInput
-              style={[styles.titleInput, { color: colors.text }]}
-              value={editText}
-              onChangeText={setEditText}
-              onBlur={commitTitle}
-              onSubmitEditing={commitTitle}
-              autoFocus
-              multiline
-            />
-          ) : (
-            <TouchableOpacity style={{ flex: 1 }} onPress={() => { setEditText(item.text); setEditingTitle(true); }}>
-              <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]}>
-                {item.text}
+        {isReviewNote ? (
+          /* Review note display — no checkbox, priority, or timer */
+          <View style={styles.reviewDetailCard}>
+            <View style={styles.reviewDetailHeader}>
+              <Text style={styles.reviewDetailStar}>★</Text>
+              <Text style={styles.reviewDetailLabel}>
+                {item.text.includes('#weeklyreview') ? 'Weekly Review' : 'Daily Review'}
               </Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={cyclePriority} style={styles.priorityButton}>
-            <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Notes */}
-        <View style={[styles.notesSection, { borderTopColor: colors.border }]}>
-          <Text style={[styles.notesLabel, { color: colors.textMuted }]}>Notes</Text>
-          {editingNotes ? (
-            <TextInput
-              style={[styles.notesInput, { color: colors.text, borderColor: colors.border }]}
-              value={notesText}
-              onChangeText={setNotesText}
-              onBlur={commitNotes}
-              autoFocus
-              multiline
-              placeholder="Add a note..."
-              placeholderTextColor={colors.textMuted}
-              textAlignVertical="top"
-            />
-          ) : (
-            <TouchableOpacity onPress={() => { setNotesText(item.notes ?? ''); setEditingNotes(true); }} style={styles.notesTouchable}>
-              {item.notes ? (
-                <Text style={[styles.notesText, { color: colors.text }]}>{item.notes}</Text>
-              ) : (
-                <Text style={[styles.notesPlaceholder, { color: colors.textMuted }]}>Tap to add a note...</Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Focus Timer — inline */}
-        {showTimer ? (
-          <View style={[styles.timerSection, { borderTopColor: colors.border }]}>
-            <InlineFocusTimer colors={colors} onComplete={handleCompleteTask} />
+            </View>
+            {item.text.split('\n').filter((line: string) => !line.startsWith('#')).map((line: string, i: number) => {
+              const parts = line.split(/(\*\*.*?\*\*)/);
+              return (
+                <Text key={i} style={styles.reviewDetailText}>
+                  {parts.map((part: string, j: number) =>
+                    part.startsWith('**') && part.endsWith('**')
+                      ? <Text key={j} style={{ fontWeight: '700' }}>{part.slice(2, -2)}</Text>
+                      : part
+                  )}
+                </Text>
+              );
+            })}
           </View>
         ) : (
-          <TouchableOpacity
-            style={[styles.focusButton, { backgroundColor: colors.accent }]}
-            onPress={() => setShowTimer(true)}
-          >
-            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-              <Path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke={colors.accentText} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-            <Text style={[styles.focusButtonText, { color: colors.accentText }]}>Focus</Text>
-          </TouchableOpacity>
+          <>
+            {/* Checkbox + title + priority */}
+            <View style={styles.taskHeader}>
+              {item.type === 'task' && (
+                <Checkbox
+                  checked={!!item.completed}
+                  onChange={(checked) => updateItem(item.id, { completed: checked })}
+                  colors={colors}
+                />
+              )}
+              {editingTitle ? (
+                <TextInput
+                  style={[styles.titleInput, { color: colors.text }]}
+                  value={editText}
+                  onChangeText={setEditText}
+                  onBlur={commitTitle}
+                  onSubmitEditing={commitTitle}
+                  autoFocus
+                  multiline
+                />
+              ) : (
+                <TouchableOpacity style={{ flex: 1 }} onPress={() => { setEditText(item.text); setEditingTitle(true); }}>
+                  <Text style={[styles.taskText, { color: colors.text }, item.completed && { color: colors.textMuted, textDecorationLine: 'line-through' }]}>
+                    {item.text}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {item.type === 'task' && (
+                <TouchableOpacity onPress={cyclePriority} style={styles.priorityButton}>
+                  <PriorityStar isPriority={item.isPriority} isMediumPriority={item.isMediumPriority} colors={colors} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Notes */}
+            <View style={[styles.notesSection, { borderTopColor: colors.border }]}>
+              <Text style={[styles.notesLabel, { color: colors.textMuted }]}>Notes</Text>
+              {editingNotes ? (
+                <TextInput
+                  style={[styles.notesInput, { color: colors.text, borderColor: colors.border }]}
+                  value={notesText}
+                  onChangeText={setNotesText}
+                  onBlur={commitNotes}
+                  autoFocus
+                  multiline
+                  placeholder="Add a note..."
+                  placeholderTextColor={colors.textMuted}
+                  textAlignVertical="top"
+                />
+              ) : (
+                <TouchableOpacity onPress={() => { setNotesText(item.notes ?? ''); setEditingNotes(true); }} style={styles.notesTouchable}>
+                  {item.notes ? (
+                    <Text style={[styles.notesText, { color: colors.text }]}>{item.notes}</Text>
+                  ) : (
+                    <Text style={[styles.notesPlaceholder, { color: colors.textMuted }]}>Tap to add a note...</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Focus Timer — inline (tasks only) */}
+            {item.type === 'task' && (
+              showTimer ? (
+                <View style={[styles.timerSection, { borderTopColor: colors.border }]}>
+                  <InlineFocusTimer colors={colors} onComplete={handleCompleteTask} />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.focusButton, { backgroundColor: colors.accent }]}
+                  onPress={() => setShowTimer(true)}
+                >
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke={colors.accentText} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                  </Svg>
+                  <Text style={[styles.focusButtonText, { color: colors.accentText }]}>Focus</Text>
+                </TouchableOpacity>
+              )
+            )}
+          </>
         )}
       </ScrollView>
     </View>
@@ -335,4 +398,21 @@ const styles = StyleSheet.create({
     gap: 8, marginTop: 24, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 24,
   },
   focusButtonText: { fontSize: 15, fontWeight: '600' },
+  reviewDetailCard: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 12,
+    padding: 18,
+    marginTop: 12,
+  },
+  reviewDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  reviewDetailStar: { fontSize: 14, color: '#92400E' },
+  reviewDetailLabel: { fontSize: 13, fontWeight: '700', color: '#92400E', textTransform: 'uppercase', letterSpacing: 0.5 },
+  reviewDetailText: { fontSize: 15, lineHeight: 22, color: '#78350F', marginBottom: 2 },
 });
