@@ -163,6 +163,10 @@ export function AddItemForm({ dayKey, isLater = false, className, listId }: AddI
             if (e.key === 'n' || e.key === 'N') {
               e.preventDefault();
               setShowReminderConfirm(false);
+              submitLine(text);
+              setText('');
+              setMode('task');
+              inputRef.current?.focus();
               return;
             }
           }

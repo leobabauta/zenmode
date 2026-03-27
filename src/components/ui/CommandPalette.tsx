@@ -327,6 +327,7 @@ export function CommandPalette({ addTaskMode = false, onClose }: CommandPaletteP
         if (e.key === 'n' || e.key === 'N') {
           e.preventDefault();
           setShowReminderConfirm(false);
+          handleAddTask(false);
           return;
         }
       }
