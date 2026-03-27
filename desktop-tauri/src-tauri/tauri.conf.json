@@ -51,6 +51,13 @@
       }
     }
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVEMDQ4Q0JEQzMwQkZEQjQKUldTMC9RdkR2WXdFN1FaMFZqRTF6SHhlNzdRYXgrNGwrY2kvOWJ5TDcvUkwxU2czN0dLTFpCWVUK",
+      "endpoints": [
+        "https://github.com/leobabauta/zenmode/releases/latest/download/latest.json"
+      ]
+    }
+  }
 
 }

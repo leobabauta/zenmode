@@ -168,6 +168,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![quick_add_task, close_quick_add, save_storage_file])
         .setup(|app| {
             // Restore localStorage before the page loads
@@ -197,6 +200,9 @@ pub fn run() {
                             }
                         })();"#
                     );
+                    // Check for updates after a short delay
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    let _ = win_clone.eval(include_str!("update-checker.js"));
                 });
 
                 let _ = main_win.show();
