@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Help Test zenmode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fafafa;
+      color: #1c1917;
+      line-height: 1.7;
+    }
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #1c1917;
+    }
+    .nav-logo img { width: 2.5rem; height: 2.5rem; }
+    .nav-logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .nav-links a:hover { color: #1d4ed8; }
+
+    .hero {
+      text-align: center;
+      padding: 4rem 1.5rem 2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #1c1917;
+      margin-bottom: 1rem;
+    }
+
+    .content {
+      max-width: 580px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+    .content p {
+      font-size: 1.05rem;
+      color: #57534e;
+      margin-bottom: 1.25rem;
+    }
+    .features {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 2rem;
+    }
+    .features li {
+      font-size: 1.05rem;
+      color: #57534e;
+      padding: 0.4rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    .features li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      color: #22c55e;
+      font-weight: 700;
+    }
+
+    .form-card {
+      background: #fff;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 1rem;
+    }
+    .form-card h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      color: #1c1917;
+    }
+    .field {
+      margin-bottom: 1rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #44403c;
+      margin-bottom: 0.35rem;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid #d6d3d1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: #1c1917;
+      background: #fafafa;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .platform-options {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .platform-options label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border: 2px solid #e7e5e4;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #57534e;
+      transition: all 0.15s;
+    }
+    .platform-options input { display: none; }
+    .platform-options input:checked + label {
+      border-color: #2563eb;
+      background: #eff6ff;
+      color: #1c1917;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: #1c1917;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.15s;
+    }
+    .submit-btn:hover { background: #292524; }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .success-msg {
+      text-align: center;
+      padding: 2rem;
+    }
+    .success-msg h3 {
+      font-size: 1.25rem;
+      color: #1c1917;
+      margin-bottom: 0.5rem;
+    }
+    .success-msg p {
+      color: #78716c;
+      font-size: 0.95rem;
+    }
+    .error-msg {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+
+    footer {
+      border-top: 1px solid #e7e5e4;
+      padding: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    footer a {
+      font-size: 1rem;
+      color: #78716c;
+      text-decoration: none;
+    }
+    footer a:hover { color: #1c1917; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/zenmode-logo.svg" alt="" />
+      <span>zenmode</span>
+    </a>
+    <div class="nav-links">
+      <a href="/about/">About</a>
+      <a href="/manifesto/">Manifesto</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Help test zenmode</h1>
+  </section>
+
+  <section class="content">
+    <p>I'm looking for a couple dozen testers for the zenmode mobile app, on both Android and iPhone. Be prepared for it to be a bit buggy, and to give me some feedback on what's broken, frustrating or confusing, or what you'd like to see.</p>
+
+    <p>The app features:</p>
+    <ul class="features">
+      <li>Daily Planning Ritual to set your priorities each morning</li>
+      <li>Today view to focus only on what matters today</li>
+      <li>Focus Timer for single-task deep work</li>
+      <li>Timeline view to organize tasks the way life actually works</li>
+      <li>Google Calendar integration to see your schedule alongside tasks</li>
+    </ul>
+
+    <div class="form-card" id="signup-form">
+      <h2>Sign up to test</h2>
+      <form id="tester-form" onsubmit="handleSubmit(event)">
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="field">
+          <label>Platform</label>
+          <div class="platform-options">
+            <input type="radio" name="platform" id="android" value="android" required />
+            <label for="android">Android</label>
+            <input type="radio" name="platform" id="ios" value="ios" />
+            <label for="ios">iPhone</label>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn" id="submit-btn">Sign up</button>
+        <div class="error-msg" id="error-msg" style="display:none"></div>
+      </form>
+    </div>
+
+    <div class="form-card success-msg" id="success-msg" style="display:none">
+      <h3>You're on the list!</h3>
+      <p>Thanks for signing up. I'll send you an invite link once you're approved&mdash;keep an eye on your inbox.</p>
+    </div>
+  </section>
+
+  <footer>
+    <a href="/about/">About</a>
+    <a href="/manifesto/">Manifesto</a>
+    <a href="/downloads/">Downloads</a>
+    <a href="/privacy/">Privacy Policy</a>
+  </footer>
+
+  <script>
+    const SUPABASE_URL = 'https://hlyxiyvqmfupyqjgfajj.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhseXhpeXZxbWZ1cHlxamdmYWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcyNTc3MTcsImV4cCI6MjA2MjgzMzcxN30.aGDHEbR2BMrIdqOB2s7cFh6ftvYBq1GfpZ-QMfDIJVE';
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const errorEl = document.getElementById('error-msg');
+      btn.disabled = true;
+      btn.textContent = 'Signing up...';
+      errorEl.style.display = 'none';
+
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const platform = document.querySelector('input[name="platform"]:checked')?.value;
+
+      if (!platform) {
+        errorEl.textContent = 'Please select a platform.';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Sign up';
+        return;
+      }
+
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/beta_testers', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({ name, email, platform }),
+        });
+
+        if (res.status === 409 || res.status === 400) {
+          errorEl.textContent = 'This email is already signed up!';
+          errorEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Sign up';
+          return;
+        }
+        if (!res.ok) throw new Error('Signup failed');
+
+        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('success-msg').style.display = 'block';
+      } catch (err) {
+        errorEl.textContent = 'Something went wrong. Please try again.';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Sign up';
+      }
+    }
+  </script>
+</body>
+</html>
