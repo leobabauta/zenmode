@@ -209,7 +209,7 @@ export function SettingsView() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-6 py-8" style={{ paddingTop: (window as any).__TAURI__ ? '2.5rem' : undefined }}>
           {/* Top bar: close + sign out */}
           <div className="flex items-center justify-between mb-4">
             <button
