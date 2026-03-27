@@ -109,42 +109,10 @@ jobs:
 
           echo "Recreating DMG with Applications shortcut..."
           rm -f "$DMG_PATH"
-          # Create a staging folder with the app and an Applications symlink
           DMG_STAGING=$(mktemp -d)
           cp -R "$APP_PATH" "$DMG_STAGING/"
           ln -s /Applications "$DMG_STAGING/Applications"
-          # Create a read-write DMG first, set window layout, then convert to compressed
-          RW_DMG=$(mktemp).dmg
-          hdiutil create -volname "zenmode" -srcfolder "$DMG_STAGING" -ov -format UDRW "$RW_DMG"
-          # Mount and configure Finder window layout
-          MOUNT_DIR=$(hdiutil attach -readwrite -noverify "$RW_DMG" | grep '/Volumes/' | sed 's/.*\/Volumes/\/Volumes/')
-          # Set window size, icon positions, and background via AppleScript
-          osascript <<APPLESCRIPT
-          tell application "Finder"
-            tell disk "zenmode"
-              open
-              set current view of container window to icon view
-              set toolbar visible of container window to false
-              set statusbar visible of container window to false
-              set bounds of container window to {200, 200, 720, 460}
-              set theViewOptions to icon view options of container window
-              set arrangement of theViewOptions to not arranged
-              set icon size of theViewOptions to 80
-              set position of item "zenmode.app" of container window to {140, 130}
-              set position of item "Applications" of container window to {380, 130}
-              close
-              open
-              update without registering applications
-            end tell
-          end tell
-          APPLESCRIPT
-          # Wait for Finder to apply changes
-          sleep 2
-          # Unmount
-          hdiutil detach "$MOUNT_DIR"
-          # Convert to compressed read-only DMG
-          hdiutil convert "$RW_DMG" -format UDZO -o "$DMG_PATH"
-          rm -f "$RW_DMG"
+          hdiutil create -volname "zenmode" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG_PATH"
           rm -rf "$DMG_STAGING"
 
           echo "Notarizing $DMG_PATH..."
