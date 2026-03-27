@@ -187,15 +187,15 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           BASE_URL="https://github.com/leobabauta/zenmode/releases/download/${TAG}"
 
-          # Read signatures
-          MAC_ARM_SIG=$(cat artifacts/zenmode-macOS-arm64/*.sig 2>/dev/null || echo "")
-          MAC_X64_SIG=$(cat artifacts/zenmode-macOS-x64/*.sig 2>/dev/null || echo "")
-          WIN_SIG=$(cat artifacts/zenmode-Windows-x64/*.sig 2>/dev/null || echo "")
+          # Read signatures (files are in subdirectories like macos/ or nsis/)
+          MAC_ARM_SIG=$(find artifacts/zenmode-macOS-arm64 -name "*.sig" -exec cat {} \; 2>/dev/null || echo "")
+          MAC_X64_SIG=$(find artifacts/zenmode-macOS-x64 -name "*.sig" -exec cat {} \; 2>/dev/null || echo "")
+          WIN_SIG=$(find artifacts/zenmode-Windows-x64 -name "*.sig" -exec cat {} \; 2>/dev/null || echo "")
 
-          # Find actual tar.gz filenames
-          MAC_ARM_TAR=$(basename "$(ls artifacts/zenmode-macOS-arm64/*.tar.gz 2>/dev/null | head -1)" 2>/dev/null || echo "zenmode.app.tar.gz")
-          MAC_X64_TAR=$(basename "$(ls artifacts/zenmode-macOS-x64/*.tar.gz 2>/dev/null | head -1)" 2>/dev/null || echo "zenmode.app.tar.gz")
-          WIN_ZIP=$(basename "$(ls artifacts/zenmode-Windows-x64/*.nsis.zip 2>/dev/null | head -1)" 2>/dev/null || echo "zenmode_${VERSION}_x64-setup.nsis.zip")
+          # Find actual tar.gz/zip filenames
+          MAC_ARM_TAR=$(find artifacts/zenmode-macOS-arm64 -name "*.tar.gz" | head -1 | xargs basename 2>/dev/null || echo "zenmode.app.tar.gz")
+          MAC_X64_TAR=$(find artifacts/zenmode-macOS-x64 -name "*.tar.gz" | head -1 | xargs basename 2>/dev/null || echo "zenmode.app.tar.gz")
+          WIN_ZIP=$(find artifacts/zenmode-Windows-x64 -name "*.nsis.zip" | head -1 | xargs basename 2>/dev/null || echo "zenmode_${VERSION}_x64-setup.nsis.zip")
 
           echo "MAC_ARM_SIG=${MAC_ARM_SIG:0:20}..."
           echo "MAC_X64_SIG=${MAC_X64_SIG:0:20}..."
