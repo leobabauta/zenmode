@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Pressable, ScrollV
 import { usePlannerStore, selectItemsForDay } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
 import { addDays } from 'date-fns';
+import { flushChangedNow, flushPreferencesNow } from '../../../shared/lib/sync';
 import type { Colors } from '../lib/colors';
 
 interface ReviewRitualCardProps {
@@ -56,6 +57,8 @@ export function ReviewRitualCard({ colors, onDismiss }: ReviewRitualCardProps) {
       lastReviewRitualDate: toDayKey(new Date()),
       reviewRitualSnoozedUntil: null,
     });
+    flushChangedNow();
+    flushPreferencesNow();
     onDismiss();
   };
 
@@ -71,6 +74,7 @@ export function ReviewRitualCard({ colors, onDismiss }: ReviewRitualCardProps) {
       lastReviewRitualDate: toDayKey(new Date()),
       reviewRitualSnoozedUntil: null,
     });
+    flushPreferencesNow();
     onDismiss();
   };
 

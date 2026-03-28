@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
+import { flushChangedNow, flushPreferencesNow } from '../../../shared/lib/sync';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
 import type { Colors } from '../lib/colors';
@@ -40,6 +41,9 @@ export function PlanningRitualCard({ colors, onDismiss }: PlanningRitualCardProp
       lastRitualDate: todayKey,
       planningRitualSnoozedUntil: null,
     });
+    // Force immediate sync so other devices see the ritual was completed
+    flushChangedNow();
+    flushPreferencesNow();
     onDismiss();
   };
 
@@ -55,6 +59,7 @@ export function PlanningRitualCard({ colors, onDismiss }: PlanningRitualCardProp
       lastRitualDate: todayKey,
       planningRitualSnoozedUntil: null,
     });
+    flushPreferencesNow();
     onDismiss();
   };
 

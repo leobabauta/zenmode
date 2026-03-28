@@ -191,7 +191,7 @@ export default function App() {
     });
   }, [user]);
 
-  // Sync on app state changes (background/foreground)
+  // Sync on app state changes (background/foreground) + periodic polling
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && user) {
@@ -205,7 +205,16 @@ export default function App() {
         flushPreferencesNow();
       }
     });
-    return () => subscription.remove();
+    // Periodic sync every 60s while app is active
+    const interval = setInterval(() => {
+      if (user && AppState.currentState === 'active') {
+        pullFromSupabase().then(() => pullPreferences());
+      }
+    }, 60000);
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
   }, [user]);
 
   if (loading) return null;
