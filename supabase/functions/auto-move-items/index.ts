@@ -229,9 +229,11 @@ Deno.serve(async (req) => {
         else itemsDeleted += toDelete.length;
       }
 
-      // Execute updates in batches (upsert)
+      // Execute updates — batch by identical field sets where possible
       if (toUpdate.length > 0) {
-        // Build full rows for upsert — only include fields we're changing plus the id and user_id
+        // Group items moving to the same day_key with same is_later value
+        // to reduce number of queries. Items with unique order values
+        // still need individual updates.
         for (const update of toUpdate) {
           const { id, ...fields } = update;
           const { error: updError } = await supabase

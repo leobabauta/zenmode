@@ -643,7 +643,10 @@ export const usePlannerStore = create<PlannerState>()(
 
       autoMoveIncompleteItems: () => {
         const todayKey = toDayKey(new Date());
-        if (get().lastAutoMoveDate === todayKey) return;
+        // Track whether this is the first run of the day — only increment
+        // consecutiveMoves on the first run to avoid inflating the counter
+        // when auto-move re-runs after sync pulls.
+        const isFirstRunToday = get().lastAutoMoveDate !== todayKey;
         set((state) => {
           state.lastAutoMoveDate = todayKey;
           const now = new Date().toISOString();
@@ -680,6 +683,9 @@ export const usePlannerStore = create<PlannerState>()(
               i.type !== 'note'
           );
 
+          // Nothing to move — skip the rest
+          if (pastIncomplete.length === 0) return;
+
           // Get existing today items to determine order offset
           const todayItems = Object.values(state.items).filter(
             (i) => i.dayKey === todayKey && !i.parentId
@@ -714,7 +720,11 @@ export const usePlannerStore = create<PlannerState>()(
               }
             }
 
-            const moves = (item.consecutiveMoves ?? 0) + 1;
+            // Only increment consecutiveMoves on the first run of the day
+            // to avoid inflating the counter on repeated sync-triggered runs.
+            const moves = isFirstRunToday
+              ? (item.consecutiveMoves ?? 0) + 1
+              : (item.consecutiveMoves ?? 0);
             if (moves >= 4) {
               // Send to Later Archive
               const laterItems = Object.values(state.items).filter(
