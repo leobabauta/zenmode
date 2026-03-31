@@ -155,8 +155,7 @@ jobs:
           name: zenmode-${{ matrix.label }}
           path: |
             desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
-            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.nsis.zip
-            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.nsis.zip.sig
+            desktop-tauri/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe.sig
 
   release:
     needs: build
@@ -190,19 +189,19 @@ jobs:
           # Read signatures (files are in subdirectories like macos/ or nsis/)
           MAC_ARM_SIG=$(find artifacts/zenmode-macOS-arm64 -name "*.sig" -exec cat {} \; 2>/dev/null || echo "")
           MAC_X64_SIG=$(find artifacts/zenmode-macOS-x64 -name "*.sig" -exec cat {} \; 2>/dev/null || echo "")
-          WIN_SIG=$(find artifacts/zenmode-Windows-x64 -name "*.sig" -exec cat {} \; 2>/dev/null || echo "")
+          WIN_SIG=$(find artifacts/zenmode-Windows-x64 -name "*.exe.sig" -exec cat {} \; 2>/dev/null || echo "")
 
           # Find actual tar.gz/zip filenames
           MAC_ARM_TAR=$(find artifacts/zenmode-macOS-arm64 -name "*.tar.gz" | head -1 | xargs basename 2>/dev/null || echo "zenmode.app.tar.gz")
           MAC_X64_TAR=$(find artifacts/zenmode-macOS-x64 -name "*.tar.gz" | head -1 | xargs basename 2>/dev/null || echo "zenmode.app.tar.gz")
-          WIN_ZIP=$(find artifacts/zenmode-Windows-x64 -name "*.nsis.zip" | head -1 | xargs basename 2>/dev/null || echo "zenmode_${VERSION}_x64-setup.nsis.zip")
+          WIN_EXE=$(find artifacts/zenmode-Windows-x64 -name "*.exe" ! -name "*.sig" | head -1 | xargs basename 2>/dev/null || echo "zenmode_${VERSION}_x64-setup.exe")
 
           echo "MAC_ARM_SIG=${MAC_ARM_SIG:0:20}..."
           echo "MAC_X64_SIG=${MAC_X64_SIG:0:20}..."
           echo "WIN_SIG=${WIN_SIG:0:20}..."
           echo "MAC_ARM_TAR=$MAC_ARM_TAR"
           echo "MAC_X64_TAR=$MAC_X64_TAR"
-          echo "WIN_ZIP=$WIN_ZIP"
+          echo "WIN_EXE=$WIN_EXE"
 
           cat > artifacts/latest.json <<ENDJSON
           {
@@ -220,7 +219,7 @@ jobs:
               },
               "windows-x86_64": {
                 "signature": "${WIN_SIG}",
-                "url": "${BASE_URL}/${WIN_ZIP}"
+                "url": "${BASE_URL}/${WIN_EXE}"
               }
             }
           }
@@ -232,9 +231,8 @@ jobs:
           files: |
             artifacts/**/*.dmg
             artifacts/**/*.exe
+            artifacts/**/*.exe.sig
             artifacts/**/*.tar.gz
             artifacts/**/*.tar.gz.sig
-            artifacts/**/*.nsis.zip
-            artifacts/**/*.nsis.zip.sig
             artifacts/latest.json
           generate_release_notes: true
