@@ -93,6 +93,7 @@ interface PlannerState {
   reorderItems: (dayKey: string | null, orderedIds: string[]) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
   autoMoveIncompleteItems: () => void;
+  resortAllDays: () => void;
   sendToInbox: (id: string) => void;
   sendToLater: (id: string) => void;
   toggleTheme: () => void;
@@ -745,6 +746,34 @@ export const usePlannerStore = create<PlannerState>()(
               item.consecutiveMoves = moves;
             }
             item.updatedAt = now;
+          }
+        });
+      },
+
+      resortAllDays: () => {
+        set((state) => {
+          const isReview = (i: PlannerItem) =>
+            i.type === 'note' && (i.text.includes('#dailyreview') || i.text.includes('#weeklyreview'));
+
+          // Group non-subtask, non-archived items by their context (dayKey, later, inbox)
+          const groups = new Map<string, PlannerItem[]>();
+          for (const item of Object.values(state.items)) {
+            if (item.parentId || item.isArchived) continue;
+            const key = item.dayKey ?? (item.isLater ? '__later__' : '__inbox__');
+            const group = groups.get(key);
+            if (group) group.push(item);
+            else groups.set(key, [item]);
+          }
+
+          for (const siblings of groups.values()) {
+            siblings.sort((a, b) => a.order - b.order);
+            const reviews = siblings.filter((i) => isReview(i));
+            const incomplete = siblings.filter((i) => !i.completed && !isReview(i));
+            const completed = siblings.filter((i) => i.completed && !isReview(i));
+            const sorted = [...completed, ...incomplete, ...reviews];
+            sorted.forEach((s, i) => {
+              state.items[s.id].order = i;
+            });
           }
         });
       },

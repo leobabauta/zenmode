@@ -173,8 +173,10 @@ export async function pullFromSupabase(): Promise<void> {
       }
     }
 
-    // Apply merged items to store
+    // Apply merged items to store, then re-sort so completed/incomplete
+    // grouping is consistent even when order values from different devices diverge.
     usePlannerStore.setState({ items: merged });
+    usePlannerStore.getState().resortAllDays();
 
     // Push local-newer items to Supabase
     if (localNewer.length > 0) {
