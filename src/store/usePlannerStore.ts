@@ -309,7 +309,8 @@ export const usePlannerStore = create<PlannerState>()(
         set((state) => {
           const item = state.items[id];
           if (!item) return;
-          Object.assign(item, patch, { updatedAt: new Date().toISOString() });
+          const now = new Date().toISOString();
+          Object.assign(item, patch, { updatedAt: now });
 
           // Track completion timestamp
           if (patch.completed === true && !item.completedAt) {
@@ -369,7 +370,10 @@ export const usePlannerStore = create<PlannerState>()(
             const completed = siblings.filter((i) => i.completed && !isReview(i));
             const sorted = [...completed, ...incomplete, ...reviews];
             sorted.forEach((s, i) => {
-              state.items[s.id].order = i;
+              if (state.items[s.id].order !== i) {
+                state.items[s.id].order = i;
+                state.items[s.id].updatedAt = now;
+              }
             });
           }
         });
