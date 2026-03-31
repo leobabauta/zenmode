@@ -211,6 +211,27 @@ export default function App() {
         pullFromSupabase().then(() => pullPreferences()).then(() => {
           // Re-run auto-move in case the day changed while the tab was hidden
           usePlannerStore.getState().autoMoveIncompleteItems();
+          // Dismiss ritual prompts if another device already completed them
+          const s = usePlannerStore.getState();
+          const todayKey = toDayKey(new Date());
+          const weekKey = getWeekKey(new Date());
+          if (s.lastRitualDate === todayKey && s.showRitualPrompt) {
+            s.setShowRitualPrompt(false);
+          }
+          if (s.lastReviewRitualDate === todayKey && s.showReviewRitualPrompt) {
+            s.setShowReviewRitualPrompt(false);
+          }
+          if (s.lastWeeklyPlanningDate === weekKey && s.showWeeklyPlanningPrompt) {
+            s.setShowWeeklyPlanningPrompt(false);
+          }
+          if (s.lastWeeklyReviewDate === weekKey && s.showWeeklyReviewPrompt) {
+            s.setShowWeeklyReviewPrompt(false);
+          }
+          // Re-check rituals in case they should now be triggered
+          checkPlanningRitual();
+          checkReviewRitual();
+          checkWeeklyPlanningRitual();
+          checkWeeklyReviewRitual();
         });
         // Calendar token refreshes via Edge Function on demand — no action needed here
       }
