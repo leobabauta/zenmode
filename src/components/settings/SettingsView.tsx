@@ -94,10 +94,6 @@ export function SettingsView() {
     setDeleteLoading(true);
     setDeleteError(null);
     try {
-      const { error: itemsErr } = await supabase.from('items').delete().eq('user_id', user.id);
-      if (itemsErr) throw itemsErr;
-      const { error: prefsErr } = await supabase.from('user_preferences').delete().eq('user_id', user.id);
-      if (prefsErr) throw prefsErr;
       const { error: deleteErr } = await supabase.functions.invoke('delete-user');
       if (deleteErr) throw deleteErr;
       usePlannerStore.persist.clearStorage();

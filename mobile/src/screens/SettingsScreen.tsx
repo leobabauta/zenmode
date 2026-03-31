@@ -89,9 +89,8 @@ export function SettingsScreen() {
             const supabase = getSupabase();
             if (!supabase || !user) return;
             try {
-              await supabase.from('items').delete().eq('user_id', user.id);
-              await supabase.from('user_preferences').delete().eq('user_id', user.id);
-              await supabase.functions.invoke('delete-user');
+              const { error } = await supabase.functions.invoke('delete-user');
+              if (error) throw error;
               await AsyncStorage.clear();
               await supabase.auth.signOut();
             } catch {

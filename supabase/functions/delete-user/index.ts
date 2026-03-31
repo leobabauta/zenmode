@@ -30,10 +30,21 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
   }
 
-  // Use service role to delete the auth user
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
-  const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
+  // Delete all user data and auth account server-side in one call.
+  // This prevents partial deletion where data is wiped but auth survives.
+  const { error: itemsErr } = await adminClient.from('items').delete().eq('user_id', user.id);
+  if (itemsErr) {
+    return new Response(JSON.stringify({ error: `Failed to delete items: ${itemsErr.message}` }), { status: 500 });
+  }
+
+  const { error: prefsErr } = await adminClient.from('user_preferences').delete().eq('user_id', user.id);
+  if (prefsErr) {
+    return new Response(JSON.stringify({ error: `Failed to delete preferences: ${prefsErr.message}` }), { status: 500 });
+  }
+
+  const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
   if (deleteError) {
     return new Response(JSON.stringify({ error: deleteError.message }), { status: 500 });
   }
