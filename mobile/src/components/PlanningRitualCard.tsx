@@ -65,7 +65,7 @@ export function PlanningRitualCard({ colors, onDismiss }: PlanningRitualCardProp
 
   const visibleInbox = inboxItems.filter((i) => !movedIds.has(i.id));
 
-  const maxHeight = Dimensions.get('window').height * 0.65;
+  const maxHeight = Dimensions.get('window').height * 0.7;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, maxHeight }]}>
@@ -74,7 +74,7 @@ export function PlanningRitualCard({ colors, onDismiss }: PlanningRitualCardProp
         What matters most today? Tap stars to set priorities.
       </Text>
 
-      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
         {/* Today's tasks with priority toggles */}
         {todayItems.length > 0 && (
           <View style={styles.section}>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   scrollArea: {
-    flexGrow: 0,
+    flexShrink: 1,
   },
   title: {
     fontSize: 22,

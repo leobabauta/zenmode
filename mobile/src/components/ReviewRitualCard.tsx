@@ -81,7 +81,7 @@ export function ReviewRitualCard({ colors, onDismiss }: ReviewRitualCardProps) {
   const dayLabel = isMorning ? 'yesterday' : 'today';
 
   const scrollRef = useRef<ScrollView>(null);
-  const maxHeight = Dimensions.get('window').height * 0.65;
+  const maxHeight = Dimensions.get('window').height * 0.7;
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -94,7 +94,8 @@ export function ReviewRitualCard({ colors, onDismiss }: ReviewRitualCardProps) {
         <ScrollView
           ref={scrollRef}
           style={styles.scrollArea}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
+          nestedScrollEnabled={true}
           keyboardShouldPersistTaps="handled"
         >
           {/* Completed tasks */}
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   scrollArea: {
-    flexGrow: 0,
+    flexShrink: 1,
   },
   title: {
     fontSize: 22,

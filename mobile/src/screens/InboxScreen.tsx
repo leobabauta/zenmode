@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, Platform, Vibration, RefreshControl, ScrollView,
+  View, Text, Pressable, StyleSheet, Platform, Vibration, RefreshControl,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -192,11 +192,6 @@ export function InboxScreen() {
         <Text style={[styles.title, { color: colors.text }]}>Inbox</Text>
       </View>
 
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
       <DraggableFlatList
         data={inboxItems}
         keyExtractor={(item) => item.id}
@@ -205,10 +200,9 @@ export function InboxScreen() {
         onDragBegin={triggerHapticMedium}
         onPlaceholderIndexChange={triggerHaptic}
         contentContainerStyle={styles.list}
-        scrollEnabled={false}
         ListEmptyComponent={<EmptyInbox colors={colors} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textMuted} />}
       />
-      </ScrollView>
 
       <AddTaskFAB colors={colors} placeholder="Add to inbox..." defaultDestination="inbox" onAdd={handleAdd} />
 
