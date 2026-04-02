@@ -16,6 +16,7 @@ import {
   selectInboxItems,
   selectLaterItems,
 } from '../store/usePlannerStore';
+import { getSelectedItemIds } from '../lib/selection';
 
 function getContainerKey(item: { dayKey: string | null; isLater?: boolean }): string {
   if (item.dayKey !== null) return item.dayKey;
@@ -119,35 +120,49 @@ export function useDragAndDrop() {
       const activeItem = items[activeIdStr];
       if (!activeItem) return; // only handle task/item drops
 
+      // Resolve all selected items (or just the dragged one)
+      const state = usePlannerStore.getState();
+      const selectedIds = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const dragIds = selectedIds.includes(activeIdStr) ? selectedIds : [activeIdStr];
+
       if (overId === 'sidebar-inbox') {
-        sendToInbox(activeIdStr);
+        for (const id of dragIds) sendToInbox(id);
+        state.clearSelection();
         return;
       }
       if (overId === 'sidebar-later') {
-        sendToLater(activeIdStr);
+        for (const id of dragIds) sendToLater(id);
+        state.clearSelection();
         return;
       }
       if (overId === 'sidebar-archive') {
-        usePlannerStore.setState((state) => {
-          const item = state.items[activeIdStr];
-          if (item) {
-            item.isArchived = true;
-            item.updatedAt = new Date().toISOString();
+        usePlannerStore.setState((s) => {
+          for (const id of dragIds) {
+            const item = s.items[id];
+            if (item) {
+              item.isArchived = true;
+              item.updatedAt = new Date().toISOString();
+            }
           }
         });
+        state.clearSelection();
         return;
       }
       if (overId.startsWith('sidebar-list-')) {
         const listId = overId.slice('sidebar-list-'.length);
-        sendToList(activeIdStr, listId);
+        for (const id of dragIds) sendToList(id, listId);
+        state.clearSelection();
         return;
       }
       if (overId.startsWith('sidebar-label-')) {
         const tag = overId.slice('sidebar-label-'.length);
-        // Add the label to the item's text if not already present
-        if (!activeItem.text.toLowerCase().includes(tag.toLowerCase())) {
-          updateItem(activeIdStr, { text: `${activeItem.text} ${tag}` });
+        for (const id of dragIds) {
+          const it = items[id];
+          if (it && !it.text.toLowerCase().includes(tag.toLowerCase())) {
+            updateItem(id, { text: `${it.text} ${tag}` });
+          }
         }
+        state.clearSelection();
         return;
       }
       return;
@@ -218,20 +233,27 @@ export function useDragAndDrop() {
       return;
     }
 
-    // Different container
+    // Different container — move all selected items if dragged item is in the selection
+    const state = usePlannerStore.getState();
+    const selectedIds = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+    const dragIds = selectedIds.includes(activeIdStr) ? selectedIds : [activeIdStr];
+
     if (targetContainerKey === 'inbox') {
-      sendToInbox(activeIdStr);
+      for (const id of dragIds) sendToInbox(id);
     } else if (targetContainerKey === 'later') {
-      sendToLater(activeIdStr);
+      for (const id of dragIds) sendToLater(id);
     } else {
       // Moving to a day column
       const targetDayKey = targetContainerKey;
       const targetContainer = selectItemsForDay(items, targetDayKey);
-      const targetOrder = targetItemId && items[targetItemId]
+      const baseOrder = targetItemId && items[targetItemId]
         ? items[targetItemId].order
         : targetContainer.length;
-      moveItem(activeIdStr, targetDayKey, targetOrder);
+      for (let i = 0; i < dragIds.length; i++) {
+        moveItem(dragIds[i], targetDayKey, baseOrder + i);
+      }
     }
+    state.clearSelection();
   }, [items, moveItem, reorderItems, sendToInbox, sendToLater, sendToList, updateItem, reorderNav, reorderLabels]);
 
   const activeItem = activeId ? items[activeId] : null;

@@ -47,7 +47,7 @@ export function StatsView() {
   const maxDow = Math.max(...dowAverages.map((d) => d?.total ?? 0), 1);
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4">
+    <div className="flex-1 overflow-y-auto px-6 pt-4 pb-20">
       <div className="max-w-2xl mx-auto space-y-8">
         <h1 className="text-5xl font-bold dark:font-extrabold text-[var(--color-text-primary)] mt-16">Stats</h1>
 

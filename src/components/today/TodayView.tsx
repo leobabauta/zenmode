@@ -65,7 +65,7 @@ export function TodayView() {
   const showAllDone = allTasksDone && !showCompletedTasks;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-4">
+    <div className="flex-1 overflow-y-auto px-6 pt-4 pb-20">
       <div className="max-w-2xl mx-auto">
         <div className="rounded-xl border-2 border-[var(--color-border)] shadow-[0_0_20px_rgba(139,92,246,0.15)] bg-[var(--color-bg)] pl-10 pr-3 py-3 min-h-[80px]">
           <div className="mr-[34px]">

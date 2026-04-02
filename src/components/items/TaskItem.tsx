@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectChildItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
+import { getSelectedItemIds } from '../../lib/selection';
 import { consumePendingEditX, getInputCursorX, getOffsetFromX, setPendingEditX } from '../../lib/editNavigation';
 import { Checkbox } from '../ui/Checkbox';
 import { IconButton } from '../ui/IconButton';
@@ -158,21 +159,31 @@ export function TaskItem({
     // Shift+I → send to Inbox
     if (e.key === 'I' && e.shiftKey) {
       e.preventDefault();
-      sendToInbox(item.id);
+      const state = usePlannerStore.getState();
+      const ids = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const targets = ids.length > 0 ? ids : [item.id];
+      for (const id of targets) sendToInbox(id);
       onDeselect?.();
       return;
     }
     // Shift+E or Shift+L → send to Later Archive
     if ((e.key === 'E' || e.key === 'L') && e.shiftKey) {
       e.preventDefault();
-      sendToLater(item.id);
+      const state = usePlannerStore.getState();
+      const ids = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const targets = ids.length > 0 ? ids : [item.id];
+      for (const id of targets) sendToLater(id);
       onDeselect?.();
       return;
     }
     // Shift+T → move to Today
     if (e.key === 'T' && e.shiftKey) {
       e.preventDefault();
-      moveItem(item.id, toDayKey(new Date()), 0);
+      const state = usePlannerStore.getState();
+      const ids = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const targets = ids.length > 0 ? ids : [item.id];
+      const todayKey = toDayKey(new Date());
+      for (const id of targets) moveItem(id, todayKey, 0);
       onDeselect?.();
       return;
     }

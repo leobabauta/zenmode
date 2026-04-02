@@ -111,7 +111,7 @@ export function Timeline() {
   }, []);
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto px-6 py-4 relative">
+    <div ref={containerRef} className="flex-1 overflow-y-auto px-6 pt-4 pb-20 relative">
       {/* Floating month pill + inbox icon */}
       <div className="sticky top-2 z-10 flex justify-center items-start pointer-events-none mb-2">
         <div className="pointer-events-auto bg-white dark:bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-full px-4 py-1.5 flex items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">

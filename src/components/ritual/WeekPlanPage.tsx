@@ -34,7 +34,7 @@ export function WeekPlanPage() {
   const weekLabel = `${format(mondayDate, 'MMM d')} - ${format(sundayDate, 'MMM d, yyyy')}`;
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-8">
+    <div className="flex-1 overflow-y-auto px-6 pt-8 pb-20">
       <div className="max-w-lg mx-auto">
         {/* Header with navigation */}
         <div className="flex items-center justify-between mb-6">

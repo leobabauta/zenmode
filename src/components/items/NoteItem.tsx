@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectItemsForDay } from '../../store/usePlannerStore';
 import { consumePendingEditX, getInputCursorX, getOffsetFromX } from '../../lib/editNavigation';
+import { getSelectedItemIds } from '../../lib/selection';
 import { IconButton } from '../ui/IconButton';
 import { HashtagText } from '../ui/HashtagText';
 import { cn } from '../../lib/utils';
@@ -117,14 +118,20 @@ export function NoteItem({
     // Shift+I → send to Inbox
     if (e.key === 'I' && e.shiftKey) {
       e.preventDefault();
-      sendToInbox(item.id);
+      const state = usePlannerStore.getState();
+      const ids = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const targets = ids.length > 0 ? ids : [item.id];
+      for (const id of targets) sendToInbox(id);
       onDeselect?.();
       return;
     }
     // Shift+E → send to Later Archive
     if (e.key === 'E' && e.shiftKey) {
       e.preventDefault();
-      sendToLater(item.id);
+      const state = usePlannerStore.getState();
+      const ids = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const targets = ids.length > 0 ? ids : [item.id];
+      for (const id of targets) sendToLater(id);
       onDeselect?.();
       return;
     }
