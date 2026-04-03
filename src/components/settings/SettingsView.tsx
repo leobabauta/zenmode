@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
 import { COLOR_PRESETS } from '../../lib/colorThemes';
+import { ApiKeysCard } from './ApiKeysCard';
 import type { PlannerItem } from '../../types';
 
 type SettingsTab = 'profile' | 'features' | 'data';
@@ -413,6 +414,9 @@ export function SettingsView() {
                   </select>
                 </RitualRow>
               </div>
+
+              {/* API Keys */}
+              {supabase && user && <ApiKeysCard />}
 
               {/* Changelog */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
