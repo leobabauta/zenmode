@@ -1,10 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
-import { fetchTodayEvents, formatEventAsTask, requestCalendarAccess } from '../../lib/googleCalendar';
-import { supabase } from '../../lib/supabase';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
 import { Checkbox } from '../ui/Checkbox';
@@ -32,8 +30,6 @@ function RitualDraggableItem({ id, children }: { id: string; children: React.Rea
     </div>
   );
 }
-
-const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 /** Droppable zone wrapper for the today column */
 function RitualDropZone({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
@@ -146,27 +142,15 @@ function RitualTaskRow({ item, starred, locked, lockedColor, color, onToggle, di
   );
 }
 
-interface CalendarEvent {
-  id: string;
-  taskText: string;
-  selected: boolean;
-}
-
 export function DailyRitualView() {
   // Determine first step based on available content
   const [step, setStep] = useState(1);
   const setView = usePlannerStore((s) => s.setView);
-  const addItem = usePlannerStore((s) => s.addItem);
   const updateItem = usePlannerStore((s) => s.updateItem);
   const moveItem = usePlannerStore((s) => s.moveItem);
   const sendToLater = usePlannerStore((s) => s.sendToLater);
   const completeRitual = usePlannerStore((s) => s.completeRitual);
   const items = usePlannerStore((s) => s.items);
-  const googleCalendarConnected = usePlannerStore((s) => s.googleCalendarConnected);
-  const googleCalendarDismissed = usePlannerStore((s) => s.googleCalendarDismissed);
-  const setGoogleCalendarConnected = usePlannerStore((s) => s.setGoogleCalendarConnected);
-  const setGoogleCalendarDismissed = usePlannerStore((s) => s.setGoogleCalendarDismissed);
-  const [calConnecting, setCalConnecting] = useState(false);
 
   const dayKey = toDayKey(new Date());
   const tomorrowKey = toDayKey(addDays(new Date(), 1));
@@ -176,80 +160,6 @@ export function DailyRitualView() {
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority).length;
-
-  // Google Calendar import state
-  const [calEvents, setCalEvents] = useState<CalendarEvent[]>([]);
-  const [calLoading, setCalLoading] = useState(false);
-  const [calError, setCalError] = useState<string | null>(null);
-
-  const loadCalendarEvents = useCallback(async () => {
-    setCalLoading(true);
-    setCalError(null);
-    try {
-      const events = await fetchTodayEvents();
-      setCalEvents(
-        events.map((e) => ({
-          id: e.id,
-          taskText: formatEventAsTask(e),
-          selected: true,
-        }))
-      );
-    } catch (err) {
-      setCalError(err instanceof Error ? err.message : 'Failed to load events');
-    } finally {
-      setCalLoading(false);
-    }
-  }, []);
-
-  // Auto-fetch calendar events when ritual opens (uses cached token or Edge Function refresh — no popup)
-  useEffect(() => {
-    if (googleCalendarConnected && calEvents.length === 0 && !calLoading) {
-      loadCalendarEvents();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleConnectCalendar = async () => {
-    setCalConnecting(true);
-    setCalError(null);
-    try {
-      // Re-trigger Google OAuth with consent to get a fresh refresh token
-      if (supabase) {
-        localStorage.removeItem('zenmode-gcal-consented');
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin + window.location.pathname,
-            scopes: 'https://www.googleapis.com/auth/calendar.events.readonly',
-            queryParams: { access_type: 'offline', prompt: 'consent' },
-          },
-        });
-        if (error) throw error;
-        // Page will redirect to Google — no need to continue
-        return;
-      }
-      await requestCalendarAccess();
-      setGoogleCalendarConnected(true);
-    } catch (err) {
-      setCalError(err instanceof Error ? err.message : 'Failed to connect');
-    } finally {
-      setCalConnecting(false);
-    }
-  };
-
-  const importCalEvent = (eventId: string) => {
-    const event = calEvents.find((e) => e.id === eventId);
-    if (event) {
-      addItem({ type: 'task', text: event.taskText, dayKey });
-      setCalEvents((prev) => prev.filter((e) => e.id !== eventId));
-    }
-  };
-
-  const importAllCalEvents = () => {
-    for (const event of calEvents) {
-      addItem({ type: 'task', text: event.taskText, dayKey });
-    }
-    setCalEvents([]);
-  };
 
   const moveInboxToToday = (id: string) => {
     const maxOrder = todayItems.length > 0 ? Math.max(...todayItems.map((i) => i.order)) : -1;
@@ -324,118 +234,34 @@ export function DailyRitualView() {
             </p>
 
             <div className="flex gap-4 items-start">
-              {/* LEFT: Inbox + Calendar */}
-              <div className="w-[240px] flex-shrink-0 flex flex-col gap-4">
-                {/* Inbox */}
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
-                    Inbox {inboxItems.length > 0 && `(${inboxItems.length})`}
-                  </h3>
-                  <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px] max-h-[30vh] overflow-y-auto">
-                    {inboxItems.length === 0 ? (
-                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
-                        Inbox is empty
-                      </p>
-                    ) : (
-                      inboxItems.map((item) => (
-                        <RitualDraggableItem key={item.id} id={item.id}>
-                          <div className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing">
-                            <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
-                              {item.text}
-                            </span>
-                            <button
-                              onClick={() => moveInboxToToday(item.id)}
-                              className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
-                              title="Add to Today"
-                            >
-                              +Today
-                            </button>
-                          </div>
-                        </RitualDraggableItem>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Calendar events */}
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
-                    Calendar
-                  </h3>
-                  <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px] max-h-[30vh] overflow-y-auto">
-                    {calLoading && (
-                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
-                        Loading events...
-                      </p>
-                    )}
-                    {calError && (
-                      <div className="text-center py-3">
-                        <p className="text-xs text-red-500 mb-1">{calError}</p>
-                        <div className="flex items-center justify-center gap-3">
-                          <button onClick={loadCalendarEvents} className="text-xs text-[var(--color-accent)] hover:underline">
-                            Try again
-                          </button>
-                          <button onClick={handleConnectCalendar} disabled={calConnecting} className="text-xs text-[var(--color-accent)] hover:underline">
-                            {calConnecting ? 'Reconnecting...' : 'Reconnect'}
+              {/* LEFT: Inbox */}
+              <div className="w-[240px] flex-shrink-0">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
+                  Inbox {inboxItems.length > 0 && `(${inboxItems.length})`}
+                </h3>
+                <div className="rounded-xl border border-[var(--color-border)] p-2 min-h-[80px] max-h-[30vh] overflow-y-auto">
+                  {inboxItems.length === 0 ? (
+                    <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+                      Inbox is empty
+                    </p>
+                  ) : (
+                    inboxItems.map((item) => (
+                      <RitualDraggableItem key={item.id} id={item.id}>
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing">
+                          <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
+                            {item.text}
+                          </span>
+                          <button
+                            onClick={() => moveInboxToToday(item.id)}
+                            className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Add to Today"
+                          >
+                            +Today
                           </button>
                         </div>
-                      </div>
-                    )}
-                    {!calLoading && !calError && calEvents.length === 0 && !googleCalendarConnected && hasGoogleClientId && !googleCalendarDismissed && (
-                      <div className="flex flex-col items-center py-3 gap-2">
-                        <p className="text-xs text-[var(--color-text-muted)] text-center">
-                          Import calendar events as tasks
-                        </p>
-                        <button
-                          onClick={handleConnectCalendar}
-                          disabled={calConnecting}
-                          className="px-3 py-1 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors disabled:opacity-60"
-                        >
-                          {calConnecting ? 'Connecting...' : 'Connect Google Calendar'}
-                        </button>
-                        <button
-                          onClick={() => setGoogleCalendarDismissed(true)}
-                          className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
-                        >
-                          Don't show this
-                        </button>
-                      </div>
-                    )}
-                    {!calLoading && !calError && calEvents.length === 0 && googleCalendarConnected && (
-                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
-                        No events today
-                      </p>
-                    )}
-                    {!calLoading && !calError && calEvents.length === 0 && (!hasGoogleClientId || googleCalendarDismissed) && (
-                      <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
-                        No calendar connected
-                      </p>
-                    )}
-                    {!calLoading && !calError && calEvents.length > 0 && (
-                      <>
-                        {calEvents.map((event) => (
-                          <div key={event.id} className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group">
-                            <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
-                              {event.taskText}
-                            </span>
-                            <button
-                              onClick={() => importCalEvent(event.id)}
-                              className="flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors opacity-0 group-hover:opacity-100"
-                              title="Add to Today"
-                            >
-                              +Today
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          onClick={importAllCalEvents}
-                          className="w-full mt-1 px-2 py-1 rounded text-[10px] font-medium text-blue-500 hover:bg-blue-500/10 transition-colors"
-                        >
-                          Add all to Today
-                        </button>
-                      </>
-                    )}
-                  </div>
+                      </RitualDraggableItem>
+                    ))
+                  )}
                 </div>
               </div>
 

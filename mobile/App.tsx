@@ -167,19 +167,6 @@ export default function App() {
       // Schedule reminder notifications after data is pulled
       syncReminderNotifications(usePlannerStore.getState().items);
     });
-    // Check if user has Google Calendar connected (refresh token stored server-side)
-    const supabase = getSupabase();
-    if (supabase && user.app_metadata?.provider === 'google') {
-      supabase.from('user_preferences')
-        .select('google_refresh_token')
-        .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.google_refresh_token) {
-            usePlannerStore.getState().setGoogleCalendarConnected(true);
-          }
-        });
-    }
     requestNotificationPermissions().then(() => {
       const state = usePlannerStore.getState();
       syncNotificationSchedules({

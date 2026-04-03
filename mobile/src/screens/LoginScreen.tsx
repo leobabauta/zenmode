@@ -8,11 +8,9 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { useColors } from '../lib/colors';
-import { usePlannerStore } from '../store/usePlannerStore';
 
 const GOOGLE_WEB_CLIENT_ID = '792674113739-mpggu1759u4q6ue4k0qg5r9j98f5fs9c.apps.googleusercontent.com';
 const GOOGLE_IOS_CLIENT_ID = '792674113739-43i08tn8gf2a4c2f24h0it3h6c8gg0nt.apps.googleusercontent.com';
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://hlyxiyvqmfupyqjgfajj.supabase.co';
 
 export function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -27,8 +25,6 @@ export function LoginScreen() {
     GoogleSignin.configure({
       webClientId: GOOGLE_WEB_CLIENT_ID,
       iosClientId: GOOGLE_IOS_CLIENT_ID,
-      scopes: ['https://www.googleapis.com/auth/calendar.events.readonly'],
-      offlineAccess: true,
     });
   }, []);
 
@@ -50,11 +46,6 @@ export function LoginScreen() {
           return;
         }
 
-        // Exchange serverAuthCode for access + refresh tokens for Calendar API
-        const serverAuthCode = response.data.serverAuthCode;
-        if (serverAuthCode && authData.user) {
-          exchangeAuthCodeForTokens(serverAuthCode, authData.user.id, supabase);
-        }
       }
     } catch (error) {
       if (isErrorWithCode(error)) {
@@ -68,38 +59,6 @@ export function LoginScreen() {
           Alert.alert('Error', error.message || 'Google sign-in failed');
         }
       }
-    }
-  };
-
-  const exchangeAuthCodeForTokens = async (
-    authCode: string,
-    userId: string,
-    supabase: ReturnType<typeof getSupabase>,
-  ) => {
-    try {
-      // Exchange the auth code via the Edge Function (which has the client secret)
-      const { data: { session } } = await supabase!.auth.getSession();
-      if (!session) return;
-
-      const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/exchange-google-code`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code: authCode }),
-        },
-      );
-
-      if (res.ok) {
-        usePlannerStore.getState().setGoogleCalendarConnected(true);
-      } else {
-        console.warn('Failed to exchange Google auth code:', await res.text());
-      }
-    } catch (err) {
-      console.warn('Error exchanging Google auth code:', err);
     }
   };
 

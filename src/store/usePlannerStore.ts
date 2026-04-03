@@ -69,8 +69,6 @@ interface PlannerState {
   reminderToast: string | null;
   navOrder: string[];
   labelOrder: string[];
-  googleCalendarConnected: boolean;
-  googleCalendarDismissed: boolean;
   lastAutoMoveDate: string | null;
   hasCompletedOnboarding: boolean;
   onboardingCompletedDate: string | null;
@@ -139,8 +137,6 @@ interface PlannerState {
   setShowSettings: (show: boolean) => void;
   setShowHelp: (show: boolean) => void;
   setShowShortcuts: (show: boolean) => void;
-  setGoogleCalendarConnected: (v: boolean) => void;
-  setGoogleCalendarDismissed: (v: boolean) => void;
   scrollToTodayRequested: number;
   requestScrollToToday: () => void;
   setLaterExpanded: (expanded: boolean) => void;
@@ -212,8 +208,6 @@ export const usePlannerStore = create<PlannerState>()(
       reminderToast: null,
       navOrder: ['timeline', 'inbox', 'today', 'later', 'archive'],
       labelOrder: [],
-      googleCalendarConnected: false,
-      googleCalendarDismissed: false,
       lastAutoMoveDate: null,
       hasCompletedOnboarding: false,
       onboardingCompletedDate: null,
@@ -1045,12 +1039,6 @@ export const usePlannerStore = create<PlannerState>()(
       setShowShortcuts: (show) => {
         set((state) => { state.showShortcuts = show; });
       },
-      setGoogleCalendarConnected: (v) => {
-        set((state) => { state.googleCalendarConnected = v; });
-      },
-      setGoogleCalendarDismissed: (v) => {
-        set((state) => { state.googleCalendarDismissed = v; });
-      },
       setLaterExpanded: (expanded) => {
         set((state) => { state.laterExpanded = expanded; });
       },
@@ -1144,7 +1132,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'zenmode-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, googleCalendarConnected: state.googleCalendarConnected, googleCalendarDismissed: state.googleCalendarDismissed, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Set initial sidebar state based on restored view
@@ -1163,7 +1151,7 @@ if (typeof window !== 'undefined') {
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'googleCalendarConnected', 'googleCalendarDismissed', 'lastAutoMoveDate'] as const;
+const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'lastAutoMoveDate'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items

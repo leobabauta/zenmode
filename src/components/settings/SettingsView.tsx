@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlannerStore, selectItemsForDay, selectInboxItems, selectLaterItems, selectChildItems } from '../../store/usePlannerStore';
-import { requestCalendarAccess, clearCalendarToken } from '../../lib/googleCalendar';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
 import { COLOR_PRESETS } from '../../lib/colorThemes';
 import type { PlannerItem } from '../../types';
-
-const hasGoogleClientId = !!import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 type SettingsTab = 'profile' | 'features' | 'data';
 
@@ -24,8 +21,6 @@ export function SettingsView() {
     setWeeklyPlanningEnabled, setWeeklyPlanningDay, setWeeklyPlanningHour,
     setWeeklyReviewEnabled, setWeeklyReviewDay, setWeeklyReviewHour, setWeeklyReviewMinute,
     accentColor, setAccentColor,
-    googleCalendarConnected, googleCalendarDismissed,
-    setGoogleCalendarConnected, setGoogleCalendarDismissed,
   } = usePlannerStore(useShallow((s) => ({
     items: s.items,
     setShowSettings: s.setShowSettings,
@@ -54,10 +49,6 @@ export function SettingsView() {
     setWeeklyReviewMinute: s.setWeeklyReviewMinute,
     accentColor: s.accentColor,
     setAccentColor: s.setAccentColor,
-    googleCalendarConnected: s.googleCalendarConnected,
-    googleCalendarDismissed: s.googleCalendarDismissed,
-    setGoogleCalendarConnected: s.setGoogleCalendarConnected,
-    setGoogleCalendarDismissed: s.setGoogleCalendarDismissed,
   })));
 
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -67,8 +58,6 @@ export function SettingsView() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [calConnecting, setCalConnecting] = useState(false);
-  const [calError, setCalError] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<{ dayKey: string | null; isLater: boolean; type: 'task' | 'note'; text: string; completed: boolean }[] | null>(null);
   const [importDone, setImportDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,25 +92,6 @@ export function SettingsView() {
       setDeleteError(err instanceof Error ? err.message : 'Failed to delete account');
       setDeleteLoading(false);
     }
-  };
-
-  const handleConnectCalendar = async () => {
-    setCalConnecting(true);
-    setCalError(null);
-    try {
-      await requestCalendarAccess();
-      setGoogleCalendarConnected(true);
-      if (googleCalendarDismissed) setGoogleCalendarDismissed(false);
-    } catch (err) {
-      setCalError(err instanceof Error ? err.message : 'Failed to connect');
-    } finally {
-      setCalConnecting(false);
-    }
-  };
-
-  const handleDisconnectCalendar = () => {
-    clearCalendarToken();
-    setGoogleCalendarConnected(false);
   };
 
   const handleExport = () => {
@@ -443,28 +413,6 @@ export function SettingsView() {
                   </select>
                 </RitualRow>
               </div>
-
-              {/* Google Calendar card */}
-              {hasGoogleClientId && (
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-base font-bold text-[var(--color-text-primary)]">Google Calendar</h2>
-                    <p className="text-sm text-[var(--color-text-muted)] mt-0.5">
-                      {googleCalendarConnected ? 'Connected — events imported during planning' : 'Import calendar events during daily planning'}
-                    </p>
-                    {calError && <p className="mt-1 text-xs text-red-500">{calError}</p>}
-                  </div>
-                  {googleCalendarConnected ? (
-                    <button onClick={handleDisconnectCalendar} className="px-4 py-1.5 text-sm rounded-full border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] transition-colors flex-shrink-0">
-                      Disconnect
-                    </button>
-                  ) : (
-                    <button onClick={handleConnectCalendar} disabled={calConnecting} className="px-4 py-1.5 text-sm rounded-full bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity disabled:opacity-60 flex-shrink-0">
-                      {calConnecting ? 'Connecting...' : 'Connect'}
-                    </button>
-                  )}
-                </div>
-              )}
 
               {/* Changelog */}
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">

@@ -30,21 +30,10 @@ export function LoginPage() {
     if (!supabase) return;
     setError('');
 
-    // Only force consent prompt on first Google sign-in to obtain the refresh
-    // token. On subsequent sign-ins, skip it so the user isn't re-prompted.
-    const hasConsented = localStorage.getItem('zenmode-gcal-consented') === '1';
-
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: window.location.origin + window.location.pathname,
-        ...(provider === 'google' ? {
-          scopes: 'https://www.googleapis.com/auth/calendar.events.readonly',
-          queryParams: {
-            access_type: 'offline',
-            ...(hasConsented ? {} : { prompt: 'consent' }),
-          },
-        } : {}),
       },
     });
     if (authError) setError(authError.message);

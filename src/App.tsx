@@ -7,7 +7,6 @@ import { toDayKey, getWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
-import { saveCachedToken as saveCalendarToken } from './lib/googleCalendar';
 import { LoginPage } from './components/auth/LoginPage';
 import { SetPasswordPage } from './components/auth/SetPasswordPage';
 import { ToastProvider } from './components/ui/Toast';
@@ -41,24 +40,6 @@ export default function App() {
           useAuthStore.getState().setPasswordRecovery(true);
         }
 
-        // On Google sign-in, capture the provider token for Calendar API access
-        // and store the refresh token server-side for silent renewal
-        if (session?.provider_token && session.user?.app_metadata?.provider === 'google') {
-          // Cache the access token locally for immediate Calendar API use
-          saveCalendarToken(session.provider_token, 3600);
-          usePlannerStore.getState().setGoogleCalendarConnected(true);
-
-          // Store refresh token server-side so we can renew silently
-          if (session.provider_refresh_token && supabase) {
-            supabase.from('user_preferences')
-              .update({ google_refresh_token: session.provider_refresh_token })
-              .eq('user_id', session.user.id)
-              .then(({ error }) => {
-                if (error) console.error('Failed to store Google refresh token:', error);
-                else localStorage.setItem('zenmode-gcal-consented', '1');
-              });
-          }
-        }
       }
     );
 
@@ -141,7 +122,6 @@ export default function App() {
     checkWeeklyPlanningRitual();
     checkWeeklyReviewRitual();
 
-    // Calendar token refresh happens via Edge Function — no GIS needed on startup.
   };
 
   // After store hydration: pull from Supabase first (if available), THEN auto-move + ritual checks.
@@ -233,7 +213,6 @@ export default function App() {
           checkWeeklyPlanningRitual();
           checkWeeklyReviewRitual();
         });
-        // Calendar token refreshes via Edge Function on demand — no action needed here
       }
     };
     document.addEventListener('visibilitychange', handler);
