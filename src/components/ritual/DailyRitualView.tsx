@@ -156,7 +156,7 @@ export function DailyRitualView() {
   const tomorrowKey = toDayKey(addDays(new Date(), 1));
   const allTodayItems = selectItemsForDay(items, dayKey);
   const todayItems = allTodayItems.filter((i) => i.type !== 'note');
-  const inboxItems = selectInboxItems(items);
+  const inboxItems = selectInboxItems(items).filter((i) => !i.completed);
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority).length;

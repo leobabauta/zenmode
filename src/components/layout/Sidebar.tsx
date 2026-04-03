@@ -630,7 +630,7 @@ function LabelRowContent({
 
       {/* 3-dot menu trigger */}
       {!editing && (
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/label:opacity-100 transition-opacity" ref={menuRef}>
+        <div className={cn("absolute right-1 top-1/2 -translate-y-1/2 transition-opacity", menuOpen ? "opacity-100" : "opacity-0 group-hover/label:opacity-100")} ref={menuRef}>
           <button
             onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); setColorPickerOpen(false); }}
             className="p-0.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] transition-colors"
