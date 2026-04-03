@@ -22,6 +22,8 @@ export function SettingsView() {
     setWeeklyPlanningEnabled, setWeeklyPlanningDay, setWeeklyPlanningHour,
     setWeeklyReviewEnabled, setWeeklyReviewDay, setWeeklyReviewHour, setWeeklyReviewMinute,
     accentColor, setAccentColor,
+    autoAdvanceEnabled, autoAdvanceLaterDays,
+    setAutoAdvanceEnabled, setAutoAdvanceLaterDays,
   } = usePlannerStore(useShallow((s) => ({
     items: s.items,
     setShowSettings: s.setShowSettings,
@@ -50,6 +52,10 @@ export function SettingsView() {
     setWeeklyReviewMinute: s.setWeeklyReviewMinute,
     accentColor: s.accentColor,
     setAccentColor: s.setAccentColor,
+    autoAdvanceEnabled: s.autoAdvanceEnabled,
+    autoAdvanceLaterDays: s.autoAdvanceLaterDays,
+    setAutoAdvanceEnabled: s.setAutoAdvanceEnabled,
+    setAutoAdvanceLaterDays: s.setAutoAdvanceLaterDays,
   })));
 
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -413,6 +419,47 @@ export function SettingsView() {
                     })}
                   </select>
                 </RitualRow>
+              </div>
+
+              {/* Auto-advance card */}
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
+                <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-1">Auto-advance tasks</h2>
+                <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                  Move incomplete tasks from past days to today each morning.
+                </p>
+
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-[var(--color-text-secondary)]">Enable auto-advance</span>
+                  <button
+                    onClick={() => setAutoAdvanceEnabled(!autoAdvanceEnabled)}
+                    className={cn(
+                      'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+                      autoAdvanceEnabled ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'
+                    )}
+                  >
+                    <span className={cn(
+                      'inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform',
+                      autoAdvanceEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                    )} />
+                  </button>
+                </div>
+
+                <div className={cn('flex items-center justify-between py-2', !autoAdvanceEnabled && 'opacity-40')}>
+                  <span className="text-sm text-[var(--color-text-secondary)]">Send to Later after</span>
+                  <select
+                    value={autoAdvanceLaterDays}
+                    onChange={(e) => setAutoAdvanceLaterDays(Number(e.target.value))}
+                    disabled={!autoAdvanceEnabled}
+                    className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+                  >
+                    <option value={0}>Never</option>
+                    <option value={3}>3 days</option>
+                    <option value={4}>4 days</option>
+                    <option value={5}>5 days</option>
+                    <option value={7}>7 days</option>
+                    <option value={14}>14 days</option>
+                  </select>
+                </div>
               </div>
 
               {/* API Keys */}
