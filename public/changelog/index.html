@@ -250,7 +250,17 @@
     <!-- Changelog -->
     <h2>Changelog</h2>
 
-    <h3><span class="version">v1.1</span> &mdash; Current Release</h3>
+    <h3><span class="version">v1.2</span> &mdash; Current Release</h3>
+    <ul>
+      <li><strong>Public API</strong> &mdash; Programmatic access to your items via REST API. Create scoped API keys in Settings, then use GET/POST/PATCH/DELETE endpoints for tasks &mdash; perfect for Shortcuts, Zapier, CLI scripts, and widgets</li>
+      <li><strong>Auto-Advance Settings</strong> &mdash; Choose whether incomplete tasks auto-advance to today each morning, and configure how many days before they're sent to Later (or never)</li>
+      <li><strong>Multi-Select Fix</strong> &mdash; Selecting multiple items and using keyboard shortcuts (Shift+I/E/L/T) or drag-and-drop now correctly moves all selected items, not just the first one</li>
+      <li><strong>Label Menu Fix</strong> &mdash; The 3-dot dropdown on hashtag labels no longer disappears when moving the mouse toward it</li>
+      <li><strong>Daily Ritual Cleanup</strong> &mdash; Completed inbox items no longer show in the Daily Planning Ritual, and Google Calendar integration removed for a cleaner sign-in experience</li>
+      <li><strong>Quick Capture Bar</strong> &mdash; The floating capture bar no longer covers the last item in long lists</li>
+    </ul>
+
+    <h3><span class="version">v1.1</span></h3>
     <ul>
       <li><strong>Server-Side Auto-Forward</strong> &mdash; Incomplete tasks now auto-forward to today via an hourly server job, even if you haven't opened the app. No more stale tasks stuck on past days</li>
       <li><strong>Cross-Device Sync Fix</strong> &mdash; Switching between devices (or browser tabs) now correctly sorts completed and incomplete tasks instead of showing them mixed together</li>
@@ -261,7 +271,7 @@
     <h3><span class="version">v1.0</span></h3>
     <ul>
       <li><strong>Mobile App (iOS & Android)</strong> &mdash; Full-featured mobile app with Today, Timeline, Inbox, Lists, Focus Timer, Daily Planning & Review Rituals</li>
-      <li><strong>Google Sign-In + Calendar</strong> &mdash; Sign in with Google on mobile and web. Google Calendar events appear in the Daily Planning Ritual for easy import</li>
+      <li><strong>Google Sign-In</strong> &mdash; Sign in with Google on mobile and web for seamless cross-device sync</li>
       <li><strong>Email/Password Auth</strong> &mdash; Sign up, sign in, forgot password, and password reset flow on both web and mobile</li>
       <li><strong>Password Recovery</strong> &mdash; Clicking a password reset link now shows a "Set your password" form instead of just signing you in</li>
       <li><strong>Sync Reliability</strong> &mdash; Completed tasks no longer revert when syncing across devices (completed status always wins)</li>
@@ -338,6 +348,7 @@
       <div class="roadmap-item"><span class="roadmap-dot in-progress"></span> Mobile widgets (quick capture + today view) <span class="roadmap-status">(up next)</span></div>
       <div class="roadmap-item"><span class="roadmap-dot"></span> Quick add browser extension</div>
       <div class="roadmap-item"><span class="roadmap-dot"></span> Show progress towards longer-term goals</div>
+      <div class="roadmap-item"><span class="roadmap-dot"></span> API documentation page</div>
     </div>
 
     <hr class="divider">
