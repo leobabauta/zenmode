@@ -48,7 +48,6 @@ interface PlannerState {
   reorderItems: (orderedIds: string[]) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
   toggleTheme: () => void;
-  setGoogleCalendarConnected: (v: boolean) => void;
 }
 
 export const usePlannerStore = create<PlannerState>()(

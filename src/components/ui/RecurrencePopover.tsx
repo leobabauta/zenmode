@@ -104,6 +104,7 @@ export function RecurrencePopover({ recurrence, dayKey, taskName, onSave, onClea
       ref={ref}
       className="absolute right-0 top-full mt-1 z-50 w-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-lg p-4"
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
     >
       {/* Task name */}
       <div className="text-xs font-medium text-[var(--color-text-secondary)] mb-3 truncate">
