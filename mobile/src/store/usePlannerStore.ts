@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nanoid } from 'nanoid/non-secure';
 import type { PlannerItem, ItemType, Recurrence, CustomList } from '../../../shared/types';
 import { toDayKey } from '../../../shared/lib/dates';
-import { markChanged, markDeleted, pushPreferences } from '../../../shared/lib/sync';
+import { markChanged, markDeleted, pushPreferences, isPullSuppressingDeletes } from '../../../shared/lib/sync';
 
 interface PlannerState {
   items: Record<string, PlannerItem>;
@@ -47,6 +47,7 @@ interface PlannerState {
   moveItem: (id: string, dayKey: string | null, isLater?: boolean) => void;
   reorderItems: (orderedIds: string[]) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
+  deleteCustomList: (id: string) => void;
   toggleTheme: () => void;
 }
 
@@ -280,6 +281,17 @@ export const usePlannerStore = create<PlannerState>()(
         });
       },
 
+      deleteCustomList: (id) => {
+        set((state) => {
+          const list = state.customLists.find((l) => l.id === id);
+          if (list) list.deletedAt = new Date().toISOString();
+          Object.values(state.items).forEach((item) => {
+            if (item.listId === id) delete item.listId;
+          });
+          if (state.activeListId === id) state.activeListId = null;
+        });
+      },
+
       toggleTheme: () => {
         set((state) => {
           state.theme = state.theme === 'light' ? 'dark' : 'light';
@@ -322,13 +334,15 @@ usePlannerStore.subscribe((state, prevState) => {
   }
   if (changedIds.length > 0) markChanged(changedIds);
 
-  const deletedIds: string[] = [];
-  for (const id of Object.keys(prevState.items)) {
-    if (!(id in state.items)) {
-      deletedIds.push(id);
+  if (!isPullSuppressingDeletes()) {
+    const deletedIds: string[] = [];
+    for (const id of Object.keys(prevState.items)) {
+      if (!(id in state.items)) {
+        deletedIds.push(id);
+      }
     }
+    if (deletedIds.length > 0) markDeleted(deletedIds);
   }
-  if (deletedIds.length > 0) markDeleted(deletedIds);
 
   // Check pref changes
   const prefKeys = ['theme', 'accentColor', 'labelColors', 'customLists', 'activeListId',

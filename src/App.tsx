@@ -50,9 +50,11 @@ export default function App() {
     const state = usePlannerStore.getState();
     if (!state.planningRitualEnabled) return;
     const todayKey = toDayKey(new Date());
-    const hour = new Date().getHours();
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const targetMinutes = state.planningRitualHour * 60 + (state.planningRitualMinute ?? 0);
     if (state.lastRitualDate === todayKey) return;
-    if (hour < state.planningRitualHour) return;
+    if (currentMinutes < targetMinutes) return;
     if (state.planningRitualSnoozedUntil && Date.now() < state.planningRitualSnoozedUntil) return;
     if (state.showRitualPrompt) return;
     if (state.view === 'ritual') return;
@@ -63,9 +65,11 @@ export default function App() {
     const state = usePlannerStore.getState();
     if (!state.reviewRitualEnabled) return;
     const todayKey = toDayKey(new Date());
-    const hour = new Date().getHours();
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const targetMinutes = state.reviewRitualHour * 60 + (state.reviewRitualMinute ?? 0);
     if (state.lastReviewRitualDate === todayKey) return;
-    if (hour < state.reviewRitualHour) return;
+    if (currentMinutes < targetMinutes) return;
     if (state.reviewRitualSnoozedUntil && Date.now() < state.reviewRitualSnoozedUntil) return;
     if (state.showReviewRitualPrompt) return;
     if (state.view === 'review') return;

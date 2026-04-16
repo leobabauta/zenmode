@@ -6,7 +6,7 @@ type SubView = null | { type: 'later' } | { type: 'archive' } | { type: 'customL
 
 export function MobileListsView() {
   const items = usePlannerStore((s) => s.items);
-  const customLists = usePlannerStore((s) => s.customLists);
+  const customLists = usePlannerStore((s) => s.customLists.filter((l) => !l.deletedAt));
   const [subView, setSubView] = useState<SubView>(null);
 
   const allHashtags = useMemo(() => {

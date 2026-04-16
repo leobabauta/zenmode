@@ -106,6 +106,11 @@ export function rowToItem(row: ItemRow): PlannerItem {
 // --- Pull from Supabase ---
 
 let pullInProgress = false;
+let suppressDeleteSync = false;
+
+export function isPullSuppressingDeletes(): boolean {
+  return suppressDeleteSync;
+}
 
 export async function pullFromSupabase(): Promise<void> {
   const supabase = getSupabase();
@@ -180,7 +185,9 @@ export async function pullFromSupabase(): Promise<void> {
       }
     }
 
+    suppressDeleteSync = true;
     _setItems(merged);
+    suppressDeleteSync = false;
 
     if (localNewer.length > 0) {
       const rows = localNewer.map((item) => itemToRow(item, user.id));
@@ -327,10 +334,16 @@ export async function pullPreferences(): Promise<void> {
       .filter(Boolean).sort().pop() ?? null;
 
     const remoteLists = (row.custom_lists as CustomList[]) ?? [];
-    const localLists = local.customLists ?? [];
-    const listById = new Map(localLists.map((l: CustomList) => [l.id, l]));
+    const localLists = (local.customLists ?? []) as CustomList[];
+    const listById = new Map(localLists.map((l) => [l.id, l]));
     for (const rl of remoteLists) {
-      if (!listById.has(rl.id)) listById.set(rl.id, rl);
+      const existing = listById.get(rl.id);
+      if (!existing) {
+        listById.set(rl.id, rl);
+      } else {
+        // If either side has a deletedAt, keep whichever is deleted (latest wins)
+        if (rl.deletedAt && !existing.deletedAt) listById.set(rl.id, rl);
+      }
     }
     const mergedLists = ([...listById.values()] as CustomList[]).sort((a, b) => a.order - b.order);
 

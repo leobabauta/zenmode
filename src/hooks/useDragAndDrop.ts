@@ -17,6 +17,7 @@ import {
   selectLaterItems,
 } from '../store/usePlannerStore';
 import { getSelectedItemIds } from '../lib/selection';
+import { toDayKey } from '../lib/dates';
 
 function getContainerKey(item: { dayKey: string | null; isLater?: boolean }): string {
   if (item.dayKey !== null) return item.dayKey;
@@ -127,6 +128,18 @@ export function useDragAndDrop() {
 
       if (overId === 'sidebar-inbox') {
         for (const id of dragIds) sendToInbox(id);
+        state.clearSelection();
+        return;
+      }
+      if (overId === 'sidebar-today') {
+        const todayKey = toDayKey(new Date());
+        const todayItems = selectItemsForDay(state.items, todayKey);
+        const maxOrder = todayItems.length > 0
+          ? Math.max(...todayItems.map((i) => i.order))
+          : -1;
+        for (let i = 0; i < dragIds.length; i++) {
+          moveItem(dragIds[i], todayKey, maxOrder + 1 + i);
+        }
         state.clearSelection();
         return;
       }

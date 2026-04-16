@@ -149,6 +149,7 @@ export function DailyRitualView() {
   const updateItem = usePlannerStore((s) => s.updateItem);
   const moveItem = usePlannerStore((s) => s.moveItem);
   const sendToLater = usePlannerStore((s) => s.sendToLater);
+  const sendToInbox = usePlannerStore((s) => s.sendToInbox);
   const completeRitual = usePlannerStore((s) => s.completeRitual);
   const items = usePlannerStore((s) => s.items);
 
@@ -235,7 +236,7 @@ export function DailyRitualView() {
 
             <div className="flex gap-4 items-start">
               {/* LEFT: Inbox */}
-              <div className="w-[240px] flex-shrink-0">
+              <div className="w-[320px] flex-shrink-0">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2 px-1">
                   Inbox {inboxItems.length > 0 && `(${inboxItems.length})`}
                 </h3>
@@ -248,7 +249,7 @@ export function DailyRitualView() {
                     inboxItems.map((item) => (
                       <RitualDraggableItem key={item.id} id={item.id}>
                         <div className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing">
-                          <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate">
+                          <span className="flex-1 min-w-0 text-xs text-[var(--color-text-primary)] truncate" title={item.text}>
                             {item.text}
                           </span>
                           <button
@@ -290,6 +291,13 @@ export function DailyRitualView() {
                             {item.text}
                           </span>
                           <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => sendToInbox(item.id)}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                              title="Send to Inbox"
+                            >
+                              Inbox
+                            </button>
                             <button
                               onClick={() => moveInboxToTomorrow(item.id)}
                               className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"

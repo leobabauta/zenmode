@@ -6,8 +6,10 @@ export function ReviewRitualPrompt() {
   const snoozeReviewRitual = usePlannerStore((s) => s.snoozeReviewRitual);
   const setView = usePlannerStore((s) => s.setView);
   const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
+  const reviewRitualMinute = usePlannerStore((s) => s.reviewRitualMinute ?? 0);
 
-  const isMorning = new Date().getHours() < reviewRitualHour;
+  const now = new Date();
+  const isMorning = now.getHours() * 60 + now.getMinutes() < reviewRitualHour * 60 + reviewRitualMinute;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

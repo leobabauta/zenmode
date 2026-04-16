@@ -26,8 +26,10 @@ interface PlannerState {
   lastRitualDate: string | null;
   planningRitualEnabled: boolean;
   planningRitualHour: number;
+  planningRitualMinute: number;
   reviewRitualEnabled: boolean;
   reviewRitualHour: number;
+  reviewRitualMinute: number;
   lastReviewRitualDate: string | null;
   showRitualPrompt: boolean;
   showRitual: boolean;
@@ -108,8 +110,10 @@ interface PlannerState {
   snoozeReviewRitual: () => void;
   setPlanningRitualEnabled: (v: boolean) => void;
   setPlanningRitualHour: (h: number) => void;
+  setPlanningRitualMinute: (m: number) => void;
   setReviewRitualEnabled: (v: boolean) => void;
   setReviewRitualHour: (h: number) => void;
+  setReviewRitualMinute: (m: number) => void;
   // Weekly ritual actions
   setShowWeeklyPlanningPrompt: (show: boolean) => void;
   setShowWeeklyReviewPrompt: (show: boolean) => void;
@@ -168,8 +172,10 @@ export const usePlannerStore = create<PlannerState>()(
       lastRitualDate: null,
       planningRitualEnabled: true,
       planningRitualHour: 6,
+      planningRitualMinute: 0,
       reviewRitualEnabled: true,
       reviewRitualHour: 17,
+      reviewRitualMinute: 0,
       lastReviewRitualDate: null,
       showRitualPrompt: false,
       showRitual: false,
@@ -612,6 +618,13 @@ export const usePlannerStore = create<PlannerState>()(
           if (!state.items[id]) return;
           const now = new Date().toISOString();
 
+          // Clear priority flags when moving to a different day so stale
+          // priorities from a previous day don't fill up the daily ritual slots
+          if (state.items[id].dayKey !== targetDayKey) {
+            delete state.items[id].isPriority;
+            delete state.items[id].isMediumPriority;
+          }
+
           // Shift items in target to make room
           Object.values(state.items).forEach((item) => {
             if (item.id !== id && item.dayKey === targetDayKey && item.order >= targetOrder) {
@@ -893,11 +906,17 @@ export const usePlannerStore = create<PlannerState>()(
       setPlanningRitualHour: (h) => {
         set((state) => { state.planningRitualHour = h; });
       },
+      setPlanningRitualMinute: (m) => {
+        set((state) => { state.planningRitualMinute = m; });
+      },
       setReviewRitualEnabled: (v) => {
         set((state) => { state.reviewRitualEnabled = v; });
       },
       setReviewRitualHour: (h) => {
         set((state) => { state.reviewRitualHour = h; });
+      },
+      setReviewRitualMinute: (m) => {
+        set((state) => { state.reviewRitualMinute = m; });
       },
 
       // Weekly ritual actions
@@ -990,7 +1009,9 @@ export const usePlannerStore = create<PlannerState>()(
 
       deleteCustomList: (id) => {
         set((state) => {
-          state.customLists = state.customLists.filter((l) => l.id !== id);
+          // Soft-delete so the deletion propagates via sync to other devices
+          const list = state.customLists.find((l) => l.id === id);
+          if (list) list.deletedAt = new Date().toISOString();
           // Clear listId from items that were in this list
           Object.values(state.items).forEach((item) => {
             if (item.listId === id) delete item.listId;
@@ -1146,7 +1167,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'zenmode-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, autoAdvanceEnabled: state.autoAdvanceEnabled, autoAdvanceLaterDays: state.autoAdvanceLaterDays, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualMinute: state.planningRitualMinute, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualMinute: state.reviewRitualMinute, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, autoAdvanceEnabled: state.autoAdvanceEnabled, autoAdvanceLaterDays: state.autoAdvanceLaterDays, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Set initial sidebar state based on restored view
@@ -1163,7 +1184,7 @@ if (typeof window !== 'undefined') {
 }
 
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
-import { markChanged, markDeleted, pushPreferences } from '../lib/sync';
+import { markChanged, markDeleted, pushPreferences, isPullSuppressingDeletes } from '../lib/sync';
 
 const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'autoAdvanceEnabled', 'autoAdvanceLaterDays', 'lastAutoMoveDate'] as const;
 
@@ -1177,14 +1198,17 @@ usePlannerStore.subscribe((state, prevState) => {
   }
   if (changedIds.length > 0) markChanged(changedIds);
 
-  // Detect deleted items
-  const deletedIds: string[] = [];
-  for (const id of Object.keys(prevState.items)) {
-    if (!(id in state.items)) {
-      deletedIds.push(id);
+  // Detect deleted items — but NOT during a pull, where removals reflect
+  // remote state and must not be re-pushed as deletes.
+  if (!isPullSuppressingDeletes()) {
+    const deletedIds: string[] = [];
+    for (const id of Object.keys(prevState.items)) {
+      if (!(id in state.items)) {
+        deletedIds.push(id);
+      }
     }
+    if (deletedIds.length > 0) markDeleted(deletedIds);
   }
-  if (deletedIds.length > 0) markDeleted(deletedIds);
 
   // Detect preference changes
   for (const key of PREF_KEYS) {

@@ -13,10 +13,10 @@ type SettingsTab = 'profile' | 'features' | 'data';
 export function SettingsView() {
   const {
     items, setShowSettings, addItem,
-    planningRitualEnabled, planningRitualHour,
-    reviewRitualEnabled, reviewRitualHour,
-    setPlanningRitualEnabled, setPlanningRitualHour,
-    setReviewRitualEnabled, setReviewRitualHour,
+    planningRitualEnabled, planningRitualHour, planningRitualMinute,
+    reviewRitualEnabled, reviewRitualHour, reviewRitualMinute,
+    setPlanningRitualEnabled, setPlanningRitualHour, setPlanningRitualMinute,
+    setReviewRitualEnabled, setReviewRitualHour, setReviewRitualMinute,
     weeklyPlanningEnabled, weeklyPlanningDay, weeklyPlanningHour,
     weeklyReviewEnabled, weeklyReviewDay, weeklyReviewHour, weeklyReviewMinute,
     setWeeklyPlanningEnabled, setWeeklyPlanningDay, setWeeklyPlanningHour,
@@ -30,12 +30,16 @@ export function SettingsView() {
     addItem: s.addItem,
     planningRitualEnabled: s.planningRitualEnabled,
     planningRitualHour: s.planningRitualHour,
+    planningRitualMinute: s.planningRitualMinute ?? 0,
     reviewRitualEnabled: s.reviewRitualEnabled,
     reviewRitualHour: s.reviewRitualHour,
+    reviewRitualMinute: s.reviewRitualMinute ?? 0,
     setPlanningRitualEnabled: s.setPlanningRitualEnabled,
     setPlanningRitualHour: s.setPlanningRitualHour,
+    setPlanningRitualMinute: s.setPlanningRitualMinute,
     setReviewRitualEnabled: s.setReviewRitualEnabled,
     setReviewRitualHour: s.setReviewRitualHour,
+    setReviewRitualMinute: s.setReviewRitualMinute,
     weeklyPlanningEnabled: s.weeklyPlanningEnabled,
     weeklyPlanningDay: s.weeklyPlanningDay,
     weeklyPlanningHour: s.weeklyPlanningHour,
@@ -381,14 +385,14 @@ export function SettingsView() {
                   label="Daily Planning Ritual" desc="Morning planning prompt"
                   enabled={planningRitualEnabled} onToggle={() => setPlanningRitualEnabled(!planningRitualEnabled)}
                 >
-                  <TimeSelect value={planningRitualHour} onChange={setPlanningRitualHour} range={[5, 12]} disabled={!planningRitualEnabled} />
+                  <HalfHourSelect hour={planningRitualHour} minute={planningRitualMinute} onChangeHour={setPlanningRitualHour} onChangeMinute={setPlanningRitualMinute} range={[5, 12]} disabled={!planningRitualEnabled} />
                 </RitualRow>
 
                 <RitualRow
                   label="Daily Review Ritual" desc="Evening reflection prompt"
                   enabled={reviewRitualEnabled} onToggle={() => setReviewRitualEnabled(!reviewRitualEnabled)}
                 >
-                  <TimeSelect value={reviewRitualHour} onChange={setReviewRitualHour} range={[12, 23]} disabled={!reviewRitualEnabled} />
+                  <HalfHourSelect hour={reviewRitualHour} minute={reviewRitualMinute} onChangeHour={setReviewRitualHour} onChangeMinute={setReviewRitualMinute} range={[12, 23]} disabled={!reviewRitualEnabled} />
                 </RitualRow>
 
                 <RitualRow
@@ -396,7 +400,7 @@ export function SettingsView() {
                   enabled={weeklyPlanningEnabled} onToggle={() => setWeeklyPlanningEnabled(!weeklyPlanningEnabled)}
                 >
                   <DaySelect value={weeklyPlanningDay} onChange={setWeeklyPlanningDay} disabled={!weeklyPlanningEnabled} names={DAY_NAMES} />
-                  <TimeSelect value={weeklyPlanningHour} onChange={setWeeklyPlanningHour} range={[5, 12]} disabled={!weeklyPlanningEnabled} />
+                  <TimeSelect value={weeklyPlanningHour} onChange={setWeeklyPlanningHour} range={[5, 23]} disabled={!weeklyPlanningEnabled} />
                 </RitualRow>
 
                 <RitualRow
@@ -621,6 +625,35 @@ function TimeSelect({ value, onChange, range, disabled }: { value: number; onCha
     >
       {Array.from({ length: range[1] - range[0] + 1 }, (_, i) => i + range[0]).map((h) => (
         <option key={h} value={h}>{h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}</option>
+      ))}
+    </select>
+  );
+}
+
+function HalfHourSelect({ hour, minute, onChangeHour, onChangeMinute, range, disabled }: {
+  hour: number; minute: number;
+  onChangeHour: (h: number) => void; onChangeMinute: (m: number) => void;
+  range: [number, number]; disabled: boolean;
+}) {
+  const slots: { h: number; m: number }[] = [];
+  for (let h = range[0]; h <= range[1]; h++) {
+    slots.push({ h, m: 0 });
+    if (h < range[1]) slots.push({ h, m: 30 });
+  }
+  const fmt = (h: number, m: number) => {
+    const label = h === 12 ? '12' : h > 12 ? `${h - 12}` : `${h}`;
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    return m === 0 ? `${label} ${suffix}` : `${label}:30 ${suffix}`;
+  };
+  return (
+    <select
+      value={`${hour}:${minute}`}
+      onChange={(e) => { const [h, m] = e.target.value.split(':').map(Number); onChangeHour(h); onChangeMinute(m); }}
+      disabled={disabled}
+      className="text-xs px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-primary)] disabled:opacity-40"
+    >
+      {slots.map(({ h, m }) => (
+        <option key={`${h}:${m}`} value={`${h}:${m}`}>{fmt(h, m)}</option>
       ))}
     </select>
   );

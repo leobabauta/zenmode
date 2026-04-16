@@ -37,6 +37,7 @@ export interface CustomList {
   id: string;
   name: string;
   order: number;
+  deletedAt?: string;  // ISO datetime — soft-delete so sync can propagate deletions
 }
 
 export interface WeeklyPlan {

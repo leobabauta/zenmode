@@ -14,12 +14,13 @@ export function DailyReviewView() {
   const moveItem = usePlannerStore((s) => s.moveItem);
   const completeReviewRitual = usePlannerStore((s) => s.completeReviewRitual);
   const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
+  const reviewRitualMinute = usePlannerStore((s) => s.reviewRitualMinute ?? 0);
 
   const now = new Date();
   const todayKey = toDayKey(now);
 
-  // If it's morning (before the ritual trigger hour), we're reviewing yesterday
-  const isReviewingYesterday = now.getHours() < reviewRitualHour;
+  // If it's morning (before the ritual trigger time), we're reviewing yesterday
+  const isReviewingYesterday = now.getHours() * 60 + now.getMinutes() < reviewRitualHour * 60 + reviewRitualMinute;
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);

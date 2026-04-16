@@ -15,6 +15,7 @@ export function TodayView() {
   const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
   const reviewRitualSnoozedUntil = usePlannerStore((s) => s.reviewRitualSnoozedUntil);
   const reviewRitualHour = usePlannerStore((s) => s.reviewRitualHour);
+  const reviewRitualMinute = usePlannerStore((s) => s.reviewRitualMinute ?? 0);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
 
   const today = new Date();
@@ -43,7 +44,7 @@ export function TodayView() {
   // Show Daily Review button when ritual is enabled, not completed for today,
   // and either snoozed or past the trigger hour
   const isSnoozed = reviewRitualSnoozedUntil !== null && reviewRitualSnoozedUntil > Date.now();
-  const isPastTriggerHour = today.getHours() >= reviewRitualHour;
+  const isPastTriggerHour = today.getHours() * 60 + today.getMinutes() >= reviewRitualHour * 60 + reviewRitualMinute;
   const showReviewButton = reviewRitualEnabled && lastReviewRitualDate !== dayKey && (isSnoozed || isPastTriggerHour);
 
   // Check if all tasks are completed

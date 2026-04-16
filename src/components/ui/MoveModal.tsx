@@ -127,7 +127,7 @@ export function MoveModal() {
       selectionAnchorId: s.selectionAnchorId,
       selectionFocusId: s.selectionFocusId,
       clearSelection: s.clearSelection,
-      customLists: s.customLists,
+      customLists: s.customLists.filter((l) => !l.deletedAt),
     })));
 
   const [inputValue, setInputValue] = useState('');

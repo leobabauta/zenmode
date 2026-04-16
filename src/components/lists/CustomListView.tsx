@@ -7,7 +7,7 @@ import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 export function CustomListView() {
   const items = usePlannerStore((s) => s.items);
   const activeListId = usePlannerStore((s) => s.activeListId);
-  const customLists = usePlannerStore((s) => s.customLists);
+  const customLists = usePlannerStore((s) => s.customLists.filter((l) => !l.deletedAt));
   const renameCustomList = usePlannerStore((s) => s.renameCustomList);
   const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);

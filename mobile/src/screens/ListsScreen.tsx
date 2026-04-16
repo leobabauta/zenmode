@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlannerStore, selectLaterItems } from '../store/usePlannerStore';
@@ -148,7 +148,8 @@ function subViewTitle(subView: SubView): string {
 
 export function ListsScreen() {
   const [subView, setSubView] = useState<SubView | null>(null);
-  const customLists = usePlannerStore((s) => s.customLists);
+  const customLists = usePlannerStore((s) => s.customLists.filter((l) => !l.deletedAt));
+  const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
   const reorderItems = usePlannerStore((s) => s.reorderItems);
   const labels = useAllLabels();
   const filteredItems = useFilteredItems(subView);
@@ -222,6 +223,12 @@ export function ListsScreen() {
                   key={cl.id}
                   style={[styles.menuRow, { borderBottomColor: colors.border }]}
                   onPress={() => setSubView({ kind: 'customList', listId: cl.id, listName: cl.name })}
+                  onLongPress={() => {
+                    Alert.alert('Delete List', `Delete "${cl.name}"?`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteCustomList(cl.id) },
+                    ]);
+                  }}
                   activeOpacity={0.6}
                 >
                   <Text style={[styles.menuText, { color: colors.text }]}>{cl.name}</Text>

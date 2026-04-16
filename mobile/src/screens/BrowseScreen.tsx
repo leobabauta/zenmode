@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl, ScrollView, BackHandler } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { usePlannerStore } from '../store/usePlannerStore';
 import { toDayKey } from '../../../shared/lib/dates';
 import { addDays } from 'date-fns';
@@ -214,6 +214,18 @@ export function BrowseScreen() {
     });
     return unsubscribe;
   }, [navigation]);
+
+  // Intercept Android hardware back so it exits a sub-view instead of leaving the Browse tab
+  useFocusEffect(
+    useCallback(() => {
+      if (!subView) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        setSubView(null);
+        return true;
+      });
+      return () => sub.remove();
+    }, [subView])
+  );
 
   const todayKey = toDayKey(new Date());
 

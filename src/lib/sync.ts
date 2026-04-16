@@ -89,6 +89,15 @@ export function rowToItem(row: ItemRow): PlannerItem {
 
 let pullInProgress = false;
 let itemsPullDone = false;
+// Suppresses the subscriber's markDeleted calls while a pull is applying merged
+// state.  Without this, any item the merge legitimately removes (or incorrectly
+// removes due to a race) would be pushed as a DELETE to Supabase, making data
+// loss permanent.
+let suppressDeleteSync = false;
+
+export function isPullSuppressingDeletes(): boolean {
+  return suppressDeleteSync;
+}
 
 export async function pullFromSupabase(): Promise<void> {
   if (!supabase) return;
@@ -175,8 +184,10 @@ export async function pullFromSupabase(): Promise<void> {
 
     // Apply merged items to store, then re-sort so completed/incomplete
     // grouping is consistent even when order values from different devices diverge.
+    suppressDeleteSync = true;
     usePlannerStore.setState({ items: merged });
     usePlannerStore.getState().resortAllDays();
+    suppressDeleteSync = false;
 
     // Push local-newer items to Supabase
     if (localNewer.length > 0) {
@@ -191,6 +202,17 @@ export async function pullFromSupabase(): Promise<void> {
       }
     }
     itemsPullDone = true;
+    // Flush any items/deletes that were queued before the first pull completed.
+    // markChanged/markDeleted track IDs before itemsPullDone but don't schedule
+    // the actual push — do that now.
+    if (changedIds.size > 0) {
+      if (changeTimer) clearTimeout(changeTimer);
+      changeTimer = setTimeout(flushChanged, 500);
+    }
+    if (deletedIds.size > 0) {
+      if (deleteTimer) clearTimeout(deleteTimer);
+      deleteTimer = setTimeout(flushDeleted, 500);
+    }
   } finally {
     pullInProgress = false;
   }
@@ -202,8 +224,12 @@ let changedIds = new Set<string>();
 let changeTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function markChanged(ids: string[]): void {
-  if (!supabase || !itemsPullDone) return;
+  if (!supabase) return;
+  // Always track changed IDs so pullFromSupabase's pendingLocalIds set
+  // protects items created before the first pull completes.
   for (const id of ids) changedIds.add(id);
+  // Only schedule the actual push after the first pull is done.
+  if (!itemsPullDone) return;
   if (changeTimer) clearTimeout(changeTimer);
   changeTimer = setTimeout(flushChanged, 500);
 }
@@ -257,8 +283,12 @@ let deletedIds = new Set<string>();
 let deleteTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function markDeleted(ids: string[]): void {
-  if (!supabase || !itemsPullDone) return;
+  if (!supabase) return;
+  // Always track deleted IDs so pullFromSupabase's pendingDeleteIds set
+  // protects deletions made before the first pull completes.
   for (const id of ids) deletedIds.add(id);
+  // Only schedule the actual push after the first pull is done.
+  if (!itemsPullDone) return;
   if (deleteTimer) clearTimeout(deleteTimer);
   deleteTimer = setTimeout(flushDeleted, 500);
 }
@@ -334,12 +364,19 @@ export async function pullPreferences(): Promise<void> {
     const bestReviewDate = [local.lastReviewRitualDate, row.last_review_ritual_date]
       .filter(Boolean).sort().pop() ?? null;
 
-    // Merge custom lists: union of local and remote by id
+    // Merge custom lists: union by id, keeping the version with the later deletedAt
+    // so soft-deletes propagate across devices.
     const remoteLists = (row.custom_lists as ReturnType<typeof usePlannerStore.getState>['customLists']) ?? [];
     const localLists = local.customLists ?? [];
     const listById = new Map(localLists.map((l) => [l.id, l]));
     for (const rl of remoteLists) {
-      if (!listById.has(rl.id)) listById.set(rl.id, rl);
+      const existing = listById.get(rl.id);
+      if (!existing) {
+        listById.set(rl.id, rl);
+      } else {
+        // If either side has a deletedAt, keep whichever is deleted (latest wins)
+        if (rl.deletedAt && !existing.deletedAt) listById.set(rl.id, rl);
+      }
     }
     const mergedLists = [...listById.values()].sort((a, b) => a.order - b.order);
 

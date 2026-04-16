@@ -282,14 +282,23 @@ export function TimelineScreen() {
 
   // Scroll to today on first render (past days are above)
   useEffect(() => {
-    if (!hasScrolledToToday.current && days.length > 0) {
+    if (!hasScrolledToToday.current) {
       hasScrolledToToday.current = true;
-      // Estimate ~90px per day row, scroll to the today index
       setTimeout(() => {
         flatListRef.current?.scrollToOffset({ offset: TODAY_INDEX * 90, animated: false });
       }, 50);
     }
   }, []);
+
+  // Reset scroll to today whenever the user taps the Timeline tab
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return;
+    const unsubscribe = parent.addListener('tabPress', () => {
+      flatListRef.current?.scrollToOffset({ offset: TODAY_INDEX * 90, animated: false });
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleSnoozeSelect = (dayKey: string | null, isLater: boolean) => {
     if (!snoozeItemId) return;
