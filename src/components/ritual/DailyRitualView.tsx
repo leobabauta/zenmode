@@ -160,7 +160,7 @@ export function DailyRitualView() {
   const inboxItems = selectInboxItems(items).filter((i) => !i.completed);
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
-  const mediumCount = todayItems.filter((i) => i.isMediumPriority).length;
+  const mediumCount = todayItems.filter((i) => i.isMediumPriority && !i.isPriority).length;
 
   const moveInboxToToday = (id: string) => {
     const maxOrder = todayItems.length > 0 ? Math.max(...todayItems.map((i) => i.order)) : -1;
@@ -174,11 +174,19 @@ export function DailyRitualView() {
   };
 
   const togglePriority = (item: PlannerItem) => {
-    updateItem(item.id, { isPriority: item.isPriority ? undefined : true });
+    if (item.isPriority) {
+      updateItem(item.id, { isPriority: undefined });
+    } else {
+      updateItem(item.id, { isPriority: true, isMediumPriority: undefined });
+    }
   };
 
   const toggleMediumPriority = (item: PlannerItem) => {
-    updateItem(item.id, { isMediumPriority: item.isMediumPriority ? undefined : true });
+    if (item.isMediumPriority) {
+      updateItem(item.id, { isMediumPriority: undefined });
+    } else {
+      updateItem(item.id, { isMediumPriority: true, isPriority: undefined });
+    }
   };
 
   // Steps: 1=Get your day right, 2=Top priorities, 3=Medium priorities, 4=Organize, 5=Summary
