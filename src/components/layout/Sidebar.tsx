@@ -536,6 +536,18 @@ export function Sidebar() {
           <span className="font-medium">Help</span>
         </button>
         <button
+          onClick={() => usePlannerStore.getState().setShowBugReport(true)}
+          className={cn(
+            'w-full flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-md text-sm transition-colors duration-100',
+            'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+          )}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0112 12.75zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 01-1.152-6.44c0-2.507-.608-4.873-1.688-6.953A3.005 3.005 0 0014.25 0h-4.5A3.005 3.005 0 006.633.797C5.553 2.877 4.945 5.243 4.945 7.75a23.9 23.9 0 01-1.152 6.44A24.108 24.108 0 0112 12.75z" />
+          </svg>
+          <span className="font-medium">Report Bug</span>
+        </button>
+        <button
           onClick={() => setShowSettings(true)}
           className={cn(
             'w-full flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-md text-sm transition-colors duration-100',

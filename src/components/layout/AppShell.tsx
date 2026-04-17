@@ -18,6 +18,7 @@ import { MoveModal } from '../ui/MoveModal';
 import { CommandPalette } from '../ui/CommandPalette';
 import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
+import { BugReportModal } from '../ui/BugReportModal';
 import { DeleteRecurrenceModal } from '../ui/DeleteRecurrenceModal';
 import { ReminderEngine } from '../ui/ReminderEngine';
 import { ReminderToast } from '../ui/ReminderToast';
@@ -77,6 +78,8 @@ export function AppShell() {
   const setCommandPaletteAddTask = usePlannerStore((s) => s.setCommandPaletteAddTask);
   const showShortcuts = usePlannerStore((s) => s.showShortcuts);
   const setShowShortcuts = usePlannerStore((s) => s.setShowShortcuts);
+  const showBugReport = usePlannerStore((s) => s.showBugReport);
+  const setShowBugReport = usePlannerStore((s) => s.setShowBugReport);
   const [showFullConfetti, setShowFullConfetti] = useState(false);
   const dismissConfetti = useCallback(() => setShowFullConfetti(false), []);
 
@@ -396,6 +399,7 @@ export function AppShell() {
 
       {/* Keyboard shortcuts modal */}
       {showShortcuts && <KeyboardShortcutsModal onClose={() => setShowShortcuts(false)} />}
+      {showBugReport && <BugReportModal onClose={() => setShowBugReport(false)} />}
 
       {/* Delete recurrence confirmation modal */}
       <DeleteRecurrenceModal />
