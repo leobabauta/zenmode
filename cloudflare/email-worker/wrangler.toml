@@ -1,0 +1,10 @@
+name = "zenmode-email-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+
+[vars]
+SUPABASE_URL = "https://hlyxiyvqmfupyqjgfajj.supabase.co"
+
+# Set secrets via: npx wrangler secret put <NAME>
+# Required: SUPABASE_SERVICE_ROLE_KEY
+# Optional: ANTHROPIC_API_KEY (for Claude task naming)

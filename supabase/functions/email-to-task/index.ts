@@ -85,16 +85,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Look up the user by email
-    const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-    if (userError) {
-      console.error('Error listing users:', userError);
-      return new Response(JSON.stringify({ error: 'Failed to look up user' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     // Ignore automated emails (e.g. Cloudflare verification)
     if (senderEmail.endsWith('@cloudflare.com') || senderEmail.endsWith('@notify.cloudflare.com')) {
       return new Response(JSON.stringify({ success: true, skipped: true }), {
@@ -105,18 +95,36 @@ Deno.serve(async (req) => {
 
     console.log(`Sender email: "${senderEmail}"`);
     console.log(`Subject: "${subject}"`);
-    console.log(`Plain body: "${plainBody}"`);
-    console.log(`HTML body present: ${!!payload.html}`);
-    console.log(`Payload keys: ${Object.keys(payload).join(', ')}`);
 
-    const user = userData.users.find((u) => u.email?.toLowerCase() === senderEmail);
-    if (!user) {
+    // Look up the user by email directly from auth.users table
+    // (listUsers() only returns the first page and misses users beyond page 1)
+    const { data: authRow, error: userError } = await supabase
+      .rpc('get_user_id_by_email', { lookup_email: senderEmail });
+
+    let userId: string | null = authRow?.[0]?.id ?? null;
+
+    // Fallback: paginated listUsers search if RPC doesn't exist yet
+    if (userError || userId === null) {
+      let page = 1;
+      while (!userId) {
+        const { data: userData, error: listError } = await supabase.auth.admin.listUsers({ page, perPage: 500 });
+        if (listError || !userData?.users?.length) break;
+        const match = userData.users.find((u: any) => u.email?.toLowerCase() === senderEmail);
+        if (match) { userId = match.id; break; }
+        if (userData.users.length < 500) break;
+        page++;
+      }
+    }
+
+    if (!userId) {
       console.log(`No user found for email: ${senderEmail}`);
       return new Response(JSON.stringify({ error: 'Unknown sender' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    const user = { id: userId };
 
     // Create a single task from subject (or first line of body)
     const cleanedBody = cleanBody(plainBody);
