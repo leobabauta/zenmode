@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        navigateFallbackDenylist: [/^\/about/, /^\/manifesto/, /^\/privacy/, /^\/changelog/, /^\/testers/, /^\/tester-feedback/, /^\/downloads/, /^\/delete-account/],
+        navigateFallbackDenylist: [/^\/about/, /^\/manifesto/, /^\/privacy/, /^\/changelog/, /^\/testers/, /^\/tester-feedback/, /^\/feedback/, /^\/downloads/, /^\/delete-account/],
       },
       manifest: {
         name: 'zenmode',
