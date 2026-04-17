@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl, ScrollView, BackHandler } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Pressable, StyleSheet, Linking as RNLinking, Platform, Vibration, RefreshControl, ScrollView, BackHandler, Alert } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -163,7 +163,7 @@ function useSearchResults(query: string): { tasks: PlannerItem[]; labels: string
     return {
       tasks: Object.values(items).filter((i) => !i.parentId && !i.isArchived && i.text.toLowerCase().includes(q)).sort((a, b) => a.order - b.order).slice(0, 15),
       labels: allLabels.filter((l) => l.includes(q)),
-      lists: customLists.filter((cl) => cl.name.toLowerCase().includes(q)).sort((a, b) => a.order - b.order),
+      lists: customLists.filter((cl) => !cl.deletedAt && cl.name.toLowerCase().includes(q)).sort((a, b) => a.order - b.order),
     };
   }, [items, customLists, allLabels, query]);
 }
@@ -181,7 +181,9 @@ export function BrowseScreen() {
   const [subView, setSubView] = useState<SubView | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
-  const customLists = usePlannerStore((s) => s.customLists);
+  const allCustomLists = usePlannerStore((s) => s.customLists);
+  const customLists = useMemo(() => allCustomLists.filter((l) => !l.deletedAt), [allCustomLists]);
+  const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
   const addItem = usePlannerStore((s) => s.addItem);
   const setRecurrence = usePlannerStore((s) => s.setRecurrence);
   const reorderItems = usePlannerStore((s) => s.reorderItems);
@@ -366,7 +368,18 @@ export function BrowseScreen() {
                 <MenuItem label="Later" colors={colors} onPress={() => setSubView({ kind: 'later' })} />
                 <MenuItem label="Archive" colors={colors} onPress={() => setSubView({ kind: 'archive' })} />
                 {customLists.slice().sort((a, b) => a.order - b.order).map((cl) => (
-                  <MenuItem key={cl.id} label={cl.name} colors={colors} onPress={() => setSubView({ kind: 'customList', listId: cl.id, listName: cl.name })} />
+                  <MenuItem
+                    key={cl.id}
+                    label={cl.name}
+                    colors={colors}
+                    onPress={() => setSubView({ kind: 'customList', listId: cl.id, listName: cl.name })}
+                    onLongPress={() => {
+                      Alert.alert('Delete List', `Delete "${cl.name}"? Items will be moved to Inbox.`, [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteCustomList(cl.id) },
+                      ]);
+                    }}
+                  />
                 ))}
 
                 {/* Labels section */}
@@ -404,9 +417,9 @@ export function BrowseScreen() {
   );
 }
 
-function MenuItem({ label, colors, onPress }: { label: string; colors: Colors; onPress: () => void }) {
+function MenuItem({ label, colors, onPress, onLongPress }: { label: string; colors: Colors; onPress: () => void; onLongPress?: () => void }) {
   return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.6}>
+    <TouchableOpacity style={styles.menuItem} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.6}>
       <Text style={[styles.menuLabel, { color: colors.text }]}>{label}</Text>
       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
         <Path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke={colors.textMuted} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />

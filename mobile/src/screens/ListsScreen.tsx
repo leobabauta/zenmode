@@ -148,7 +148,8 @@ function subViewTitle(subView: SubView): string {
 
 export function ListsScreen() {
   const [subView, setSubView] = useState<SubView | null>(null);
-  const customLists = usePlannerStore((s) => s.customLists.filter((l) => !l.deletedAt));
+  const allCustomLists = usePlannerStore((s) => s.customLists);
+  const customLists = useMemo(() => allCustomLists.filter((l) => !l.deletedAt), [allCustomLists]);
   const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
   const reorderItems = usePlannerStore((s) => s.reorderItems);
   const labels = useAllLabels();
