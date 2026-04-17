@@ -188,7 +188,8 @@ export function Sidebar() {
   const getLabelColor = usePlannerStore((s) => s.getLabelColor);
   const setLabelColor = usePlannerStore((s) => s.setLabelColor);
   const updateItem = usePlannerStore((s) => s.updateItem);
-  const customLists = usePlannerStore((s) => s.customLists.filter((l) => !l.deletedAt));
+  const allCustomLists = usePlannerStore((s) => s.customLists);
+  const customLists = useMemo(() => allCustomLists.filter((l) => !l.deletedAt), [allCustomLists]);
   const activeListId = usePlannerStore((s) => s.activeListId);
   const addCustomList = usePlannerStore((s) => s.addCustomList);
   const setActiveListId = usePlannerStore((s) => s.setActiveListId);

@@ -127,9 +127,10 @@ export function MoveModal() {
       selectionAnchorId: s.selectionAnchorId,
       selectionFocusId: s.selectionFocusId,
       clearSelection: s.clearSelection,
-      customLists: s.customLists.filter((l) => !l.deletedAt),
+      customLists: s.customLists,
     })));
 
+  const visibleLists = useMemo(() => customLists.filter((l: any) => !l.deletedAt), [customLists]);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const presets = useMemo(() => buildPresets(), []);
@@ -151,7 +152,7 @@ export function MoveModal() {
   const matchInbox = inputLower ? 'inbox'.startsWith(inputLower) : false;
   const matchArchive = inputLower ? 'archive'.startsWith(inputLower) : false;
   const matchingListIdx = inputLower
-    ? customLists.findIndex((l) => l.name.toLowerCase().startsWith(inputLower))
+    ? visibleLists.findIndex((l: any) => l.name.toLowerCase().startsWith(inputLower))
     : -1;
 
   const handleMove = (targetDayKey: string) => {
@@ -187,7 +188,7 @@ export function MoveModal() {
   };
 
   const handleSubmit = () => {
-    if (matchingListIdx >= 0) { handleMoveToList(customLists[matchingListIdx].id); return; }
+    if (matchingListIdx >= 0) { handleMoveToList(visibleLists[matchingListIdx].id); return; }
     if (matchInbox) { handleMoveToInbox(); return; }
     if (matchArchive) { handleMoveToArchive(); return; }
     if (matchingPresetIdx >= 0) {
@@ -231,7 +232,7 @@ export function MoveModal() {
           />
           {inputValue.trim() && (() => {
             let hint: string | null = null;
-            if (matchingListIdx >= 0) hint = `Move to ${customLists[matchingListIdx].name}`;
+            if (matchingListIdx >= 0) hint = `Move to ${visibleLists[matchingListIdx].name}`;
             else if (matchInbox) hint = 'Move to Inbox';
             else if (matchArchive) hint = 'Move to Archive (Later)';
             else if (matchingPresetIdx >= 0) hint = `Move to ${presets[matchingPresetIdx].label} — ${format(presets[matchingPresetIdx].date, 'EEE, MMM d')}`;
@@ -303,10 +304,10 @@ export function MoveModal() {
         </div>
 
         {/* Custom Lists */}
-        {customLists.length > 0 && (
+        {visibleLists.length > 0 && (
           <div className="border-t border-[var(--color-border)]">
-            {[...customLists].sort((a, b) => a.order - b.order).map((list) => {
-              const isHighlighted = matchingListIdx >= 0 && customLists[matchingListIdx].id === list.id;
+            {[...visibleLists].sort((a: any, b: any) => a.order - b.order).map((list: any) => {
+              const isHighlighted = matchingListIdx >= 0 && visibleLists[matchingListIdx].id === list.id;
               return (
                 <button
                   key={list.id}

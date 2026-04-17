@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { usePlannerStore, selectCustomListItems } from '../../store/usePlannerStore';
 import { ItemList } from '../items/ItemList';
 import { AddItemForm } from '../forms/AddItemForm';
@@ -7,7 +7,8 @@ import { SortArchiveButtons } from '../ui/SortArchiveButtons';
 export function CustomListView() {
   const items = usePlannerStore((s) => s.items);
   const activeListId = usePlannerStore((s) => s.activeListId);
-  const customLists = usePlannerStore((s) => s.customLists.filter((l) => !l.deletedAt));
+  const allCustomLists = usePlannerStore((s) => s.customLists);
+  const customLists = useMemo(() => allCustomLists.filter((l) => !l.deletedAt), [allCustomLists]);
   const renameCustomList = usePlannerStore((s) => s.renameCustomList);
   const deleteCustomList = usePlannerStore((s) => s.deleteCustomList);
   const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
