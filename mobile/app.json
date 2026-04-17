@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "7",
+      "buildNumber": "8",
       "bundleIdentifier": "net.zenhabits.zenmode",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,7 +28,7 @@
       }
     },
     "android": {
-      "versionCode": 13,
+      "versionCode": 14,
       "package": "net.zenhabits.zenmode",
       "adaptiveIcon": {
         "backgroundColor": "#fafaf9",
