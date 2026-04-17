@@ -766,11 +766,37 @@ export const usePlannerStore = create<PlannerState>()(
             }
             item.updatedAt = now;
           }
+
+          // Second dedup pass: catch recurring duplicates that landed on the
+          // same day as a result of the moves above.
+          const seen2 = new Map<string, string>();
+          Object.values(state.items).forEach((item) => {
+            if (!item.recurrence || !item.dayKey || item.completed || item.parentId) return;
+            const key = `${item.dayKey}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
+            if (seen2.has(key)) {
+              delete state.items[item.id];
+            } else {
+              seen2.set(key, item.id);
+            }
+          });
         });
       },
 
       resortAllDays: () => {
         set((state) => {
+          // Deduplicate recurring tasks: if multiple incomplete copies of the
+          // same recurring task exist on the same day, keep only the first.
+          const seenRecur = new Map<string, string>();
+          for (const item of Object.values(state.items)) {
+            if (!item.recurrence || !item.dayKey || item.completed || item.parentId) continue;
+            const key = `${item.dayKey}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
+            if (seenRecur.has(key)) {
+              delete state.items[item.id];
+            } else {
+              seenRecur.set(key, item.id);
+            }
+          }
+
           const isReview = (i: PlannerItem) =>
             i.type === 'note' && (i.text.includes('#dailyreview') || i.text.includes('#weeklyreview'));
 

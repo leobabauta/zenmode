@@ -141,6 +141,26 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
     }
   }
 
+  // Second dedup pass: after moves, check for recurring items that will
+  // end up on the same day.  Build a virtual view of final day_key per item.
+  const finalDay = new Map<string, string | null>();
+  for (const item of items) finalDay.set(item.id, item.day_key);
+  for (const u of toUpdate) finalDay.set(u.id!, u.day_key ?? finalDay.get(u.id!) ?? null);
+
+  const seen2 = new Map<string, string>();
+  for (const item of items) {
+    if (toDelete.includes(item.id)) continue;
+    if (!item.recurrence || item.completed || item.parent_id) continue;
+    const dk = finalDay.get(item.id);
+    if (!dk) continue;
+    const key = `${dk}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
+    if (seen2.has(key)) {
+      toDelete.push(item.id);
+    } else {
+      seen2.set(key, item.id);
+    }
+  }
+
   return { toDelete, toUpdate };
 }
 
