@@ -1,11 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, AppState } from 'react-native';
+import { Text, AppState, View, TouchableOpacity, StyleSheet as RNStyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
+import * as Updates from 'expo-updates';
 import { ToastProvider } from './src/components/Toast';
 
 import { setupSupabase } from './src/lib/supabaseInit';
@@ -97,6 +98,51 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
+
+function UpdateBanner() {
+  const [updateReady, setUpdateReady] = useState(false);
+
+  const checkForUpdate = useCallback(async () => {
+    if (__DEV__) return;
+    try {
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        setUpdateReady(true);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    checkForUpdate();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkForUpdate();
+    });
+    return () => sub.remove();
+  }, [checkForUpdate]);
+
+  if (!updateReady) return null;
+  return (
+    <View style={updateStyles.banner}>
+      <Text style={updateStyles.text}>A new version is available</Text>
+      <TouchableOpacity onPress={() => Updates.reloadAsync()} style={updateStyles.btn}>
+        <Text style={updateStyles.btnText}>Restart</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const updateStyles = RNStyleSheet.create({
+  banner: {
+    position: 'absolute', bottom: 80, left: 16, right: 16, zIndex: 100,
+    backgroundColor: '#6A5AAC', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+  },
+  text: { color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 },
+  btn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6, marginLeft: 12 },
+  btnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+});
 
 export default function App() {
   const { user, loading } = useAuthStore();
@@ -226,6 +272,7 @@ export default function App() {
               )}
             </Stack.Navigator>
           </NavigationContainer>
+          <UpdateBanner />
         </ToastProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
