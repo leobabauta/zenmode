@@ -34,7 +34,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           mode: agent
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.BOT_PAT }}
           direct_prompt: |
             You are triaging and fixing a bug report for the zenmode app (Issue #${{ inputs.issue_number }}).
 
@@ -62,4 +62,4 @@ jobs:
           allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
           model: "sonnet"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
