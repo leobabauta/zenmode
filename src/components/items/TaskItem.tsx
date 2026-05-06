@@ -124,17 +124,23 @@ export function TaskItem({
 
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isEditing) return;
-    let offset = item.text.length;
-    if (document.caretRangeFromPoint) {
-      const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-      if (range) offset = range.startOffset;
-    } else if ('caretPositionFromPoint' in document) {
-      const pos = (document as unknown as { caretPositionFromPoint: (x: number, y: number) => { offset: number } | null }).caretPositionFromPoint(e.clientX, e.clientY);
-      if (pos) offset = pos.offset;
+    
+    // If item is already focused/selected, enter edit mode
+    if (isFocused) {
+      let offset = item.text.length;
+      if (document.caretRangeFromPoint) {
+        const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+        if (range) offset = range.startOffset;
+      } else if ('caretPositionFromPoint' in document) {
+        const pos = (document as unknown as { caretPositionFromPoint: (x: number, y: number) => { offset: number } | null }).caretPositionFromPoint(e.clientX, e.clientY);
+        if (pos) offset = pos.offset;
+      }
+      cursorPosRef.current = offset;
+      setIsEditing(true);
+    } else {
+      // First click: just select the item for manipulation
+      onSelect?.();
     }
-    cursorPosRef.current = offset;
-    onSelect?.();
-    setIsEditing(true);
   };
 
   // Keyboard handler for manipulating mode (only fires when container has DOM focus).
