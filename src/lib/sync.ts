@@ -169,8 +169,8 @@ export async function pullFromSupabase(): Promise<void> {
           // Item was just created/modified locally — keep it
           localNewer.push(localItems[id]);
         } else if (!itemsPullDone) {
-          // First pull: local item not on remote = deleted on another device
-          delete merged[id];
+          // First pull: local item not on remote = treat as new local item, keep and push
+          localNewer.push(localItems[id]);
         } else if (knownRemoteIds.has(id)) {
           // Was on remote before but now gone — deleted on another device
           delete merged[id];
