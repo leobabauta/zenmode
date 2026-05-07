@@ -6,6 +6,32 @@ import type { PlannerItem } from '../types';
 // Local-only items NOT in this set are new/unpushed and must never be auto-deleted.
 const knownRemoteIds = new Set<string>();
 
+// Persist knownRemoteIds across sessions to fix first-pull merge ambiguity
+function loadKnownRemoteIds(): void {
+  try {
+    const stored = localStorage.getItem('zenmode-known-remote-ids');
+    if (stored) {
+      const ids = JSON.parse(stored);
+      if (Array.isArray(ids)) {
+        for (const id of ids) knownRemoteIds.add(id);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load knownRemoteIds from localStorage:', e);
+  }
+}
+
+function saveKnownRemoteIds(): void {
+  try {
+    localStorage.setItem('zenmode-known-remote-ids', JSON.stringify(Array.from(knownRemoteIds)));
+  } catch (e) {
+    console.warn('Failed to save knownRemoteIds to localStorage:', e);
+  }
+}
+
+// Initialize knownRemoteIds from localStorage on module load
+loadKnownRemoteIds();
+
 // --- Row <-> Item transforms ---
 
 interface ItemRow {
@@ -161,6 +187,7 @@ export async function pullFromSupabase(): Promise<void> {
     // Record all remote IDs so we know what exists on the server.
     const remoteIds = new Set(remoteItems.map((r) => r.id));
     for (const id of remoteIds) knownRemoteIds.add(id);
+    saveKnownRemoteIds();
 
     // Handle local items that don't exist remotely.
     for (const id of Object.keys(localItems)) {
@@ -175,6 +202,7 @@ export async function pullFromSupabase(): Promise<void> {
           // Was on remote before but now gone — deleted on another device
           delete merged[id];
           knownRemoteIds.delete(id);
+          saveKnownRemoteIds();
         } else {
           // Never seen on remote — new local item, keep and push
           localNewer.push(localItems[id]);
@@ -199,6 +227,7 @@ export async function pullFromSupabase(): Promise<void> {
         console.error('push local-newer error:', upsertError);
       } else {
         for (const item of localNewer) knownRemoteIds.add(item.id);
+        saveKnownRemoteIds();
       }
     }
     itemsPullDone = true;
@@ -257,6 +286,7 @@ async function flushChanged(): Promise<void> {
     } else {
       // Mark as confirmed on remote so pull won't delete them
       for (const id of ids) knownRemoteIds.add(id);
+      saveKnownRemoteIds();
     }
   }
 }

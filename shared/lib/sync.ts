@@ -5,6 +5,46 @@ import type { PlannerItem, CustomList } from '../types';
 // Local-only items NOT in this set are new/unpushed and must never be auto-deleted.
 const knownRemoteIds = new Set<string>();
 
+// Persist knownRemoteIds across sessions to fix first-pull merge ambiguity
+function loadKnownRemoteIds(): void {
+  try {
+    // Use AsyncStorage for React Native, localStorage for web
+    const isReactNative = typeof window === 'undefined';
+    if (isReactNative) {
+      // For mobile, we'll need to call this asynchronously from the initialization code
+      return;
+    }
+    const stored = localStorage.getItem('zenmode-known-remote-ids');
+    if (stored) {
+      const ids = JSON.parse(stored);
+      if (Array.isArray(ids)) {
+        for (const id of ids) knownRemoteIds.add(id);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load knownRemoteIds from storage:', e);
+  }
+}
+
+function saveKnownRemoteIds(): void {
+  try {
+    // Use AsyncStorage for React Native, localStorage for web
+    const isReactNative = typeof window === 'undefined';
+    if (isReactNative) {
+      // For mobile, we'll need to import AsyncStorage and handle this asynchronously
+      return;
+    }
+    localStorage.setItem('zenmode-known-remote-ids', JSON.stringify(Array.from(knownRemoteIds)));
+  } catch (e) {
+    console.warn('Failed to save knownRemoteIds to storage:', e);
+  }
+}
+
+// Initialize knownRemoteIds from storage on module load (web only)
+if (typeof window !== 'undefined') {
+  loadKnownRemoteIds();
+}
+
 // --- Store accessor ---
 // The platform (web/mobile) must register its store accessor at startup.
 let _getItems: () => Record<string, PlannerItem> = () => ({});
@@ -170,6 +210,7 @@ export async function pullFromSupabase(): Promise<void> {
 
     const remoteIds = new Set(remoteItems.map((r) => r.id));
     for (const id of remoteIds) knownRemoteIds.add(id);
+    saveKnownRemoteIds();
 
     for (const id of Object.keys(localItems)) {
       if (!remoteIds.has(id)) {
@@ -179,6 +220,7 @@ export async function pullFromSupabase(): Promise<void> {
         } else if (knownRemoteIds.has(id)) {
           delete merged[id];
           knownRemoteIds.delete(id);
+          saveKnownRemoteIds();
         } else {
           localNewer.push(localItems[id]);
         }
@@ -198,6 +240,7 @@ export async function pullFromSupabase(): Promise<void> {
         console.error('push local-newer error:', upsertError);
       } else {
         for (const item of localNewer) knownRemoteIds.add(item.id);
+        saveKnownRemoteIds();
       }
     }
   } finally {
@@ -240,6 +283,7 @@ async function flushChanged(): Promise<void> {
       for (const id of ids) changedIds.add(id);
     } else {
       for (const id of ids) knownRemoteIds.add(id);
+      saveKnownRemoteIds();
     }
   }
 }
