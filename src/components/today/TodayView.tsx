@@ -10,6 +10,7 @@ import { CopyButton } from '../ui/CopyButton';
 
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
+  const autoAdvanceEnabled = usePlannerStore((s) => s.autoAdvanceEnabled);
   const setView = usePlannerStore((s) => s.setView);
   const reviewRitualEnabled = usePlannerStore((s) => s.reviewRitualEnabled);
   const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
@@ -20,7 +21,34 @@ export function TodayView() {
 
   const today = new Date();
   const dayKey = toDayKey(today);
-  const todayItems = selectItemsForDay(items, dayKey);
+  const baseTodayItems = selectItemsForDay(items, dayKey);
+  
+  // When auto-advance is disabled, also include past incomplete items
+  const todayItems = useMemo(() => {
+    if (autoAdvanceEnabled) {
+      return baseTodayItems;
+    }
+    
+    // Get past incomplete items (excluding notes and subtasks)
+    const pastIncomplete = Object.values(items).filter(
+      (i) =>
+        i.dayKey !== null &&
+        i.dayKey < dayKey &&
+        !i.completed &&
+        !i.isLater &&
+        !i.parentId &&
+        !i.isArchived &&
+        i.type !== 'note'
+    );
+    
+    // Combine and sort: today's items first, then past items by date (newest first)
+    const combined = [...baseTodayItems];
+    pastIncomplete
+      .sort((a, b) => (b.dayKey || '').localeCompare(a.dayKey || ''))
+      .forEach(item => combined.push(item));
+    
+    return combined;
+  }, [baseTodayItems, autoAdvanceEnabled, items, dayKey]);
   const pendingReminders = selectPendingRemindersForDay(items, dayKey);
   const [showReminders, setShowReminders] = useState(false);
   const deleteItem = usePlannerStore((s) => s.deleteItem);
