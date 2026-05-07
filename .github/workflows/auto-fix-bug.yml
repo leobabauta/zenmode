@@ -59,7 +59,7 @@ jobs:
 
             Be conservative — only fix things you're confident about. A wrong fix is worse than no fix. The PR will be reviewed by a human before it ships, so prefer a small, focused change over a large speculative one.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
+          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep,TodoWrite"
           model: "sonnet"
           max_turns: "50"
           timeout_minutes: "45"
