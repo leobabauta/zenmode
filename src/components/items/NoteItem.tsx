@@ -206,7 +206,7 @@ export function NoteItem({
           if (e.shiftKey) onExtendSelection?.();
           else onSelect?.();
         }}
-        className="opacity-0 group-hover:opacity-100 flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mt-0.5"
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mt-0.5"
       >
         <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
           <circle cx="5.5" cy="3.5" r="1.5" />
@@ -345,7 +345,7 @@ export function NoteItem({
       <IconButton
         label="Delete note"
         onClick={() => promptDeleteItem(item.id)}
-        className="opacity-0 group-hover:opacity-100 flex-shrink-0"
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

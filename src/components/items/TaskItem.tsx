@@ -266,7 +266,7 @@ export function TaskItem({
             if (e.shiftKey) onExtendSelection?.();
             else onSelect?.();
           }}
-          className="opacity-0 group-hover:opacity-100 flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mt-0.5"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0 cursor-grab active:cursor-grabbing text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] mt-0.5"
         >
           <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
             <circle cx="5.5" cy="3.5" r="1.5" />
@@ -436,7 +436,7 @@ export function TaskItem({
           title="Set recurrence (R)"
           onClick={() => setShowRecurrence((v) => !v)}
           className={cn(
-            'flex-shrink-0 opacity-0 group-hover:opacity-100',
+            'flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100',
             item.recurrence
               ? 'group-hover:text-orange-600 dark:group-hover:text-orange-500'
               : ''
@@ -467,7 +467,7 @@ export function TaskItem({
           'flex-shrink-0',
           hasChildren || item.notes
             ? 'text-[var(--color-text-muted)] opacity-100'
-            : 'opacity-0 group-hover:opacity-100'
+            : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'
         )}
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -497,7 +497,7 @@ export function TaskItem({
             ? 'bg-amber-400 ring-1 ring-amber-400/30'
             : item.isMediumPriority
               ? 'bg-blue-400/60 ring-1 ring-blue-400/20'
-              : 'opacity-0 group-hover:opacity-100 border border-[var(--color-border)] hover:border-blue-300',
+              : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 border border-[var(--color-border)] hover:border-blue-300',
         )}
         title={item.isPriority ? 'High priority (click to remove)' : item.isMediumPriority ? 'Medium priority (click for high)' : 'Set priority'}
       >
@@ -545,7 +545,7 @@ export function TaskItem({
         label="Delete task"
         title="Delete task (DD)"
         onClick={() => promptDeleteItem(item.id)}
-        className="opacity-0 group-hover:opacity-100 flex-shrink-0"
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
