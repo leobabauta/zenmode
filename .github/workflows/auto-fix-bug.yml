@@ -52,12 +52,12 @@ jobs:
 
             5. If the fix is successful, commit your changes to a new branch named `auto-fix/issue-${{ inputs.issue_number }}`. Then create a PR that closes the issue:
                ```
-               gh pr create --title "fix: <concise description>" --body "Fixes #${{ inputs.issue_number }}\n\n<description of what was wrong and how it was fixed>\n\n---\n_Auto-generated fix from bug report._"
+               gh pr create --title "fix: <concise description>" --body "Fixes #${{ inputs.issue_number }}\n\n<description of what was wrong and how it was fixed>\n\n---\n_Auto-generated fix from bug report. **Awaits human review before merge.**_"
                ```
 
-            6. After creating the PR, enable auto-merge: `gh pr merge auto-fix/issue-${{ inputs.issue_number }} --auto --squash`
+            6. **Do NOT enable auto-merge.** Leave the PR open for the maintainer to review and merge manually. Comment on the issue with a link to the PR.
 
-            Be conservative — only fix things you're confident about. A wrong fix is worse than no fix.
+            Be conservative — only fix things you're confident about. A wrong fix is worse than no fix. The PR will be reviewed by a human before it ships, so prefer a small, focused change over a large speculative one.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
           model: "sonnet"
