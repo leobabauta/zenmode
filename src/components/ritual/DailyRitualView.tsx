@@ -287,18 +287,18 @@ export function DailyRitualView() {
                   ) : (
                     todayItems.map((item) => (
                       <RitualDraggableItem key={item.id} id={item.id}>
-                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing relative">
                           <Checkbox
                             checked={item.completed}
                             onChange={(checked) => updateItem(item.id, { completed: checked })}
                           />
                           <span className={cn(
-                            'flex-1 min-w-0 text-xs truncate',
+                            'flex-1 min-w-0 text-xs truncate pr-2',
                             item.completed ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'
                           )}>
                             {item.text}
                           </span>
-                          <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--color-surface)] rounded px-1">
                             <button
                               onClick={() => sendToInbox(item.id)}
                               className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
