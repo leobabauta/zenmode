@@ -79,8 +79,10 @@ export function SwipeableRow({ children, onTomorrow, onSnooze, onMoveToInbox, on
 
   const panGesture = Gesture.Pan()
     .enabled(enabled)
-    .activeOffsetX([-8, 8])
-    .failOffsetY([-40, 40])
+    .activeOffsetX([-12, 12])
+    .failOffsetY([-20, 20])
+    .minPointers(1)
+    .maxPointers(1)
     .onUpdate((event) => {
       'worklet';
       translateX.value = Math.max(-maxLeft, Math.min(maxRight, event.translationX));
