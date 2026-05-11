@@ -11,6 +11,9 @@ import { CopyButton } from '../ui/CopyButton';
 export function TodayView() {
   const items = usePlannerStore((s) => s.items);
   const autoAdvanceEnabled = usePlannerStore((s) => s.autoAdvanceEnabled);
+  const setAutoAdvanceEnabled = usePlannerStore((s) => s.setAutoAdvanceEnabled);
+  const showPastIncompleteInToday = usePlannerStore((s) => s.showPastIncompleteInToday);
+  const setShowPastIncompleteInToday = usePlannerStore((s) => s.setShowPastIncompleteInToday);
   const setView = usePlannerStore((s) => s.setView);
   const reviewRitualEnabled = usePlannerStore((s) => s.reviewRitualEnabled);
   const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
@@ -21,34 +24,25 @@ export function TodayView() {
 
   const today = new Date();
   const dayKey = toDayKey(today);
-  const baseTodayItems = selectItemsForDay(items, dayKey);
-  
-  // When auto-advance is disabled, also include past incomplete items
-  const todayItems = useMemo(() => {
-    if (autoAdvanceEnabled) {
-      return baseTodayItems;
-    }
-    
-    // Get past incomplete items (excluding notes and subtasks)
-    const pastIncomplete = Object.values(items).filter(
-      (i) =>
-        i.dayKey !== null &&
-        i.dayKey < dayKey &&
-        !i.completed &&
-        !i.isLater &&
-        !i.parentId &&
-        !i.isArchived &&
-        i.type !== 'note'
-    );
-    
-    // Combine and sort: today's items first, then past items by date (newest first)
-    const combined = [...baseTodayItems];
-    pastIncomplete
-      .sort((a, b) => (b.dayKey || '').localeCompare(a.dayKey || ''))
-      .forEach(item => combined.push(item));
-    
-    return combined;
-  }, [baseTodayItems, autoAdvanceEnabled, items, dayKey]);
+  const todayItems = selectItemsForDay(items, dayKey);
+
+  // When auto-advance is disabled and the section isn't hidden, surface past
+  // incomplete tasks in a distinct section below today's items.
+  const pastIncompleteItems = useMemo(() => {
+    if (autoAdvanceEnabled || !showPastIncompleteInToday) return [];
+    return Object.values(items)
+      .filter(
+        (i) =>
+          i.dayKey !== null &&
+          i.dayKey < dayKey &&
+          !i.completed &&
+          !i.isLater &&
+          !i.parentId &&
+          !i.isArchived &&
+          i.type !== 'note',
+      )
+      .sort((a, b) => (b.dayKey || '').localeCompare(a.dayKey || ''));
+  }, [items, autoAdvanceEnabled, showPastIncompleteInToday, dayKey]);
   const pendingReminders = selectPendingRemindersForDay(items, dayKey);
   const [showReminders, setShowReminders] = useState(false);
   const deleteItem = usePlannerStore((s) => s.deleteItem);
@@ -210,6 +204,28 @@ export function TodayView() {
               </div>
               <AddItemForm dayKey={dayKey} className="mt-1" />
               <SortArchiveButtons items={todayItems} />
+              {pastIncompleteItems.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                    Past unfinished ({pastIncompleteItems.length})
+                  </h3>
+                  <ItemList items={pastIncompleteItems} />
+                  <div className="mt-3 flex gap-2 text-xs">
+                    <button
+                      onClick={() => setShowPastIncompleteInToday(false)}
+                      className="px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                    >
+                      Hide from Today
+                    </button>
+                    <button
+                      onClick={() => setAutoAdvanceEnabled(true)}
+                      className="px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)] transition-colors"
+                    >
+                      Turn on auto-advance
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
