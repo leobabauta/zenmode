@@ -6,3 +6,4 @@ mobile/.env
 mobile/.expo
 mobile/android
 mobile/ios
+supabase/.temp/
