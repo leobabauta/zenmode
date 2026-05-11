@@ -4,7 +4,40 @@ import type { PlannerItem } from '../types';
 
 // Track IDs confirmed to exist on remote (seen during pull or successfully pushed).
 // Local-only items NOT in this set are new/unpushed and must never be auto-deleted.
-const knownRemoteIds = new Set<string>();
+let knownRemoteIds = new Set<string>();
+
+// Storage key for persisting knownRemoteIds across sessions
+const KNOWN_REMOTE_IDS_KEY = 'zenmode-known-remote-ids';
+
+// Load persisted knownRemoteIds on startup
+function loadKnownRemoteIds(): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(KNOWN_REMOTE_IDS_KEY);
+      if (stored) {
+        const ids = JSON.parse(stored);
+        knownRemoteIds = new Set(Array.isArray(ids) ? ids : []);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load knownRemoteIds from localStorage:', error);
+    knownRemoteIds = new Set();
+  }
+}
+
+// Persist knownRemoteIds to storage
+function saveKnownRemoteIds(): void {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(KNOWN_REMOTE_IDS_KEY, JSON.stringify(Array.from(knownRemoteIds)));
+    }
+  } catch (error) {
+    console.warn('Failed to save knownRemoteIds to localStorage:', error);
+  }
+}
+
+// Initialize knownRemoteIds from storage
+loadKnownRemoteIds();
 
 // --- Row <-> Item transforms ---
 
@@ -201,6 +234,9 @@ export async function pullFromSupabase(): Promise<void> {
         for (const item of localNewer) knownRemoteIds.add(item.id);
       }
     }
+
+    // Persist updated knownRemoteIds after pull
+    saveKnownRemoteIds();
     itemsPullDone = true;
     // Flush any items/deletes that were queued before the first pull completed.
     // markChanged/markDeleted track IDs before itemsPullDone but don't schedule
@@ -257,6 +293,7 @@ async function flushChanged(): Promise<void> {
     } else {
       // Mark as confirmed on remote so pull won't delete them
       for (const id of ids) knownRemoteIds.add(id);
+      saveKnownRemoteIds();
     }
   }
 }
