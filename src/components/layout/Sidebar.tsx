@@ -203,7 +203,7 @@ export function Sidebar() {
   const [newListName, setNewListName] = useState('');
   const [listsCollapsed, setListsCollapsed] = useState(false);
   const [labelsCollapsed, setLabelsCollapsed] = useState(false);
-  const [planningCollapsed, setPlanningCollapsed] = useState(false);
+  const [planningCollapsed, setPlanningCollapsed] = useState(true);
   const setShowShortcuts = usePlannerStore((s) => s.setShowShortcuts);
   const setShowHelp = usePlannerStore((s) => s.setShowHelp);
   const lastRitualDate = usePlannerStore((s) => s.lastRitualDate);
@@ -421,7 +421,7 @@ export function Sidebar() {
           <svg className={cn('w-3 h-3 transition-transform', planningCollapsed && '-rotate-90')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
-          Planning
+          Plan
         </button>
         {!planningCollapsed && (
           <div className="mt-1.5 space-y-0.5">
