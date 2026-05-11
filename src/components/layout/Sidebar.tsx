@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { usePlannerStore, LABEL_PALETTE } from '../../store/usePlannerStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
+import { toDayKey, getWeekKey } from '../../lib/dates';
 
 const DEFAULT_NAV_ORDER = ['timeline', 'inbox', 'today', 'later', 'archive'];
 
@@ -202,8 +203,13 @@ export function Sidebar() {
   const [newListName, setNewListName] = useState('');
   const [listsCollapsed, setListsCollapsed] = useState(false);
   const [labelsCollapsed, setLabelsCollapsed] = useState(false);
+  const [planningCollapsed, setPlanningCollapsed] = useState(true);
   const setShowShortcuts = usePlannerStore((s) => s.setShowShortcuts);
   const setShowHelp = usePlannerStore((s) => s.setShowHelp);
+  const lastRitualDate = usePlannerStore((s) => s.lastRitualDate);
+  const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
+  const lastWeeklyPlanningDate = usePlannerStore((s) => s.lastWeeklyPlanningDate);
+  const lastWeeklyReviewDate = usePlannerStore((s) => s.lastWeeklyReviewDate);
   const newListInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -258,6 +264,16 @@ export function Sidebar() {
     return ordered;
   }, [effectiveNavOrder]);
 
+  // Calculate ritual completion status
+  const todayKey = toDayKey(new Date());
+  const weekKey = getWeekKey(new Date());
+  const planningStatus = useMemo(() => ({
+    dailyPlanning: lastRitualDate === todayKey,
+    dailyReview: lastReviewRitualDate === todayKey,
+    weeklyPlanning: lastWeeklyPlanningDate === weekKey,
+    weeklyReview: lastWeeklyReviewDate === weekKey,
+  }), [lastRitualDate, lastReviewRitualDate, lastWeeklyPlanningDate, lastWeeklyReviewDate, todayKey, weekKey]);
+
   if (collapsed) {
     return (
       <div className="flex-shrink-0 flex flex-col items-center pt-2 px-1">
@@ -281,6 +297,41 @@ export function Sidebar() {
       addCustomList(name);
       setNewListName('');
       setCreatingList(false);
+    }
+  };
+
+  const handlePlanningAction = (type: 'dailyPlanning' | 'dailyReview' | 'weeklyPlanning' | 'weeklyReview') => {
+    const isCompleted = planningStatus[type];
+    
+    switch (type) {
+      case 'dailyPlanning':
+        if (isCompleted) {
+          setView('ritual'); // View completed ritual
+        } else {
+          setView('ritual'); // Start new ritual
+        }
+        break;
+      case 'dailyReview':
+        if (isCompleted) {
+          setView('review'); // View completed review
+        } else {
+          setView('review'); // Start new review
+        }
+        break;
+      case 'weeklyPlanning':
+        if (isCompleted) {
+          setView('weekPlan'); // View completed weekly planning results
+        } else {
+          setView('weeklyPlanning'); // Start new weekly planning
+        }
+        break;
+      case 'weeklyReview':
+        if (isCompleted) {
+          setView('weekReviewPage'); // View completed weekly review results
+        } else {
+          setView('weeklyReview'); // Start new weekly review
+        }
+        break;
     }
   };
 
@@ -360,6 +411,99 @@ export function Sidebar() {
           })}
         </SortableContext>
       </nav>
+
+      {/* Planning section */}
+      <div className="mt-3 px-3">
+        <button
+          onClick={() => setPlanningCollapsed(!planningCollapsed)}
+          className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] px-1 hover:text-[var(--color-text-secondary)] transition-colors"
+        >
+          <svg className={cn('w-3 h-3 transition-transform', planningCollapsed && '-rotate-90')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+          Plan
+        </button>
+        {!planningCollapsed && (
+          <div className="mt-1.5 space-y-0.5">
+            <button
+              onClick={() => handlePlanningAction('dailyPlanning')}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+                view === 'ritual'
+                  ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+              )}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span className="truncate">Daily Planning</span>
+              {planningStatus.dailyPlanning && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 flex-shrink-0">
+                  Done
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handlePlanningAction('dailyReview')}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+                view === 'review'
+                  ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+              )}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="truncate">Daily Review</span>
+              {planningStatus.dailyReview && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 flex-shrink-0">
+                  Done
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handlePlanningAction('weeklyPlanning')}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+                (view === 'weeklyPlanning' || view === 'weekPlan')
+                  ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+              )}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="truncate">Weekly Planning</span>
+              {planningStatus.weeklyPlanning && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 flex-shrink-0">
+                  Done
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handlePlanningAction('weeklyReview')}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors duration-100 text-left',
+                (view === 'weeklyReview' || view === 'weekReviewPage')
+                  ? 'bg-[var(--color-accent-tint)] text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]',
+              )}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span className="truncate">Weekly Review</span>
+              {planningStatus.weeklyReview && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 flex-shrink-0">
+                  Done
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Custom lists section */}
       <div className="mt-3 px-3">
