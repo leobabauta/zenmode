@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useShallow } from 'zustand/react/shallow';
 import { DraggableItem } from './DraggableItem';
@@ -38,6 +37,7 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
   const {
     selectionAnchorId, selectionFocusId,
     startSelection, moveFocus, clearSelection, reorderItems, insertItemAfter,
+    collapsedItemIds, toggleItemCollapse,
   } = usePlannerStore(useShallow((s) => ({
     selectionAnchorId: s.selectionAnchorId,
     selectionFocusId: s.selectionFocusId,
@@ -46,18 +46,10 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
     clearSelection: s.clearSelection,
     reorderItems: s.reorderItems,
     insertItemAfter: s.insertItemAfter,
+    collapsedItemIds: s.collapsedItemIds,
+    toggleItemCollapse: s.toggleItemCollapse,
   })));
   const allItems = usePlannerStore((s) => s.items);
-
-  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
-  const toggleCollapse = (id: string) => {
-    setCollapsedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   const ids = items.map((i) => i.id);
   const dayKey = items[0]?.dayKey ?? null;
@@ -130,8 +122,8 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
             onCrossPrev?.(99999);
           }
         }}
-        onToggleCollapse={!isChild ? () => toggleCollapse(item.id) : undefined}
-        isCollapsed={collapsedIds.has(item.id)}
+        onToggleCollapse={!isChild ? () => toggleItemCollapse(item.id) : undefined}
+        isCollapsed={collapsedItemIds.has(item.id)}
       />
     </div>
   );
@@ -141,7 +133,7 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
       <div className="flex flex-col gap-0.5">
         {items.map((item, index) => {
           const children = selectChildItems(allItems, item.id);
-          const isCollapsed = collapsedIds.has(item.id);
+          const isCollapsed = collapsedItemIds.has(item.id);
           return (
             <div key={item.id}>
               {renderItem(item, index)}

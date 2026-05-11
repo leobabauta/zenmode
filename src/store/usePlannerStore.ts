@@ -77,6 +77,7 @@ interface PlannerState {
   lastAutoMoveDate: string | null;
   hasCompletedOnboarding: boolean;
   onboardingCompletedDate: string | null;
+  collapsedItemIds: Set<string>;
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
@@ -158,6 +159,7 @@ interface PlannerState {
   startSelection: (id: string | null) => void;
   moveFocus: (id: string | null) => void;
   clearSelection: () => void;
+  toggleItemCollapse: (id: string) => void;
 }
 
 export const usePlannerStore = create<PlannerState>()(
@@ -226,6 +228,7 @@ export const usePlannerStore = create<PlannerState>()(
       lastAutoMoveDate: null,
       hasCompletedOnboarding: false,
       onboardingCompletedDate: null,
+      collapsedItemIds: new Set(),
 
       getLabelColor: (tag: string) => {
         const key = tag.toLowerCase();
@@ -1196,14 +1199,29 @@ export const usePlannerStore = create<PlannerState>()(
       clearSelection: () => {
         set((state) => { state.selectionAnchorId = null; state.selectionFocusId = null; });
       },
+      toggleItemCollapse: (id) => {
+        set((state) => {
+          if (state.collapsedItemIds.has(id)) {
+            state.collapsedItemIds.delete(id);
+          } else {
+            state.collapsedItemIds.add(id);
+          }
+        });
+      },
     })),
     {
       name: 'zenmode-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualMinute: state.planningRitualMinute, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualMinute: state.reviewRitualMinute, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, autoAdvanceEnabled: state.autoAdvanceEnabled, autoAdvanceLaterDays: state.autoAdvanceLaterDays, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualMinute: state.planningRitualMinute, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualMinute: state.reviewRitualMinute, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, autoAdvanceEnabled: state.autoAdvanceEnabled, autoAdvanceLaterDays: state.autoAdvanceLaterDays, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate, collapsedItemIds: Array.from(state.collapsedItemIds) }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Set initial sidebar state based on restored view
           state.sidebarCollapsed = state.view === 'today';
+          // Ensure collapsedItemIds is a Set (JSON deserialization might make it an array)
+          if (Array.isArray(state.collapsedItemIds)) {
+            state.collapsedItemIds = new Set(state.collapsedItemIds);
+          } else if (!state.collapsedItemIds) {
+            state.collapsedItemIds = new Set();
+          }
         }
       },
     }
@@ -1277,7 +1295,13 @@ export function selectLaterItems(items: Record<string, PlannerItem>) {
 export function selectChildItems(items: Record<string, PlannerItem>, parentId: string) {
   return Object.values(items)
     .filter((i) => i.parentId === parentId)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => {
+      // Sort completed items to the top, then by order
+      if (a.completed !== b.completed) {
+        return a.completed ? -1 : 1;
+      }
+      return a.order - b.order;
+    });
 }
 
 export function selectCustomListItems(items: Record<string, PlannerItem>, listId: string) {
