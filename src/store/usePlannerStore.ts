@@ -78,6 +78,7 @@ interface PlannerState {
   hasCompletedOnboarding: boolean;
   onboardingCompletedDate: string | null;
   collapsedItemIds: Set<string>;
+  showPastIncompleteInToday: boolean;
 
   getLabelColor: (tag: string) => string;
   setLabelColor: (tag: string, color: string) => void;
@@ -154,6 +155,7 @@ interface PlannerState {
   unarchiveItem: (id: string) => void;
   setAutoAdvanceEnabled: (v: boolean) => void;
   setAutoAdvanceLaterDays: (v: number) => void;
+  setShowPastIncompleteInToday: (v: boolean) => void;
   reorderNav: (orderedIds: string[]) => void;
   reorderLabels: (orderedTags: string[]) => void;
   startSelection: (id: string | null) => void;
@@ -229,6 +231,7 @@ export const usePlannerStore = create<PlannerState>()(
       hasCompletedOnboarding: false,
       onboardingCompletedDate: null,
       collapsedItemIds: new Set(),
+      showPastIncompleteInToday: true,
 
       getLabelColor: (tag: string) => {
         const key = tag.toLowerCase();
@@ -1112,6 +1115,9 @@ export const usePlannerStore = create<PlannerState>()(
       setAutoAdvanceLaterDays: (v) => {
         set((state) => { state.autoAdvanceLaterDays = v; });
       },
+      setShowPastIncompleteInToday: (v) => {
+        set((state) => { state.showPastIncompleteInToday = v; });
+      },
       sortCompletedToTop: (context) => {
         const state = get();
         let itemList: PlannerItem[];
@@ -1211,7 +1217,7 @@ export const usePlannerStore = create<PlannerState>()(
     })),
     {
       name: 'zenmode-v1',
-      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualMinute: state.planningRitualMinute, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualMinute: state.reviewRitualMinute, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, autoAdvanceEnabled: state.autoAdvanceEnabled, autoAdvanceLaterDays: state.autoAdvanceLaterDays, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate, collapsedItemIds: Array.from(state.collapsedItemIds) }),
+      partialize: (state) => ({ items: state.items, theme: state.theme, view: state.view, activeHashtag: state.activeHashtag, labelColors: state.labelColors, lastRitualDate: state.lastRitualDate, planningRitualEnabled: state.planningRitualEnabled, planningRitualHour: state.planningRitualHour, planningRitualMinute: state.planningRitualMinute, planningRitualSnoozedUntil: state.planningRitualSnoozedUntil, reviewRitualEnabled: state.reviewRitualEnabled, reviewRitualHour: state.reviewRitualHour, reviewRitualMinute: state.reviewRitualMinute, reviewRitualSnoozedUntil: state.reviewRitualSnoozedUntil, lastReviewRitualDate: state.lastReviewRitualDate, customLists: state.customLists, activeListId: state.activeListId, weeklyPlans: state.weeklyPlans, weeklyReviews: state.weeklyReviews, weeklyPlanningEnabled: state.weeklyPlanningEnabled, weeklyPlanningDay: state.weeklyPlanningDay, weeklyPlanningHour: state.weeklyPlanningHour, weeklyPlanningSnoozedUntil: state.weeklyPlanningSnoozedUntil, weeklyReviewEnabled: state.weeklyReviewEnabled, weeklyReviewDay: state.weeklyReviewDay, weeklyReviewHour: state.weeklyReviewHour, weeklyReviewMinute: state.weeklyReviewMinute, weeklyReviewSnoozedUntil: state.weeklyReviewSnoozedUntil, lastWeeklyPlanningDate: state.lastWeeklyPlanningDate, lastWeeklyReviewDate: state.lastWeeklyReviewDate, navOrder: state.navOrder, labelOrder: state.labelOrder, autoAdvanceEnabled: state.autoAdvanceEnabled, autoAdvanceLaterDays: state.autoAdvanceLaterDays, lastAutoMoveDate: state.lastAutoMoveDate, hasCompletedOnboarding: state.hasCompletedOnboarding, onboardingCompletedDate: state.onboardingCompletedDate, collapsedItemIds: Array.from(state.collapsedItemIds), showPastIncompleteInToday: state.showPastIncompleteInToday }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Set initial sidebar state based on restored view
@@ -1236,7 +1242,7 @@ if (typeof window !== 'undefined') {
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
 import { markChanged, markDeleted, pushPreferences, isPullSuppressingDeletes } from '../lib/sync';
 
-const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'autoAdvanceEnabled', 'autoAdvanceLaterDays', 'lastAutoMoveDate'] as const;
+const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'autoAdvanceEnabled', 'autoAdvanceLaterDays', 'lastAutoMoveDate', 'showPastIncompleteInToday'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
   // Detect changed items
