@@ -224,6 +224,10 @@ export function useDragAndDrop() {
     if (sourceContainerKey === targetContainerKey) {
       if (!targetItemId || targetItemId === activeIdStr) return;
 
+      const state = usePlannerStore.getState();
+      const selectedIds = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const dragIds = selectedIds.includes(activeIdStr) ? selectedIds : [activeIdStr];
+
       const containerItems =
         targetContainerKey === 'inbox'
           ? selectInboxItems(items)
@@ -231,18 +235,43 @@ export function useDragAndDrop() {
           ? selectLaterItems(items)
           : selectItemsForDay(items, targetContainerKey);
 
-      const oldIndex = containerItems.findIndex((i) => i.id === activeIdStr);
-      const newIndex = containerItems.findIndex((i) => i.id === targetItemId);
+      // If dragging multiple items, move them as a group
+      if (dragIds.length > 1) {
+        const dragIdsSet = new Set(dragIds);
+        const nonDraggedItems = containerItems.filter((i) => !dragIdsSet.has(i.id));
+        const targetIndex = nonDraggedItems.findIndex((i) => i.id === targetItemId);
+        
+        if (targetIndex === -1) return;
+        
+        // Insert the dragged items at the target position
+        const reordered = [
+          ...nonDraggedItems.slice(0, targetIndex),
+          ...dragIds.map((id) => items[id]).filter(Boolean),
+          ...nonDraggedItems.slice(targetIndex)
+        ];
+        
+        reorderItems(
+          targetContainerKey === 'inbox' || targetContainerKey === 'later'
+            ? null
+            : targetContainerKey,
+          reordered.map((i) => i.id)
+        );
+      } else {
+        // Single item drag: use existing logic
+        const oldIndex = containerItems.findIndex((i) => i.id === activeIdStr);
+        const newIndex = containerItems.findIndex((i) => i.id === targetItemId);
 
-      if (oldIndex === newIndex) return;
+        if (oldIndex === newIndex) return;
 
-      const reordered = arrayMove(containerItems, oldIndex, newIndex);
-      reorderItems(
-        targetContainerKey === 'inbox' || targetContainerKey === 'later'
-          ? null
-          : targetContainerKey,
-        reordered.map((i) => i.id)
-      );
+        const reordered = arrayMove(containerItems, oldIndex, newIndex);
+        reorderItems(
+          targetContainerKey === 'inbox' || targetContainerKey === 'later'
+            ? null
+            : targetContainerKey,
+          reordered.map((i) => i.id)
+        );
+      }
+      state.clearSelection();
       return;
     }
 
