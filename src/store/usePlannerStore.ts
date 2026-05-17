@@ -123,7 +123,7 @@ interface PlannerState {
   snoozeWeeklyPlanning: () => void;
   snoozeWeeklyReview: () => void;
   saveWeeklyPlan: (plan: WeeklyPlan) => void;
-  completeWeeklyPlanning: () => void;
+  completeWeeklyPlanning: (weekKey?: string) => void;
   saveWeeklyReview: (review: WeeklyReview) => void;
   completeWeeklyReview: () => void;
   setWeeklyPlanningEnabled: (v: boolean) => void;
@@ -978,9 +978,10 @@ export const usePlannerStore = create<PlannerState>()(
           state.weeklyPlans[plan.weekKey] = plan;
         });
       },
-      completeWeeklyPlanning: () => {
+      completeWeeklyPlanning: (weekKey) => {
         set((state) => {
-          state.lastWeeklyPlanningDate = getWeekKey(new Date());
+          // Use provided weekKey or fall back to current week
+          state.lastWeeklyPlanningDate = weekKey || getWeekKey(new Date());
           state.showWeeklyPlanningPrompt = false;
           state.weeklyPlanningSnoozedUntil = null;
           state.view = 'weekPlan';

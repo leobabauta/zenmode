@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { nanoid } from 'nanoid';
 import { usePlannerStore } from '../../store/usePlannerStore';
-import { getWeekKey, toDayKey } from '../../lib/dates';
+import { getWeekKeyForPlanning, toDayKey } from '../../lib/dates';
 import { addDays } from 'date-fns';
 import { CopyButton } from '../ui/CopyButton';
 import { cn } from '../../lib/utils';
@@ -10,7 +10,7 @@ import type { WeeklyPlan } from '../../types';
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function WeeklyPlanningView() {
-  const weekKey = getWeekKey(new Date());
+  const weekKey = getWeekKeyForPlanning(new Date());
   const existingPlan = usePlannerStore((s) => s.weeklyPlans[weekKey]);
 
   const [step, setStep] = useState(1);
@@ -82,7 +82,7 @@ export function WeeklyPlanningView() {
       }
     }
 
-    completeWeeklyPlanning();
+    completeWeeklyPlanning(weekKey);
   };
 
   return (

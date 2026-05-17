@@ -48,3 +48,15 @@ export function getWeekKey(date: Date = new Date()): string {
   const monday = startOfWeek(date, { weekStartsOn: 1 }); // 1 = Monday
   return format(monday, 'yyyy-MM-dd');
 }
+
+/** Returns the appropriate week key for weekly planning. 
+ * If it's Sunday, returns next week's key (since people want to plan ahead).
+ * Otherwise returns current week's key. */
+export function getWeekKeyForPlanning(date: Date = new Date()): string {
+  if (date.getDay() === 0) { // Sunday is 0
+    // On Sunday, plan for next week
+    const nextWeek = addDays(date, 1); // Move to Monday (next week)
+    return getWeekKey(nextWeek);
+  }
+  return getWeekKey(date);
+}
