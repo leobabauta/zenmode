@@ -5,6 +5,7 @@ import { addDays, format } from 'date-fns';
 
 export function WeekReviewPage() {
   const weeklyReviews = usePlannerStore((s) => s.weeklyReviews);
+  const weeklyPlans = usePlannerStore((s) => s.weeklyPlans);
   const setView = usePlannerStore((s) => s.setView);
 
   // Start with the most recent review or current week
@@ -12,6 +13,7 @@ export function WeekReviewPage() {
   const [selectedWeekKey, setSelectedWeekKey] = useState(allWeekKeys[0] ?? getWeekKey(new Date()));
 
   const review = weeklyReviews[selectedWeekKey];
+  const weeklyPlan = weeklyPlans[selectedWeekKey];
   const currentIdx = allWeekKeys.indexOf(selectedWeekKey);
 
   const mondayDate = new Date(selectedWeekKey + 'T00:00:00');
@@ -66,6 +68,29 @@ export function WeekReviewPage() {
           </p>
         ) : (
           <>
+            {/* Show weekly plan priorities and intentions if they exist */}
+            {weeklyPlan && weeklyPlan.priorities.length > 0 && (
+              <div className="mb-3 rounded-xl border border-blue-500/30 bg-blue-500/5 p-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 block">
+                  This week's priorities
+                </span>
+                {weeklyPlan.priorities.map((p) => (
+                  <div key={p.id} className="px-3 py-1.5">
+                    <span className="text-sm text-[var(--color-text-primary)]">{p.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {weeklyPlan && weeklyPlan.intentions?.trim() && (
+              <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 block mb-1">
+                  This week's intention
+                </span>
+                <span className="text-sm text-[var(--color-text-primary)]">{weeklyPlan.intentions}</span>
+              </div>
+            )}
+
             {review.priorityReflections?.trim() && (
               <div className="mb-3 rounded-xl border border-blue-500/30 bg-blue-500/5 px-3 py-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-blue-400 block mb-1">
