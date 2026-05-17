@@ -50,7 +50,14 @@ export function HashtagText({ text, onHashtagClick, className }: HashtagTextProp
         ) : /^\*\*[^*]+\*\*$/.test(part) ? (
           <strong key={i}>{part.slice(2, -2)}</strong>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={i}>
+            {part.split('\n').map((line, lineIndex, lines) => (
+              <span key={lineIndex}>
+                {line}
+                {lineIndex < lines.length - 1 && <br />}
+              </span>
+            ))}
+          </span>
         )
       )}
     </span>
