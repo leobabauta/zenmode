@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -152,18 +152,41 @@ export function DailyRitualView() {
   const sendToInbox = usePlannerStore((s) => s.sendToInbox);
   const completeRitual = usePlannerStore((s) => s.completeRitual);
   const items = usePlannerStore((s) => s.items);
+  const autoAdvanceEnabled = usePlannerStore((s) => s.autoAdvanceEnabled);
+  const showPastIncompleteInToday = usePlannerStore((s) => s.showPastIncompleteInToday);
 
   const dayKey = toDayKey(new Date());
   const tomorrowKey = toDayKey(addDays(new Date(), 1));
   const allTodayItems = selectItemsForDay(items, dayKey);
-  const todayItems = allTodayItems.filter((i) => i.type !== 'note');
+  const baseTodayItems = allTodayItems.filter((i) => i.type !== 'note');
   const inboxItems = selectInboxItems(items).filter((i) => !i.completed);
+
+  // Include past incomplete items when auto-advance is disabled and the feature is enabled
+  // This matches the logic from TodayView
+  const pastIncompleteItems = useMemo(() => {
+    if (autoAdvanceEnabled || !showPastIncompleteInToday) return [];
+    return Object.values(items)
+      .filter(
+        (i) =>
+          i.dayKey !== null &&
+          i.dayKey < dayKey &&
+          !i.completed &&
+          !i.isLater &&
+          !i.parentId &&
+          !i.isArchived &&
+          i.type !== 'note',
+      )
+      .sort((a, b) => (b.dayKey || '').localeCompare(a.dayKey || ''));
+  }, [items, autoAdvanceEnabled, showPastIncompleteInToday, dayKey]);
+
+  // Combine today's items with past incomplete items
+  const todayItems = [...baseTodayItems, ...pastIncompleteItems];
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority && !i.isPriority).length;
 
   const moveInboxToToday = (id: string) => {
-    const maxOrder = todayItems.length > 0 ? Math.max(...todayItems.map((i) => i.order)) : -1;
+    const maxOrder = baseTodayItems.length > 0 ? Math.max(...baseTodayItems.map((i) => i.order)) : -1;
     moveItem(id, dayKey, maxOrder + 1);
   };
 
