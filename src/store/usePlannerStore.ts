@@ -338,8 +338,10 @@ export const usePlannerStore = create<PlannerState>()(
           // (only if one doesn't already exist — setRecurrence pre-generates future copies)
           if (patch.completed === true && item.recurrence && item.dayKey) {
             const nextDayKey = computeNextOccurrence(item.dayKey, item.recurrence);
+            // Check for any future instance of the same recurring item, not just the exact next occurrence.
+            // This prevents duplicates when completing items in hindsight from the timeline.
             const alreadyExists = Object.values(state.items).some(
-              (i) => i.dayKey === nextDayKey && i.text === item.text &&
+              (i) => i.dayKey && i.dayKey >= nextDayKey && i.text === item.text &&
                 !i.completed && i.recurrence &&
                 i.recurrence.type === item.recurrence!.type &&
                 i.recurrence.interval === item.recurrence!.interval
