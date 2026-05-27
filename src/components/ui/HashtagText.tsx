@@ -32,7 +32,7 @@ export function HashtagText({ text, onHashtagClick, className }: HashtagTextProp
   const parts = text.split(SPLIT_RE);
 
   return (
-    <span className={className}>
+    <span className={`${className} whitespace-pre-wrap`}>
       {parts.map((part, i) =>
         /^#[\w-]+$/.test(part) ? (
           <ColoredHashtag key={i} tag={part} onClick={() => onHashtagClick(part)} />

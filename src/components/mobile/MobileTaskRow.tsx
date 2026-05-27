@@ -12,7 +12,7 @@ export function MobileTaskRow({ item }: MobileTaskRowProps) {
   const promptDeleteItem = usePlannerStore((s) => s.promptDeleteItem);
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(item.text);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -42,20 +42,21 @@ export function MobileTaskRow({ item }: MobileTaskRowProps) {
         onClick={() => { if (!isEditing) { setEditText(item.text); setIsEditing(true); } }}
       >
         {isEditing ? (
-          <input
+          <textarea
             ref={inputRef}
             value={editText}
+            rows={Math.min(Math.max(editText.split('\n').length, 1), 10)}
             onChange={(e) => setEditText(e.target.value)}
             onBlur={commitEdit}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); }
               if (e.key === 'Escape') { setEditText(item.text); setIsEditing(false); }
             }}
-            className="w-full bg-transparent text-base text-[var(--color-text-primary)] outline-none"
+            className="w-full bg-transparent text-base text-[var(--color-text-primary)] outline-none resize-none"
           />
         ) : (
           <span
-            className={`text-base break-words ${
+            className={`text-base break-words whitespace-pre-wrap ${
               item.completed
                 ? 'line-through text-[var(--color-text-muted)]'
                 : 'text-[var(--color-text-primary)]'
