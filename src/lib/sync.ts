@@ -217,7 +217,10 @@ export async function pullFromSupabase(): Promise<void> {
 
     // Apply merged items to store, then re-sort so completed/incomplete
     // grouping is consistent even when order values from different devices diverge.
+    // Set itemsPullDone BEFORE setState to ensure any new items created during
+    // the setState subscription get properly queued for sync.
     suppressDeleteSync = true;
+    itemsPullDone = true;
     usePlannerStore.setState({ items: merged });
     usePlannerStore.getState().resortAllDays();
     suppressDeleteSync = false;
@@ -237,7 +240,6 @@ export async function pullFromSupabase(): Promise<void> {
 
     // Persist updated knownRemoteIds after pull
     saveKnownRemoteIds();
-    itemsPullDone = true;
     // Flush any items/deletes that were queued before the first pull completed.
     // markChanged/markDeleted track IDs before itemsPullDone but don't schedule
     // the actual push — do that now.
