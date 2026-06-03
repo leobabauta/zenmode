@@ -669,7 +669,6 @@ export const usePlannerStore = create<PlannerState>()(
       },
 
       autoMoveIncompleteItems: () => {
-        if (!get().autoAdvanceEnabled) return;
         const todayKey = toDayKey(new Date());
         // Track whether this is the first run of the day — only increment
         // consecutiveMoves on the first run to avoid inflating the counter
@@ -701,6 +700,9 @@ export const usePlannerStore = create<PlannerState>()(
               delete item.isMediumPriority;
             }
           });
+
+          // If auto-advance is disabled, stop here (only do cleanup, no moving)
+          if (!state.autoAdvanceEnabled) return;
 
           const pastIncomplete = Object.values(state.items).filter(
             (i) =>
