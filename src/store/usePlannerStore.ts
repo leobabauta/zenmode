@@ -4,7 +4,7 @@ import { immer } from 'zustand/middleware/immer';
 import { nanoid } from 'nanoid';
 import type { PlannerItem, ItemType, Recurrence, CustomList, WeeklyPlan, WeeklyReview } from '../types';
 import { computeNextOccurrence } from '../lib/recurrence';
-import { toDayKey, getWeekKey } from '../lib/dates';
+import { toDayKey, getWeekKey, getWeeklyPlanningWeekKey } from '../lib/dates';
 
 export const LABEL_PALETTE = [
   '#D20000', '#F65353', '#EA7D70', '#FD5E00', '#F58553',
@@ -980,7 +980,7 @@ export const usePlannerStore = create<PlannerState>()(
       },
       completeWeeklyPlanning: () => {
         set((state) => {
-          state.lastWeeklyPlanningDate = getWeekKey(new Date());
+          state.lastWeeklyPlanningDate = getWeeklyPlanningWeekKey(new Date(), state.weeklyPlanningDay);
           state.showWeeklyPlanningPrompt = false;
           state.weeklyPlanningSnoozedUntil = null;
           state.view = 'weekPlan';

@@ -3,7 +3,7 @@ import { AppShell } from './components/layout/AppShell';
 import { MobileApp } from './components/mobile/MobileApp';
 import { useIsMobile } from './hooks/useIsMobile';
 import { usePlannerStore } from './store/usePlannerStore';
-import { toDayKey, getWeekKey } from './lib/dates';
+import { toDayKey, getWeekKey, getWeeklyPlanningWeekKey } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
@@ -80,8 +80,8 @@ export default function App() {
     const state = usePlannerStore.getState();
     if (!state.weeklyPlanningEnabled) return;
     const now = new Date();
-    const currentWeekKey = getWeekKey(now);
-    if (state.lastWeeklyPlanningDate === currentWeekKey) return;
+    const targetWeekKey = getWeeklyPlanningWeekKey(now, state.weeklyPlanningDay);
+    if (state.lastWeeklyPlanningDate === targetWeekKey) return;
     if (now.getDay() !== state.weeklyPlanningDay) return;
     if (now.getHours() < state.weeklyPlanningHour) return;
     if (state.weeklyPlanningSnoozedUntil && Date.now() < state.weeklyPlanningSnoozedUntil) return;
@@ -199,13 +199,14 @@ export default function App() {
           const s = usePlannerStore.getState();
           const todayKey = toDayKey(new Date());
           const weekKey = getWeekKey(new Date());
+          const weeklyPlanningWeekKey = getWeeklyPlanningWeekKey(new Date(), s.weeklyPlanningDay);
           if (s.lastRitualDate === todayKey && s.showRitualPrompt) {
             s.setShowRitualPrompt(false);
           }
           if (s.lastReviewRitualDate === todayKey && s.showReviewRitualPrompt) {
             s.setShowReviewRitualPrompt(false);
           }
-          if (s.lastWeeklyPlanningDate === weekKey && s.showWeeklyPlanningPrompt) {
+          if (s.lastWeeklyPlanningDate === weeklyPlanningWeekKey && s.showWeeklyPlanningPrompt) {
             s.setShowWeeklyPlanningPrompt(false);
           }
           if (s.lastWeeklyReviewDate === weekKey && s.showWeeklyReviewPrompt) {
