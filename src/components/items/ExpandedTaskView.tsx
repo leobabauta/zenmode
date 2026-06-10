@@ -146,6 +146,20 @@ export function ExpandedTaskView() {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const timerStartRef = useRef<string>(new Date().toISOString());
+
+  // Auto-resize textarea based on content
+  const autoResizeTextarea = useCallback(() => {
+    const textarea = notesRef.current;
+    if (!textarea) return;
+    
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    // Set height to scrollHeight, with a minimum of 3 lines and maximum of 10 lines
+    const minHeight = 3 * 20; // 3 lines * ~20px per line
+    const maxHeight = 10 * 20; // 10 lines * ~20px per line
+    const scrollHeight = textarea.scrollHeight;
+    textarea.style.height = `${Math.max(minHeight, Math.min(maxHeight, scrollHeight))}px`;
+  }, []);
   // editRequest: { index, tick } — index is the child to edit (-1 = new last child), tick always increments
   const [editRequest, setEditRequest] = useState<{ index: number; tick: number } | null>(null);
   const tickRef = useRef(0);
@@ -159,6 +173,14 @@ export function ExpandedTaskView() {
     setNotesText(task?.notes || '');
     setIsEditingNotes(false);
   }, [expandedTaskId]);
+
+  // Auto-resize textarea when notes text changes or editing starts
+  useEffect(() => {
+    if (isEditingNotes) {
+      // Small delay to ensure the textarea is rendered
+      setTimeout(autoResizeTextarea, 0);
+    }
+  }, [isEditingNotes, notesText, autoResizeTextarea]);
 
   const focusTextarea = useCallback(() => {
     // Small delay to let React finish re-rendering after item deletion
@@ -342,7 +364,11 @@ export function ExpandedTaskView() {
             <textarea
               ref={notesRef}
               value={notesText}
-              onChange={(e) => setNotesText(e.target.value)}
+              onChange={(e) => {
+                setNotesText(e.target.value);
+                // Auto-resize on every change
+                setTimeout(autoResizeTextarea, 0);
+              }}
               onBlur={() => {
                 const trimmed = notesText.trim();
                 if (trimmed !== (task?.notes || '')) {
@@ -357,9 +383,9 @@ export function ExpandedTaskView() {
                   setIsEditingNotes(false);
                 }
               }}
-              rows={Math.max(notesText.split('\n').length, 3)}
               placeholder="Add notes..."
               className="w-full bg-transparent text-sm text-[var(--color-text-secondary)] outline-none resize-none"
+              style={{ minHeight: '60px' }} // 3 lines worth of height
               autoFocus
             />
           ) : (
