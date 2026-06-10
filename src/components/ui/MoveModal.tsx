@@ -22,6 +22,7 @@ function buildPresets(): Preset[] {
   const monday = nextMonday(today);
 
   return [
+    { label: 'Today', date: today, dayKey: toDayKey(today) },
     { label: 'Tomorrow', date: tomorrow, dayKey: toDayKey(tomorrow) },
     { label: 'Later this week', date: laterThisWeek, dayKey: toDayKey(laterThisWeek) },
     { label: 'This weekend', date: weekend, dayKey: toDayKey(weekend) },
