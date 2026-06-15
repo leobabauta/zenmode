@@ -235,16 +235,20 @@ export function NoteItem({
         )}
         <div className="cursor-text" onClick={handleContentClick}>
           {isReviewNote && !isEditing ? (
-            <div className="space-y-0.5">
-              {item.text.split('\n').filter((line) => !line.startsWith('#')).map((line, i) => (
-                <p key={i} className="text-sm text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
-                  {line.split(/(\*\*.*?\*\*)/).map((part, j) =>
-                    part.startsWith('**') && part.endsWith('**')
-                      ? <strong key={j}>{part.slice(2, -2)}</strong>
-                      : part
-                  )}
-                </p>
-              ))}
+            <div className="space-y-2">
+              {item.text.split('\n').filter((line) => !line.startsWith('#')).map((line, i) =>
+                line.trim() === '' ? (
+                  <div key={i} className="h-1" />
+                ) : (
+                  <p key={i} className="text-sm text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
+                    {line.split(/(\*\*.*?\*\*)/).map((part, j) =>
+                      part.startsWith('**') && part.endsWith('**')
+                        ? <strong key={j}>{part.slice(2, -2)}</strong>
+                        : part
+                    )}
+                  </p>
+                )
+              )}
             </div>
           ) : isEditing ? (
             <textarea

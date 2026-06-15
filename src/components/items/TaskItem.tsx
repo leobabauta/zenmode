@@ -415,7 +415,7 @@ export function TaskItem({
         ) : item.text === '' ? (
           <span className="text-sm">&nbsp;</span>
         ) : (
-          <span className="inline">
+          <span className="block whitespace-pre-wrap">
             <HashtagText
               text={item.text}
               onHashtagClick={setHashtagView}

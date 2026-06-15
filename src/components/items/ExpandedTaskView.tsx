@@ -160,6 +160,14 @@ export function ExpandedTaskView() {
     setIsEditingNotes(false);
   }, [expandedTaskId]);
 
+  useEffect(() => {
+    if (isEditingNotes && notesRef.current) {
+      const el = notesRef.current;
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+  }, [isEditingNotes]);
+
   const focusTextarea = useCallback(() => {
     // Small delay to let React finish re-rendering after item deletion
     setTimeout(() => textareaRef.current?.focus(), 0);
@@ -342,7 +350,11 @@ export function ExpandedTaskView() {
             <textarea
               ref={notesRef}
               value={notesText}
-              onChange={(e) => setNotesText(e.target.value)}
+              onChange={(e) => {
+                setNotesText(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
               onBlur={() => {
                 const trimmed = notesText.trim();
                 if (trimmed !== (task?.notes || '')) {
@@ -357,9 +369,9 @@ export function ExpandedTaskView() {
                   setIsEditingNotes(false);
                 }
               }}
-              rows={Math.max(notesText.split('\n').length, 3)}
               placeholder="Add notes..."
-              className="w-full bg-transparent text-sm text-[var(--color-text-secondary)] outline-none resize-none"
+              className="w-full bg-transparent text-sm text-[var(--color-text-secondary)] outline-none resize-none overflow-hidden"
+              style={{ minHeight: '4.5rem' }}
               autoFocus
             />
           ) : (
