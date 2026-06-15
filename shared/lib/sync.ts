@@ -8,35 +8,51 @@ let knownRemoteIds = new Set<string>();
 // Storage key for persisting knownRemoteIds across sessions
 const KNOWN_REMOTE_IDS_KEY = 'zenmode-known-remote-ids';
 
-// Load persisted knownRemoteIds on startup
-function loadKnownRemoteIds(): void {
+// Async storage interface — defaults to localStorage (web/desktop).
+// Mobile must call registerStorage(AsyncStorage) at startup because
+// React Native has no localStorage and knownRemoteIds would never persist.
+let _getItem: (key: string) => Promise<string | null> = async (key) => {
   try {
-    if (typeof localStorage !== 'undefined') {
-      const stored = localStorage.getItem(KNOWN_REMOTE_IDS_KEY);
-      if (stored) {
-        const ids = JSON.parse(stored);
-        knownRemoteIds = new Set(Array.isArray(ids) ? ids : []);
-      }
+    return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+  } catch { return null; }
+};
+let _setItem: (key: string, value: string) => Promise<void> = async (key, value) => {
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+  } catch {}
+};
+
+export function registerStorage(storage: {
+  getItem: (key: string) => string | null | Promise<string | null>;
+  setItem: (key: string, value: string) => void | Promise<void>;
+}): void {
+  _getItem = (key) => Promise.resolve(storage.getItem(key));
+  _setItem = (key, value) => Promise.resolve(storage.setItem(key, value));
+}
+
+let _initDone = false;
+
+async function ensureKnownRemoteIdsLoaded(): Promise<void> {
+  if (_initDone) return;
+  _initDone = true;
+  try {
+    const stored = await _getItem(KNOWN_REMOTE_IDS_KEY);
+    if (stored) {
+      const ids = JSON.parse(stored);
+      knownRemoteIds = new Set(Array.isArray(ids) ? ids : []);
     }
   } catch (error) {
-    console.warn('Failed to load knownRemoteIds from localStorage:', error);
-    knownRemoteIds = new Set();
+    console.warn('Failed to load knownRemoteIds:', error);
   }
 }
 
-// Persist knownRemoteIds to storage
-function saveKnownRemoteIds(): void {
+async function saveKnownRemoteIds(): Promise<void> {
   try {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(KNOWN_REMOTE_IDS_KEY, JSON.stringify(Array.from(knownRemoteIds)));
-    }
+    await _setItem(KNOWN_REMOTE_IDS_KEY, JSON.stringify(Array.from(knownRemoteIds)));
   } catch (error) {
-    console.warn('Failed to save knownRemoteIds to localStorage:', error);
+    console.warn('Failed to save knownRemoteIds:', error);
   }
 }
-
-// Initialize knownRemoteIds from storage
-loadKnownRemoteIds();
 
 // --- Store accessor ---
 // The platform (web/mobile) must register its store accessor at startup.
@@ -152,6 +168,8 @@ export async function pullFromSupabase(): Promise<void> {
   pullInProgress = true;
 
   try {
+    await ensureKnownRemoteIdsLoaded();
+
     // Flush any pending local changes FIRST so remote has our latest
     await flushChanged();
     await flushDeleted();
@@ -235,7 +253,7 @@ export async function pullFromSupabase(): Promise<void> {
     }
 
     // Persist updated knownRemoteIds after pull
-    saveKnownRemoteIds();
+    await saveKnownRemoteIds();
   } finally {
     pullInProgress = false;
   }
@@ -276,7 +294,7 @@ async function flushChanged(): Promise<void> {
       for (const id of ids) changedIds.add(id);
     } else {
       for (const id of ids) knownRemoteIds.add(id);
-      saveKnownRemoteIds();
+      await saveKnownRemoteIds();
     }
   }
 }
@@ -313,7 +331,12 @@ async function flushDeleted(): Promise<void> {
   deleteTimer = null;
 
   const { error } = await supabase.from('items').delete().in('id', ids);
-  if (error) console.error('pushDeleted error:', error);
+  if (error) {
+    console.error('pushDeleted error:', error);
+  } else {
+    for (const id of ids) knownRemoteIds.delete(id);
+    await saveKnownRemoteIds();
+  }
 }
 
 export function flushDeletedNow(): void {

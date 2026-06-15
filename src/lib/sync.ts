@@ -138,6 +138,10 @@ export async function pullFromSupabase(): Promise<void> {
   pullInProgress = true;
 
   try {
+    // Capture pending delete IDs BEFORE flushing so the merge can still
+    // protect items that were just deleted if there's a remote race.
+    const pendingDeleteIds = new Set(deletedIds);
+
     // Flush any pending local changes FIRST so remote has our latest data.
     // This prevents the pull from seeing stale remote state and overwriting
     // changes the user just made.
@@ -167,9 +171,8 @@ export async function pullFromSupabase(): Promise<void> {
     const merged: Record<string, PlannerItem> = { ...localItems };
     const localNewer: PlannerItem[] = [];
 
-    // Items with pending local changes or deletes should never be overwritten by remote
+    // Items with pending local changes should never be overwritten by remote
     const pendingLocalIds = new Set(changedIds);
-    const pendingDeleteIds = new Set(deletedIds);
 
     for (const remote of remoteItems) {
       // Skip items that are pending local delete
@@ -200,9 +203,6 @@ export async function pullFromSupabase(): Promise<void> {
       if (!remoteIds.has(id)) {
         if (pendingLocalIds.has(id)) {
           // Item was just created/modified locally — keep it
-          localNewer.push(localItems[id]);
-        } else if (!itemsPullDone) {
-          // First pull: local item not on remote = treat as new local item, keep and push
           localNewer.push(localItems[id]);
         } else if (knownRemoteIds.has(id)) {
           // Was on remote before but now gone — deleted on another device
@@ -340,7 +340,12 @@ async function flushDeleted(): Promise<void> {
   deleteTimer = null;
 
   const { error } = await supabase.from('items').delete().in('id', ids);
-  if (error) console.error('pushDeleted error:', error);
+  if (error) {
+    console.error('pushDeleted error:', error);
+  } else {
+    for (const id of ids) knownRemoteIds.delete(id);
+    saveKnownRemoteIds();
+  }
 }
 
 // --- Preferences sync ---

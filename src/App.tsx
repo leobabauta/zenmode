@@ -3,7 +3,7 @@ import { AppShell } from './components/layout/AppShell';
 import { MobileApp } from './components/mobile/MobileApp';
 import { useIsMobile } from './hooks/useIsMobile';
 import { usePlannerStore } from './store/usePlannerStore';
-import { toDayKey, getWeekKey } from './lib/dates';
+import { toDayKey, getWeekKey, getWeekKeyForPlanning } from './lib/dates';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/useAuthStore';
 import { pullFromSupabase, pullPreferences, flushPreferencesNow, flushChangedNow, flushDeletedNow, subscribeToRealtime } from './lib/sync';
@@ -80,7 +80,7 @@ export default function App() {
     const state = usePlannerStore.getState();
     if (!state.weeklyPlanningEnabled) return;
     const now = new Date();
-    const currentWeekKey = getWeekKey(now);
+    const currentWeekKey = getWeekKeyForPlanning(now, state.weeklyPlanningDay);
     if (state.lastWeeklyPlanningDate === currentWeekKey) return;
     if (now.getDay() !== state.weeklyPlanningDay) return;
     if (now.getHours() < state.weeklyPlanningHour) return;

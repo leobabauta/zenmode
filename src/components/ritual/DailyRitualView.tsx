@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { usePlannerStore, selectItemsForDay, selectInboxItems } from '../../store/usePlannerStore';
 import { toDayKey } from '../../lib/dates';
@@ -153,11 +153,30 @@ export function DailyRitualView() {
   const completeRitual = usePlannerStore((s) => s.completeRitual);
   const items = usePlannerStore((s) => s.items);
 
+  const autoAdvanceEnabled = usePlannerStore((s) => s.autoAdvanceEnabled);
+  const showPastIncompleteInToday = usePlannerStore((s) => s.showPastIncompleteInToday);
+
   const dayKey = toDayKey(new Date());
   const tomorrowKey = toDayKey(addDays(new Date(), 1));
   const allTodayItems = selectItemsForDay(items, dayKey);
   const todayItems = allTodayItems.filter((i) => i.type !== 'note');
   const inboxItems = selectInboxItems(items).filter((i) => !i.completed);
+
+  const pastIncompleteItems = useMemo(() => {
+    if (autoAdvanceEnabled || !showPastIncompleteInToday) return [];
+    return Object.values(items)
+      .filter(
+        (i) =>
+          i.dayKey !== null &&
+          i.dayKey < dayKey &&
+          !i.completed &&
+          !i.isLater &&
+          !i.parentId &&
+          !i.isArchived &&
+          i.type !== 'note',
+      )
+      .sort((a, b) => (b.dayKey || '').localeCompare(a.dayKey || ''));
+  }, [items, autoAdvanceEnabled, showPastIncompleteInToday, dayKey]);
 
   const priorityCount = todayItems.filter((i) => i.isPriority).length;
   const mediumCount = todayItems.filter((i) => i.isMediumPriority && !i.isPriority).length;
@@ -277,7 +296,7 @@ export function DailyRitualView() {
               {/* MIDDLE: Today's tasks (droppable) */}
               <RitualDropZone id={dayKey} className="flex-1 min-w-0">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-blue-400 mb-2 px-1">
-                  Today ({todayItems.length})
+                  Today ({todayItems.length + pastIncompleteItems.length})
                 </h3>
                 <div className="rounded-xl border border-blue-400/30 bg-blue-500/5 p-2 min-h-[200px] max-h-[60vh] overflow-y-auto">
                   {todayItems.length === 0 ? (
@@ -324,6 +343,49 @@ export function DailyRitualView() {
                         </div>
                       </RitualDraggableItem>
                     ))
+                  )}
+                  {pastIncompleteItems.length > 0 && (
+                    <div className="mt-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-500/70 px-2 py-1">
+                        Past unfinished
+                      </div>
+                      {pastIncompleteItems.map((item) => (
+                        <RitualDraggableItem key={item.id} id={item.id}>
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-[var(--color-surface)] transition-colors group cursor-grab active:cursor-grabbing relative">
+                            <Checkbox
+                              checked={item.completed}
+                              onChange={(checked) => updateItem(item.id, { completed: checked })}
+                            />
+                            <span className="flex-1 min-w-0 text-xs truncate pr-2 text-[var(--color-text-secondary)]">
+                              {item.text}
+                            </span>
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--color-surface)] rounded px-1">
+                              <button
+                                onClick={() => moveItem(item.id, dayKey, todayItems.length)}
+                                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
+                                title="Move to Today"
+                              >
+                                Today
+                              </button>
+                              <button
+                                onClick={() => moveInboxToTomorrow(item.id)}
+                                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] transition-colors"
+                                title="Move to Tomorrow"
+                              >
+                                Tmrw
+                              </button>
+                              <button
+                                onClick={() => sendToLater(item.id)}
+                                className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)] transition-colors"
+                                title="Move to Later"
+                              >
+                                Later
+                              </button>
+                            </div>
+                          </div>
+                        </RitualDraggableItem>
+                      ))}
+                    </div>
                   )}
                   <AddItemForm dayKey={dayKey} className="mt-1" />
                 </div>

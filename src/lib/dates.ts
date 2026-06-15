@@ -48,3 +48,16 @@ export function getWeekKey(date: Date = new Date()): string {
   const monday = startOfWeek(date, { weekStartsOn: 1 }); // 1 = Monday
   return format(monday, 'yyyy-MM-dd');
 }
+
+/**
+ * Returns the week key for the week the user intends to plan/review.
+ * When the configured ritual day is Sunday (0) and today is Sunday, the user
+ * is planning for the NEXT week — advance by one day to get that Monday.
+ * All other days: the current week's Monday is correct.
+ */
+export function getWeekKeyForPlanning(date: Date, ritualDay: number): string {
+  if (ritualDay === 0 && date.getDay() === 0) {
+    return getWeekKey(addDays(date, 1));
+  }
+  return getWeekKey(date);
+}

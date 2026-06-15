@@ -1,4 +1,5 @@
-import { registerStoreAccessors } from '../../../shared/lib/sync';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerStoreAccessors, registerStorage } from '../../../shared/lib/sync';
 import { usePlannerStore } from '../store/usePlannerStore';
 
 export function setupSync() {
@@ -8,4 +9,5 @@ export function setupSync() {
     getPrefs: () => usePlannerStore.getState(),
     setPrefs: (prefs) => usePlannerStore.setState(prefs),
   });
+  registerStorage(AsyncStorage);
 }
