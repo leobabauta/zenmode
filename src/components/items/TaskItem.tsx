@@ -256,7 +256,8 @@ export function TaskItem({
           onClick={(e) => {
             e.stopPropagation();
             if (e.shiftKey) onExtendSelection?.();
-            else onToggleCollapse();
+            else if (isFocused) onToggleCollapse();
+            else onSelect?.();
           }}
           className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors mt-0.5 cursor-grab active:cursor-grabbing"
         >
