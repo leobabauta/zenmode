@@ -29,6 +29,14 @@ export function WeeklyReviewView() {
 
     // Create a #weeklyreview note
     const lines: string[] = [];
+    if (weeklyPlan?.priorities?.length) {
+      const filled = weeklyPlan.priorities.filter((p) => p.text.trim());
+      if (filled.length) {
+        lines.push('**Priorities this week:**');
+        filled.forEach((p) => lines.push(`- ${p.text.trim()}`));
+      }
+    }
+    if (weeklyPlan?.intentions?.trim()) lines.push(`**Intentions:** ${weeklyPlan.intentions.trim()}`);
     if (priorityReflections.trim()) lines.push(`**Priority reflections:** ${priorityReflections.trim()}`);
     if (wins.trim()) lines.push(`**Wins:** ${wins.trim()}`);
     if (learned.trim()) lines.push(`**Learned:** ${learned.trim()}`);

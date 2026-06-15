@@ -68,6 +68,8 @@ interface PlannerState {
   laterExpanded: boolean;
   labelColors: Record<string, string>;
   deleteConfirmItemId: string | null;
+  editConfirmItemId: string | null;
+  editConfirmNewText: string;
   lastDeletedItems: PlannerItem[] | null;
   reminderToast: string | null;
   navOrder: string[];
@@ -94,6 +96,10 @@ interface PlannerState {
   confirmDeleteSingle: (id: string) => void;
   confirmDeleteAllFuture: (id: string) => void;
   cancelDelete: () => void;
+  promptEditRecurringItem: (id: string, newText: string) => void;
+  confirmEditSingle: () => void;
+  confirmEditAllFuture: () => void;
+  cancelEditRecurring: () => void;
   moveItem: (id: string, targetDayKey: string | null, targetOrder: number) => void;
   reorderItems: (dayKey: string | null, orderedIds: string[]) => void;
   setRecurrence: (id: string, recurrence: Recurrence | null) => void;
@@ -221,6 +227,8 @@ export const usePlannerStore = create<PlannerState>()(
       laterExpanded: true,
       labelColors: {},
       deleteConfirmItemId: null,
+      editConfirmItemId: null,
+      editConfirmNewText: '',
       lastDeletedItems: null,
       reminderToast: null,
       navOrder: ['timeline', 'inbox', 'today', 'later', 'archive'],
@@ -620,6 +628,65 @@ export const usePlannerStore = create<PlannerState>()(
 
       cancelDelete: () => {
         set((state) => { state.deleteConfirmItemId = null; });
+      },
+
+      promptEditRecurringItem: (id, newText) => {
+        const item = get().items[id];
+        if (!item) return;
+        if (item.recurrence) {
+          set((state) => { state.editConfirmItemId = id; state.editConfirmNewText = newText; });
+        } else {
+          get().updateItem(id, { text: newText });
+        }
+      },
+
+      confirmEditSingle: () => {
+        const { editConfirmItemId, editConfirmNewText } = get();
+        if (!editConfirmItemId) return;
+        get().updateItem(editConfirmItemId, { text: editConfirmNewText });
+        set((state) => { state.editConfirmItemId = null; state.editConfirmNewText = ''; });
+      },
+
+      confirmEditAllFuture: () => {
+        const { editConfirmItemId, editConfirmNewText } = get();
+        if (!editConfirmItemId) return;
+        set((state) => {
+          const item = state.items[editConfirmItemId];
+          if (!item) return;
+          if (item.recurrence && item.dayKey) {
+            const rec = item.recurrence;
+            const recWeekdaysStr = rec.weekdays ? JSON.stringify([...rec.weekdays].sort()) : '';
+            Object.values(state.items).forEach((other) => {
+              if (
+                other.id !== editConfirmItemId &&
+                other.text === item.text &&
+                other.dayKey &&
+                other.dayKey >= item.dayKey! &&
+                other.recurrence &&
+                other.recurrence.type === rec.type &&
+                other.recurrence.interval === rec.interval
+              ) {
+                const otherWeekdaysStr = other.recurrence.weekdays ? JSON.stringify([...other.recurrence.weekdays].sort()) : '';
+                if (
+                  otherWeekdaysStr === recWeekdaysStr &&
+                  other.recurrence.weekday === rec.weekday &&
+                  other.recurrence.dayOfMonth === rec.dayOfMonth
+                ) {
+                  const now = new Date().toISOString();
+                  Object.assign(other, { text: editConfirmNewText, updatedAt: now });
+                }
+              }
+            });
+          }
+          const now = new Date().toISOString();
+          Object.assign(item, { text: editConfirmNewText, updatedAt: now });
+          state.editConfirmItemId = null;
+          state.editConfirmNewText = '';
+        });
+      },
+
+      cancelEditRecurring: () => {
+        set((state) => { state.editConfirmItemId = null; state.editConfirmNewText = ''; });
       },
 
       moveItem: (id, targetDayKey, targetOrder) => {

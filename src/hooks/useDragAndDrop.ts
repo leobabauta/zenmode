@@ -231,18 +231,41 @@ export function useDragAndDrop() {
           ? selectLaterItems(items)
           : selectItemsForDay(items, targetContainerKey);
 
-      const oldIndex = containerItems.findIndex((i) => i.id === activeIdStr);
-      const newIndex = containerItems.findIndex((i) => i.id === targetItemId);
-
-      if (oldIndex === newIndex) return;
-
-      const reordered = arrayMove(containerItems, oldIndex, newIndex);
-      reorderItems(
+      const dayKeyArg =
         targetContainerKey === 'inbox' || targetContainerKey === 'later'
           ? null
-          : targetContainerKey,
-        reordered.map((i) => i.id)
-      );
+          : targetContainerKey;
+
+      const state = usePlannerStore.getState();
+      const selectedIds = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
+      const dragIds = selectedIds.includes(activeIdStr) ? selectedIds : [activeIdStr];
+
+      if (dragIds.length <= 1 || !selectedIds.includes(activeIdStr)) {
+        // Single item reorder
+        const oldIndex = containerItems.findIndex((i) => i.id === activeIdStr);
+        const newIndex = containerItems.findIndex((i) => i.id === targetItemId);
+        if (oldIndex === newIndex) return;
+        const reordered = arrayMove(containerItems, oldIndex, newIndex);
+        reorderItems(dayKeyArg, reordered.map((i) => i.id));
+      } else {
+        // Multi-item reorder: keep selection in relative order, insert as group near target
+        if (dragIds.includes(targetItemId)) return;
+        const dragIdSet = new Set(dragIds);
+        const oldActiveIndex = containerItems.findIndex((i) => i.id === activeIdStr);
+        const targetIndex = containerItems.findIndex((i) => i.id === targetItemId);
+        const nonSelected = containerItems.filter((i) => !dragIdSet.has(i.id));
+        const selectedInOrder = containerItems.filter((i) => dragIdSet.has(i.id));
+        const targetInNonSelected = nonSelected.findIndex((i) => i.id === targetItemId);
+        if (targetInNonSelected === -1) return;
+        const insertAt = targetIndex > oldActiveIndex ? targetInNonSelected + 1 : targetInNonSelected;
+        const reordered = [
+          ...nonSelected.slice(0, insertAt),
+          ...selectedInOrder,
+          ...nonSelected.slice(insertAt),
+        ];
+        reorderItems(dayKeyArg, reordered.map((i) => i.id));
+        state.clearSelection();
+      }
       return;
     }
 

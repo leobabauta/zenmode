@@ -39,9 +39,10 @@ export function TaskItem({
   onShiftSelectPrev, onShiftSelectNext, onMoveUp, onMoveDown,
   onInsertAfter, onToggleCollapse, isCollapsed, dragHandleProps,
 }: TaskItemProps) {
-  const { updateItem, promptDeleteItem, setRecurrence, sendToInbox, sendToLater, moveItem, setExpandedTask, setExpandedTaskFullScreen, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
+  const { updateItem, promptDeleteItem, promptEditRecurringItem, setRecurrence, sendToInbox, sendToLater, moveItem, setExpandedTask, setExpandedTaskFullScreen, setShowMoveModal, setHashtagView, unarchiveItem } = usePlannerStore(useShallow((s) => ({
     updateItem: s.updateItem,
     promptDeleteItem: s.promptDeleteItem,
+    promptEditRecurringItem: s.promptEditRecurringItem,
     setRecurrence: s.setRecurrence,
     sendToInbox: s.sendToInbox,
     sendToLater: s.sendToLater,
@@ -117,7 +118,7 @@ export function TaskItem({
 
   const commitEdit = () => {
     const trimmed = editText.trim();
-    if (trimmed && trimmed !== item.text) updateItem(item.id, { text: trimmed });
+    if (trimmed && trimmed !== item.text) promptEditRecurringItem(item.id, trimmed);
     else setEditText(item.text);
     setIsEditing(false);
   };

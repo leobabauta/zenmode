@@ -20,6 +20,7 @@ import { FullScreenConfetti } from '../ui/FullScreenConfetti';
 import { KeyboardShortcutsModal } from '../ui/KeyboardShortcutsModal';
 import { BugReportModal } from '../ui/BugReportModal';
 import { DeleteRecurrenceModal } from '../ui/DeleteRecurrenceModal';
+import { EditRecurrenceModal } from '../ui/EditRecurrenceModal';
 import { ReminderEngine } from '../ui/ReminderEngine';
 import { ReminderToast } from '../ui/ReminderToast';
 import { UndoDeleteToast } from '../ui/UndoDeleteToast';
@@ -403,6 +404,9 @@ export function AppShell() {
 
       {/* Delete recurrence confirmation modal */}
       <DeleteRecurrenceModal />
+
+      {/* Edit recurrence confirmation modal */}
+      <EditRecurrenceModal />
 
       {/* Reminder notification engine + toast */}
       <ReminderEngine />
