@@ -23,6 +23,30 @@ interface ItemRow {
   is_medium_priority: boolean;
 }
 
+// PostgREST caps every response at `max_rows` (1000 on hosted Supabase) and
+// returns the truncated set without an error. Any query that must see ALL
+// matching rows has to page explicitly, or it silently processes a slice.
+const PAGE_SIZE = 1000;
+
+/**
+ * Read every row matching a query, one page at a time.
+ * `build` receives the page bounds and returns the ranged query.
+ * Throws on error so callers never act on a partial result set.
+ */
+async function fetchAllRows<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 0; ; page++) {
+    const from = page * PAGE_SIZE;
+    const { data, error } = await build(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) return all;
+  }
+}
+
 /** Compute YYYY-MM-DD for "today" in a given IANA timezone */
 function todayInTimezone(tz: string): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: tz });
@@ -183,13 +207,18 @@ Deno.serve(async (req) => {
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // Fetch all users who have a timezone set
-    const { data: prefs, error: prefsError } = await supabase
-      .from('user_preferences')
-      .select('user_id, timezone, last_auto_move_date')
-      .not('timezone', 'is', null);
-
-    if (prefsError) {
+    // Fetch all users who have a timezone set (paged — see fetchAllRows)
+    let prefs: { user_id: string; timezone: string | null; last_auto_move_date: string | null }[];
+    try {
+      prefs = await fetchAllRows((from, to) =>
+        supabase
+          .from('user_preferences')
+          .select('user_id, timezone, last_auto_move_date')
+          .not('timezone', 'is', null)
+          .order('user_id', { ascending: true })
+          .range(from, to),
+      );
+    } catch (prefsError) {
       console.error('Error fetching preferences:', prefsError);
       return new Response(JSON.stringify({ error: 'Failed to fetch preferences' }), {
         status: 500,
@@ -217,18 +246,24 @@ Deno.serve(async (req) => {
       // Skip if already processed today
       if (last_auto_move_date === todayKey) continue;
 
-      // Fetch this user's items
-      const { data: items, error: itemsError } = await supabase
-        .from('items')
-        .select('*')
-        .eq('user_id', user_id);
-
-      if (itemsError) {
+      // Fetch this user's items (paged — auto-move reasons over the whole set,
+      // so a truncated read would skip forwarding items past the cap)
+      let items: ItemRow[];
+      try {
+        items = await fetchAllRows<ItemRow>((from, to) =>
+          supabase
+            .from('items')
+            .select('*')
+            .eq('user_id', user_id)
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
+      } catch (itemsError) {
         console.error(`Error fetching items for user ${user_id}:`, itemsError);
         continue;
       }
 
-      const { toDelete, toUpdate } = computeAutoMove(items as ItemRow[], todayKey);
+      const { toDelete, toUpdate } = computeAutoMove(items, todayKey);
 
       if (toDelete.length === 0 && toUpdate.length === 0) {
         // No changes needed, but still mark as processed

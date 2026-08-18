@@ -161,6 +161,39 @@ export function isPullSuppressingDeletes(): boolean {
   return suppressDeleteSync;
 }
 
+// Supabase/PostgREST truncates any single response to `max_rows` (1000 on
+// hosted projects) without raising an error, so every read of the full item
+// set must be paged. Returns null if any page fails — callers must treat a
+// partial read as no read at all, since the merge deletes local items that
+// are absent from the remote set.
+const ITEM_PAGE_SIZE = 1000;
+
+async function fetchAllItemRows(userId: string): Promise<ItemRow[] | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const all: ItemRow[] = [];
+
+  for (let page = 0; ; page++) {
+    const from = page * ITEM_PAGE_SIZE;
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('user_id', userId)
+      // Stable ordering is required, otherwise pages can overlap or skip rows.
+      .order('id', { ascending: true })
+      .range(from, from + ITEM_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error('pullFromSupabase error:', error, JSON.stringify(error));
+      return null;
+    }
+
+    const rows = (data ?? []) as ItemRow[];
+    all.push(...rows);
+    if (rows.length < ITEM_PAGE_SIZE) return all;
+  }
+}
+
 export async function pullFromSupabase(): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) return;
@@ -177,16 +210,10 @@ export async function pullFromSupabase(): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: rows, error } = await supabase
-      .from('items')
-      .select('id, user_id, type, text, completed, day_key, is_later, order, created_at, updated_at, recurrence, parent_id, consecutive_moves, is_priority, is_medium_priority, is_practice, list_id, completed_at, timer_sessions, is_archived, notes')
-      .eq('user_id', user.id);
+    const rows = await fetchAllItemRows(user.id);
+    if (!rows) return; // Read failed or was incomplete — never merge partial data.
 
-    if (error) {
-      console.error('pullFromSupabase error:', error, JSON.stringify(error));
-      return;
-    }
-    const remoteItems = (rows as ItemRow[]).map(rowToItem);
+    const remoteItems = rows.map(rowToItem);
 
     // Re-read local items AFTER the network call to get the freshest state.
     // This prevents overwriting changes the user made during the fetch.

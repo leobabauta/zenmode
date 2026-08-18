@@ -149,14 +149,35 @@ async function handleListItems(
     }
   }
 
-  const { data: rows, error } = await query;
+  // Explicit pagination. Without a range, PostgREST silently truncates at
+  // `max_rows` (1000) and the caller has no way to tell a full page from a
+  // clipped one. `id` breaks ties so paging can't overlap or skip rows.
+  const DEFAULT_LIMIT = 200;
+  const MAX_LIMIT = 1000;
+  const parsedLimit = Number.parseInt(params.get('limit') ?? '', 10);
+  const parsedOffset = Number.parseInt(params.get('offset') ?? '', 10);
+  const limit = Number.isFinite(parsedLimit)
+    ? Math.min(Math.max(parsedLimit, 1), MAX_LIMIT)
+    : DEFAULT_LIMIT;
+  const offset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
+
+  const { data: rows, error } = await query
+    .order('id', { ascending: true })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     console.error('List items error:', error);
     return jsonResponse({ error: 'Failed to fetch items' }, 500);
   }
 
-  return jsonResponse({ items: (rows as ItemRow[]).map(rowToApiItem) });
+  const items = (rows as ItemRow[]).map(rowToApiItem);
+  return jsonResponse({
+    items,
+    limit,
+    offset,
+    // True when another page may exist — callers should keep paging until false.
+    hasMore: items.length === limit,
+  });
 }
 
 async function handleCreateItem(

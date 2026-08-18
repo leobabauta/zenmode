@@ -132,6 +132,38 @@ export function isPullSuppressingDeletes(): boolean {
   return suppressDeleteSync;
 }
 
+// Supabase/PostgREST truncates any single response to `max_rows` (1000 on
+// hosted projects) without raising an error, so every read of the full item
+// set must be paged. Returns null if any page fails — callers must treat a
+// partial read as no read at all, since the merge deletes local items that
+// are absent from the remote set.
+const ITEM_PAGE_SIZE = 1000;
+
+async function fetchAllItemRows(userId: string): Promise<ItemRow[] | null> {
+  if (!supabase) return null;
+  const all: ItemRow[] = [];
+
+  for (let page = 0; ; page++) {
+    const from = page * ITEM_PAGE_SIZE;
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('user_id', userId)
+      // Stable ordering is required, otherwise pages can overlap or skip rows.
+      .order('id', { ascending: true })
+      .range(from, from + ITEM_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error('pullFromSupabase error:', error);
+      return null;
+    }
+
+    const rows = (data ?? []) as ItemRow[];
+    all.push(...rows);
+    if (rows.length < ITEM_PAGE_SIZE) return all;
+  }
+}
+
 export async function pullFromSupabase(): Promise<void> {
   if (!supabase) return;
   if (pullInProgress) return; // Prevent concurrent pulls
@@ -151,17 +183,15 @@ export async function pullFromSupabase(): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: rows, error } = await supabase
-      .from('items')
-      .select('*')
-      .eq('user_id', user.id);
+    // Fetch ALL rows, page by page. Supabase caps a single response at
+    // `max_rows` (1000 by default) and returns the truncated set WITHOUT an
+    // error — so an unpaginated select silently hides everything past the cap.
+    // The merge below deletes local items missing from the remote set, so a
+    // truncated read would wipe items for anyone over the cap.
+    const rows = await fetchAllItemRows(user.id);
+    if (!rows) return; // Read failed or was incomplete — never merge partial data.
 
-    if (error) {
-      console.error('pullFromSupabase error:', error);
-      return;
-    }
-
-    const remoteItems = (rows as ItemRow[]).map(rowToItem);
+    const remoteItems = rows.map(rowToItem);
 
     // Re-read local items AFTER the network call completes.
     // This ensures we merge against the freshest local state, not a stale
