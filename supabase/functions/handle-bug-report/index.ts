@@ -17,6 +17,8 @@ Deno.serve(async (req) => {
 
   const githubPat = Deno.env.get('GITHUB_PAT');
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const repo = 'leobabauta/zenmode';
 
   try {
@@ -28,6 +30,10 @@ Deno.serve(async (req) => {
         headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
       });
     }
+
+    // Opaque reference that ties the public issue to the private record.
+    // The repo is public, so the reporter's email must never reach the issue.
+    const ref = `BR-${crypto.randomUUID().slice(0, 8)}`;
 
     // 1. Create GitHub Issue
     let issueNumber: number | null = null;
@@ -42,7 +48,7 @@ Deno.serve(async (req) => {
         `**Description:**`,
         message,
         '',
-        user_email ? `**User:** ${user_email}` : '',
+        `**Reporter:** \`${ref}\` (identity held privately — this repo is public)`,
         url ? `**URL:** ${url}` : '',
         userAgent ? `**User Agent:** ${userAgent}` : '',
         '',
@@ -73,7 +79,50 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Trigger Claude Code auto-fix workflow
+    // 2. Record the reporter privately, keyed by the ref in the public issue.
+    // RLS is on with no policies, so only the service role can read this back.
+    if (supabaseUrl && serviceRoleKey) {
+      // Prefer the identity on the caller's JWT over the client-supplied email.
+      let userId: string | null = null;
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+            headers: { Authorization: authHeader, apikey: serviceRoleKey },
+          });
+          if (userRes.ok) userId = (await userRes.json())?.id ?? null;
+        } catch (err) {
+          console.error('Could not resolve reporter from JWT:', err);
+        }
+      }
+
+      const insertRes = await fetch(`${supabaseUrl}/rest/v1/bug_reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({
+          ref,
+          issue_number: issueNumber,
+          user_id: userId,
+          user_email: user_email ?? null,
+          message,
+          url: url ?? null,
+          user_agent: userAgent ?? null,
+        }),
+      });
+
+      if (!insertRes.ok) {
+        // Non-fatal: the issue still exists and the notification email below
+        // carries the reporter, so the report is never lost.
+        console.error(`bug_reports insert failed: ${insertRes.status} ${await insertRes.text()}`);
+      }
+    }
+
+    // 3. Trigger Claude Code auto-fix workflow
     if (githubPat && issueNumber) {
       const dispatchRes = await fetch(
         `https://api.github.com/repos/${repo}/actions/workflows/auto-fix-bug.yml/dispatches`,
@@ -101,7 +150,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Send email notification
+    // 4. Send email notification
     if (resendApiKey) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -113,7 +162,7 @@ Deno.serve(async (req) => {
           from: 'zenmode <notifications@zenmode.work>',
           to: ['leo.babauta@gmail.com'],
           subject: `Bug Report${issueNumber ? ` #${issueNumber}` : ''}: ${message.slice(0, 60)}`,
-          text: `Bug report from ${user_email || 'unknown'}:\n\n${message}\n\n${issueNumber ? `GitHub Issue: https://github.com/${repo}/issues/${issueNumber}` : ''}`,
+          text: `Bug report from ${user_email || 'unknown'} (${ref}):\n\n${message}\n\n${issueNumber ? `GitHub Issue: https://github.com/${repo}/issues/${issueNumber}` : ''}`,
         }),
       });
     }
