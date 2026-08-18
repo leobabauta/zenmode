@@ -128,8 +128,18 @@ export function ItemList({ items, onCrossPrev, onCrossNext }: ItemListProps) {
     </div>
   );
 
+  // dnd-kit resolves a drag by looking the id up in this list, so every
+  // rendered sortable — subtasks included — must appear here, in the order it
+  // appears on screen. Registering only top-level ids left child drags with an
+  // index of -1, which made subtask reordering a no-op.
+  const sortableIds = items.flatMap((item) =>
+    collapsedItemIds.has(item.id)
+      ? [item.id]
+      : [item.id, ...selectChildItems(allItems, item.id).map((c) => c.id)],
+  );
+
   return (
-    <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+    <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
       <div className="flex flex-col gap-0.5">
         {items.map((item, index) => {
           const children = selectChildItems(allItems, item.id);

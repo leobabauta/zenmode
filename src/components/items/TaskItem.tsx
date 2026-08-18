@@ -255,9 +255,12 @@ export function TaskItem({
           {...dragHandleProps}
           onClick={(e) => {
             e.stopPropagation();
+            // The chevron is a parent's only collapse affordance, so a plain
+            // click must always collapse/expand. Selecting a parent (to drag it,
+            // or to start a multi-select) is done by clicking its text, and
+            // dragging works from this handle whether or not it's selected.
             if (e.shiftKey) onExtendSelection?.();
-            else if (isFocused) onToggleCollapse();
-            else onSelect?.();
+            else onToggleCollapse();
           }}
           className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors mt-0.5 cursor-grab active:cursor-grabbing"
         >

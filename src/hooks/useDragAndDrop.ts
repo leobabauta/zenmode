@@ -15,6 +15,7 @@ import {
   selectItemsForDay,
   selectInboxItems,
   selectLaterItems,
+  selectChildItems,
 } from '../store/usePlannerStore';
 import { getSelectedItemIds } from '../lib/selection';
 import { toDayKey } from '../lib/dates';
@@ -203,6 +204,31 @@ export function useDragAndDrop() {
         });
         return;
       }
+    }
+
+    // --- Subtask reorder ---
+    // The container selectors below all exclude items with a parentId, so a
+    // child dragged through that path resolves to index -1 and arrayMove(-1)
+    // splices out the LAST top-level item instead — scrambling the parent list.
+    // Handle sibling reordering here, and ignore drops that would move a child
+    // out of its parent.
+    if (activeItem.parentId) {
+      const overItem = items[overId];
+      if (overItem && overItem.parentId === activeItem.parentId) {
+        const siblings = selectChildItems(items, activeItem.parentId);
+        const oldIndex = siblings.findIndex((i) => i.id === activeIdStr);
+        const newIndex = siblings.findIndex((i) => i.id === overId);
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const reordered = arrayMove(siblings, oldIndex, newIndex);
+          reorderItems(null, reordered.map((i) => i.id));
+        }
+        return;
+      }
+      // Any other drop inside the same container isn't a reorder we can
+      // express, and falling through would corrupt the parent list — ignore it.
+      // Drops onto a different container still fall through to the move logic.
+      const overContainerKey = overItem ? getContainerKey(overItem) : overId;
+      if (overContainerKey === getContainerKey(activeItem)) return;
     }
 
     const sourceContainerKey = getContainerKey(activeItem);
