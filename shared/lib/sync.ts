@@ -203,6 +203,10 @@ export async function pullFromSupabase(): Promise<void> {
   try {
     await ensureKnownRemoteIdsLoaded();
 
+    // Capture pending delete IDs BEFORE flushing so the merge can still
+    // protect items that were just deleted if there's a remote race.
+    const pendingDeleteIds = new Set(deletedIds);
+
     // Flush any pending local changes FIRST so remote has our latest
     await flushChanged();
     await flushDeleted();
@@ -225,6 +229,10 @@ export async function pullFromSupabase(): Promise<void> {
     const pendingLocalIds = new Set(changedIds);
 
     for (const remote of remoteItems) {
+      // Skip items pending local delete. `deletedIds` is consulted live as
+      // well as through the snapshot, so a delete made *during* the network
+      // round-trip isn't undone by the row we fetched before it happened.
+      if (pendingDeleteIds.has(remote.id) || deletedIds.has(remote.id)) continue;
       const local = localItems[remote.id];
       if (!local) {
         merged[remote.id] = remote;
@@ -342,7 +350,13 @@ let deleteTimer: ReturnType<typeof setTimeout> | null = null;
 export function markDeleted(ids: string[]): void {
   const supabase = getSupabase();
   if (!supabase) return;
-  for (const id of ids) deletedIds.add(id);
+  // A deleted item must never also count as a pending local *change*: the pull
+  // treats pendingLocalIds as "keep the local copy", which would resurrect the
+  // item and push it straight back to the server.
+  for (const id of ids) {
+    deletedIds.add(id);
+    changedIds.delete(id);
+  }
   if (deleteTimer) clearTimeout(deleteTimer);
   deleteTimer = setTimeout(flushDeleted, 500);
 }

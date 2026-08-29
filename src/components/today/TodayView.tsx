@@ -15,6 +15,7 @@ export function TodayView() {
   const showPastIncompleteInToday = usePlannerStore((s) => s.showPastIncompleteInToday);
   const setShowPastIncompleteInToday = usePlannerStore((s) => s.setShowPastIncompleteInToday);
   const setView = usePlannerStore((s) => s.setView);
+  const archiveCompleted = usePlannerStore((s) => s.archiveCompleted);
   const reviewRitualEnabled = usePlannerStore((s) => s.reviewRitualEnabled);
   const lastReviewRitualDate = usePlannerStore((s) => s.lastReviewRitualDate);
   const reviewRitualSnoozedUntil = usePlannerStore((s) => s.reviewRitualSnoozedUntil);
@@ -203,7 +204,10 @@ export function TodayView() {
                 <ItemList items={todayItems} />
               </div>
               <AddItemForm dayKey={dayKey} className="mt-1" />
-              <SortArchiveButtons items={todayItems} />
+              <SortArchiveButtons
+                items={todayItems}
+                onArchive={() => archiveCompleted({ dayKey })}
+              />
               {pastIncompleteItems.length > 0 && (
                 <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
