@@ -157,7 +157,7 @@ interface PlannerState {
   requestScrollToToday: () => void;
   setLaterExpanded: (expanded: boolean) => void;
   sortCompletedToTop: (context: { dayKey?: string; isLater?: boolean; listId?: string; hashtag?: string }) => void;
-  archiveCompleted: (context: { isLater?: boolean; listId?: string; hashtag?: string }) => void;
+  archiveCompleted: (context: { dayKey?: string; isLater?: boolean; listId?: string; hashtag?: string }) => void;
   unarchiveItem: (id: string) => void;
   setAutoAdvanceEnabled: (v: boolean) => void;
   setAutoAdvanceLaterDays: (v: number) => void;
@@ -346,9 +346,14 @@ export const usePlannerStore = create<PlannerState>()(
           // (only if one doesn't already exist — setRecurrence pre-generates future copies)
           if (patch.completed === true && item.recurrence && item.dayKey) {
             const nextDayKey = computeNextOccurrence(item.dayKey, item.recurrence);
+            // An existing instance counts whether or not it's been completed.
+            // Requiring `!i.completed` here meant completing an item in
+            // hindsight (e.g. ticking off last Monday after being offline)
+            // spawned a second copy on a day that already had a ticked-off
+            // one — the item then showed up twice on the same day.
             const alreadyExists = Object.values(state.items).some(
               (i) => i.dayKey === nextDayKey && i.text === item.text &&
-                !i.completed && i.recurrence &&
+                i.id !== item.id && i.recurrence &&
                 i.recurrence.type === item.recurrence!.type &&
                 i.recurrence.interval === item.recurrence!.interval
             );
@@ -710,6 +715,9 @@ export const usePlannerStore = create<PlannerState>()(
 
           state.items[id].dayKey = targetDayKey;
           state.items[id].isLater = false;
+          // A day and a custom list are different containers — keeping listId
+          // here left the item showing in both places at once.
+          delete state.items[id].listId;
           state.items[id].order = targetOrder;
           state.items[id].consecutiveMoves = 0;
           state.items[id].updatedAt = now;
@@ -876,11 +884,12 @@ export const usePlannerStore = create<PlannerState>()(
           const isReview = (i: PlannerItem) =>
             i.type === 'note' && (i.text.includes('#dailyreview') || i.text.includes('#weeklyreview'));
 
-          // Group non-subtask, non-archived items by their context (dayKey, later, inbox)
+          // Group non-subtask, non-archived items by their context
+          // (dayKey, later, inbox, or a custom list)
           const groups = new Map<string, PlannerItem[]>();
           for (const item of Object.values(state.items)) {
             if (item.parentId || item.isArchived) continue;
-            const key = item.dayKey ?? (item.isLater ? '__later__' : '__inbox__');
+            const key = item.dayKey ?? containerKeyForLooseItem(item);
             const group = groups.get(key);
             if (group) group.push(item);
             else groups.set(key, [item]);
@@ -910,6 +919,7 @@ export const usePlannerStore = create<PlannerState>()(
             : -1;
           state.items[id].dayKey = null;
           state.items[id].isLater = false;
+          delete state.items[id].listId;
           state.items[id].order = maxOrder + 1;
           state.items[id].updatedAt = new Date().toISOString();
         });
@@ -926,6 +936,7 @@ export const usePlannerStore = create<PlannerState>()(
             : -1;
           state.items[id].dayKey = null;
           state.items[id].isLater = true;
+          delete state.items[id].listId;
           state.items[id].order = maxOrder + 1;
           state.items[id].updatedAt = new Date().toISOString();
         });
@@ -1217,6 +1228,10 @@ export const usePlannerStore = create<PlannerState>()(
             itemList = Object.values(state.items).filter(
               (i) => i.listId === context.listId && !i.parentId && !i.isArchived
             );
+          } else if (context.dayKey) {
+            itemList = Object.values(state.items).filter(
+              (i) => i.dayKey === context.dayKey && !i.parentId && !i.isArchived
+            );
           } else if (context.isLater) {
             itemList = Object.values(state.items).filter(
               (i) => i.dayKey === null && i.isLater === true && !i.parentId && !i.isArchived
@@ -1341,6 +1356,16 @@ usePlannerStore.subscribe((state, prevState) => {
     }
   }
 });
+
+// Items without a dayKey still belong to exactly one container: a custom list,
+// Later, or the Inbox. Anything that groups or reorders items has to agree on
+// which one, otherwise list items get shuffled in with the Inbox — which both
+// scrambled list ordering on every sync pull and churned `updatedAt` on items
+// the user never touched.
+export function containerKeyForLooseItem(item: { isLater?: boolean; listId?: string }): string {
+  if (item.listId) return `__list__${item.listId}`;
+  return item.isLater ? '__later__' : '__inbox__';
+}
 
 // Selectors
 export function isReminderPending(item: PlannerItem): boolean {

@@ -205,8 +205,10 @@ export async function pullFromSupabase(): Promise<void> {
     const pendingLocalIds = new Set(changedIds);
 
     for (const remote of remoteItems) {
-      // Skip items that are pending local delete
-      if (pendingDeleteIds.has(remote.id)) continue;
+      // Skip items pending local delete. `deletedIds` is consulted live as
+      // well as through the snapshot, so a delete made *during* the network
+      // round-trip isn't undone by the row we fetched before it happened.
+      if (pendingDeleteIds.has(remote.id) || deletedIds.has(remote.id)) continue;
       const local = localItems[remote.id];
       if (!local) {
         // Remote-only: take it
@@ -353,7 +355,13 @@ export function markDeleted(ids: string[]): void {
   if (!supabase) return;
   // Always track deleted IDs so pullFromSupabase's pendingDeleteIds set
   // protects deletions made before the first pull completes.
-  for (const id of ids) deletedIds.add(id);
+  // A deleted item must never also count as a pending local *change*: the pull
+  // treats pendingLocalIds as "keep the local copy", which would resurrect the
+  // item and push it straight back to the server.
+  for (const id of ids) {
+    deletedIds.add(id);
+    changedIds.delete(id);
+  }
   // Only schedule the actual push after the first pull is done.
   if (!itemsPullDone) return;
   if (deleteTimer) clearTimeout(deleteTimer);

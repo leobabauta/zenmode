@@ -16,13 +16,32 @@ import {
   selectInboxItems,
   selectLaterItems,
   selectChildItems,
+  selectCustomListItems,
+  containerKeyForLooseItem,
 } from '../store/usePlannerStore';
 import { getSelectedItemIds } from '../lib/selection';
 import { toDayKey } from '../lib/dates';
+import type { PlannerItem } from '../types';
 
-function getContainerKey(item: { dayKey: string | null; isLater?: boolean }): string {
+function getContainerKey(item: { dayKey: string | null; isLater?: boolean; listId?: string }): string {
   if (item.dayKey !== null) return item.dayKey;
-  return item.isLater ? 'later' : 'inbox';
+  // Custom lists are their own container. Treating them as the Inbox made
+  // every within-list drag resolve to an index of -1 in the Inbox item list,
+  // so reordering inside a list silently did nothing.
+  return containerKeyForLooseItem(item);
+}
+
+/** The items making up a container, in display order. */
+function getContainerItems(
+  items: Record<string, PlannerItem>,
+  containerKey: string,
+): PlannerItem[] {
+  if (containerKey === '__inbox__') return selectInboxItems(items);
+  if (containerKey === '__later__') return selectLaterItems(items);
+  if (containerKey.startsWith('__list__')) {
+    return selectCustomListItems(items, containerKey.slice('__list__'.length));
+  }
+  return selectItemsForDay(items, containerKey);
 }
 
 export function useDragAndDrop() {
@@ -238,7 +257,7 @@ export function useDragAndDrop() {
     let targetItemId: string | null = null;
 
     if (overId === 'inbox' || overId === 'later') {
-      targetContainerKey = overId;
+      targetContainerKey = overId === 'inbox' ? '__inbox__' : '__later__';
     } else if (items[overId]) {
       targetContainerKey = getContainerKey(items[overId]);
       targetItemId = overId;
@@ -250,17 +269,9 @@ export function useDragAndDrop() {
     if (sourceContainerKey === targetContainerKey) {
       if (!targetItemId || targetItemId === activeIdStr) return;
 
-      const containerItems =
-        targetContainerKey === 'inbox'
-          ? selectInboxItems(items)
-          : targetContainerKey === 'later'
-          ? selectLaterItems(items)
-          : selectItemsForDay(items, targetContainerKey);
+      const containerItems = getContainerItems(items, targetContainerKey);
 
-      const dayKeyArg =
-        targetContainerKey === 'inbox' || targetContainerKey === 'later'
-          ? null
-          : targetContainerKey;
+      const dayKeyArg = targetContainerKey.startsWith('__') ? null : targetContainerKey;
 
       const state = usePlannerStore.getState();
       const selectedIds = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
@@ -270,7 +281,9 @@ export function useDragAndDrop() {
         // Single item reorder
         const oldIndex = containerItems.findIndex((i) => i.id === activeIdStr);
         const newIndex = containerItems.findIndex((i) => i.id === targetItemId);
-        if (oldIndex === newIndex) return;
+        // arrayMove with -1 splices the wrong element and scrambles the list,
+        // so bail rather than reorder against a container we can't resolve.
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
         const reordered = arrayMove(containerItems, oldIndex, newIndex);
         reorderItems(dayKeyArg, reordered.map((i) => i.id));
       } else {
@@ -300,10 +313,13 @@ export function useDragAndDrop() {
     const selectedIds = getSelectedItemIds(state.items, state.selectionAnchorId, state.selectionFocusId);
     const dragIds = selectedIds.includes(activeIdStr) ? selectedIds : [activeIdStr];
 
-    if (targetContainerKey === 'inbox') {
+    if (targetContainerKey === '__inbox__') {
       for (const id of dragIds) sendToInbox(id);
-    } else if (targetContainerKey === 'later') {
+    } else if (targetContainerKey === '__later__') {
       for (const id of dragIds) sendToLater(id);
+    } else if (targetContainerKey.startsWith('__list__')) {
+      const listId = targetContainerKey.slice('__list__'.length);
+      for (const id of dragIds) sendToList(id, listId);
     } else {
       // Moving to a day column
       const targetDayKey = targetContainerKey;
