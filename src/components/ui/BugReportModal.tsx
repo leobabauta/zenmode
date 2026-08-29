@@ -62,7 +62,7 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
           <>
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-2">Thanks for reporting!</h2>
             <p className="text-sm text-[var(--color-text-muted)] mb-4">
-              Your bug report has been filed and will be automatically analyzed. If a fix is possible, it will be applied automatically.
+              Your bug report has been filed and sent to Leo. Thanks for taking the time.
             </p>
             <button
               onClick={onClose}
@@ -75,7 +75,7 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
           <>
             <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-1">Report a bug</h2>
             <p className="text-xs text-[var(--color-text-muted)] mb-4">
-              Describe what went wrong. Your report will be automatically triaged and, if possible, fixed.
+              Describe what went wrong. Your report goes straight to Leo.
             </p>
             <textarea
               value={description}
