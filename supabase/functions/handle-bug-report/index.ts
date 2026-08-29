@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
         userAgent ? `**User Agent:** ${userAgent}` : '',
         '',
         '---',
-        '_This issue was auto-created from an in-app bug report. Claude Code will attempt to auto-fix it._',
+        '_This issue was auto-created from an in-app bug report._',
       ].filter(Boolean).join('\n');
 
       const issueRes = await fetch(`https://api.github.com/repos/${repo}/issues`, {
@@ -122,37 +122,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3. Trigger Claude Code auto-fix workflow
-    if (githubPat && issueNumber) {
-      const dispatchRes = await fetch(
-        `https://api.github.com/repos/${repo}/actions/workflows/auto-fix-bug.yml/dispatches`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${githubPat}`,
-            'Accept': 'application/vnd.github+json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ref: 'main',
-            inputs: {
-              issue_number: String(issueNumber),
-              bug_description: message,
-            },
-          }),
-        },
-      );
-
-      if (dispatchRes.ok || dispatchRes.status === 204) {
-        console.log(`Dispatched auto-fix workflow for issue #${issueNumber}`);
-      } else {
-        console.error(`Workflow dispatch failed: ${dispatchRes.status} ${await dispatchRes.text()}`);
-      }
-    }
-
-    // 4. Send email notification
-    if (resendApiKey) {
-      await fetch('https://api.resend.com/emails', {
+    // 3. Send email notification. This is the only channel that actively
+    // reaches a human — nothing watches the issue tracker for new reports —
+    // so log a failure rather than letting it pass silently.
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY missing — no notification sent for ' + ref);
+    } else {
+      const emailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${resendApiKey}`,
@@ -165,6 +141,10 @@ Deno.serve(async (req) => {
           text: `Bug report from ${user_email || 'unknown'} (${ref}):\n\n${message}\n\n${issueNumber ? `GitHub Issue: https://github.com/${repo}/issues/${issueNumber}` : ''}`,
         }),
       });
+
+      if (!emailRes.ok) {
+        console.error(`Resend failed for ${ref}: ${emailRes.status} ${await emailRes.text()}`);
+      }
     }
 
     return new Response(JSON.stringify({
