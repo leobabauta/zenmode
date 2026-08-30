@@ -57,6 +57,14 @@ async function authenticateApiKey(
 
 // --- Helpers ---
 
+/**
+ * WARNING: this is today in **UTC** -- Deno's clock here has no user timezone. Every Zenmode
+ * client writes `day_key` from its own local date, so for anyone west of UTC this returns
+ * tomorrow's key late in the day (from 5pm Pacific onward), and `GET /today` answers with the
+ * wrong list. If you are writing a client, call `GET /items?dayKey=<your local yyyy-MM-dd>`
+ * instead. Fixing this properly means resolving the day from `user_preferences.timezone` the way
+ * `auto-move-items` already does.
+ */
 function todayKey(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

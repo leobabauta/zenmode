@@ -406,6 +406,7 @@ interface PrefsRow {
   last_review_ritual_date: string | null;
   custom_lists: unknown[];
   active_list_id: string | null;
+  timezone: string | null;
   updated_at: string;
 }
 
@@ -508,6 +509,10 @@ async function flushPreferences(): Promise<void> {
     last_review_ritual_date: s.lastReviewRitualDate,
     custom_lists: s.customLists,
     active_list_id: s.activeListId,
+    // auto-move-items resolves each user's "today" from this and skips anyone without it, so a
+    // client that never writes it gets no nightly rollover at all. The web client has always
+    // pushed it; this is the same line, so mobile-only accounts stop being left out.
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     updated_at: new Date().toISOString(),
   };
 
