@@ -256,7 +256,8 @@
 
     <h2>Base URL and auth</h2>
     <p>Every route below is relative to this base:</p>
-    <pre><code>https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api</code></pre>
+    <pre><code>https://api.zenmode.work/v1</code></pre>
+    <p>The Supabase URL this API was originally served from &mdash; <code>https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api</code> &mdash; still works, so nothing built against it breaks. New work should use the address above.</p>
     <p>Pass your key as a bearer token. No other headers are required beyond <code>Content-Type</code> on requests with a body.</p>
     <pre><code>Authorization: Bearer zmk_your_key_here</code></pre>
     <p>A missing, malformed, or revoked key returns <code>401 {"error": "Invalid or missing API key"}</code>.</p>
@@ -271,7 +272,7 @@
 
     <h2>Reading items</h2>
     <pre><code>curl -H "Authorization: Bearer zmk_your_key_here" \
-  "https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api/items?dayKey=2026-09-09"</code></pre>
+  "https://api.zenmode.work/v1/items?dayKey=2026-09-09"</code></pre>
 
     <p>Query parameters on <code>/items</code>:</p>
     <div class="table-wrap">
@@ -328,7 +329,7 @@
   -H "Authorization: Bearer zmk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{"text": "Call the plumber", "dayKey": "2026-09-09", "isPriority": true}' \
-  "https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api/items"</code></pre>
+  "https://api.zenmode.work/v1/items"</code></pre>
 
     <div class="table-wrap">
       <table>
@@ -356,13 +357,13 @@
   -H "Authorization: Bearer zmk_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{"completed": true}' \
-  "https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api/items/V1StGXR8_Z5jdHi6B-myT"</code></pre>
+  "https://api.zenmode.work/v1/items/V1StGXR8_Z5jdHi6B-myT"</code></pre>
     <p>Setting <code>completed</code> also records the completion time, so the item shows up correctly in your stats. Moving an item is a matter of patching its container: <code>{"dayKey": "2026-09-10"}</code> reschedules it, and <code>{"dayKey": null}</code> sends it back to the Inbox. The updated item comes back in the same <code>{ "item": ... }</code> shape; an id that isn&rsquo;t yours returns <code>404</code>, and a patch with no recognized fields returns <code>400</code>.</p>
 
     <h2>Deleting an item</h2>
     <pre><code>curl -X DELETE \
   -H "Authorization: Bearer zmk_your_key_here" \
-  "https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api/items/V1StGXR8_Z5jdHi6B-myT"</code></pre>
+  "https://api.zenmode.work/v1/items/V1StGXR8_Z5jdHi6B-myT"</code></pre>
     <p>Any subtasks are deleted along with the parent. Deletion is permanent &mdash; there&rsquo;s no undo through the API. The response is <code>{"success": true}</code>.</p>
 
     <h2>Errors</h2>
