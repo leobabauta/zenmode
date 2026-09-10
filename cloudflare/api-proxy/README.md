@@ -25,10 +25,9 @@ must be `/functions/v1/api/<route>`.
 
 ## Deploy
 
-One-time, before the first deploy: add an `api` record to the `zenmode.work`
-zone in the Cloudflare dashboard, proxied (orange cloud). A Workers-only
-hostname conventionally uses `AAAA api 100::`. The route in `wrangler.toml`
-attaches to it.
+`wrangler.toml` declares `api.zenmode.work` as a Custom Domain, so the first
+deploy creates the DNS record and provisions the TLS certificate. No dashboard
+step is needed.
 
 ```bash
 cd cloudflare/api-proxy
@@ -41,6 +40,10 @@ forwards the caller's `Authorization` header and holds no credentials of its
 own.
 
 ## Verify
+
+`api.zenmode.work` should resolve to Cloudflare anycast addresses (`104.x` or
+`172.67.x`). An empty `dig` result means the custom domain has not finished
+provisioning — it usually takes under a minute.
 
 ```bash
 curl -i -H "Authorization: Bearer zmk_your_key_here" \

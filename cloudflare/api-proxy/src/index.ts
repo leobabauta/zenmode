@@ -31,6 +31,21 @@ const STRIPPED_REQUEST_HEADERS = [
   'x-forwarded-proto',
 ];
 
+// Upstream response headers that shouldn't reach API clients. `set-cookie` is the
+// important one: Supabase's edge sets a bot-management cookie scoped to
+// supabase.co, which a browser-based caller would store for a domain that has
+// nothing to do with them. The rest just announce what is behind the proxy.
+const STRIPPED_RESPONSE_HEADERS = [
+  'set-cookie',
+  'sb-gateway-version',
+  'sb-project-ref',
+  'sb-request-id',
+  'x-deno-execution-id',
+  'x-sb-edge-region',
+  'x-served-by',
+  'endpoint-load-metrics',
+];
+
 function corsPreflight(): Response {
   return new Response(null, {
     status: 204,
@@ -90,6 +105,7 @@ export default {
 
     // Rebuild the response so the body streams through and the headers stay mutable.
     const responseHeaders = new Headers(upstreamResponse.headers);
+    for (const name of STRIPPED_RESPONSE_HEADERS) responseHeaders.delete(name);
     responseHeaders.set('Access-Control-Allow-Origin', '*');
 
     return new Response(upstreamResponse.body, {

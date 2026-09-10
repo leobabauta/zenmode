@@ -5,9 +5,10 @@ compatibility_date = "2024-09-01"
 [vars]
 SUPABASE_URL = "https://hlyxiyvqmfupyqjgfajj.supabase.co"
 
-# api.zenmode.work must exist as a DNS record in the zenmode.work zone before
-# `wrangler deploy` can attach this route. A proxied (orange-cloud) AAAA record
-# pointing at 100:: is the usual placeholder for a Workers-only hostname.
+# A Custom Domain rather than a route: the worker owns this whole hostname, and
+# `wrangler deploy` creates the DNS record and provisions the certificate itself.
+# A plain route would need a proxied DNS record to already exist. Note there is
+# no `/*` here — a custom domain sends every path on the hostname to the worker.
 [[routes]]
-pattern = "api.zenmode.work/*"
-zone_name = "zenmode.work"
+pattern = "api.zenmode.work"
+custom_domain = true
