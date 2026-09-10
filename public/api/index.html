@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API - zenmode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fafafa;
+      color: #1c1917;
+      line-height: 1.7;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: #1c1917;
+    }
+    .nav-logo img { width: 2.5rem; height: 2.5rem; }
+    .nav-logo span { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #2563eb;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: #1d4ed8; }
+    .nav-links .btn-signin {
+      display: inline-block;
+      background: #1c1917;
+      color: #fff;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-links .btn-signin:hover { background: #292524; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 6rem 1.5rem 4rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: #1c1917;
+      margin-bottom: 1.5rem;
+    }
+    .hero .intro {
+      font-size: 1.1rem;
+      color: #57534e;
+      max-width: 40rem;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* Content */
+    .content {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+    }
+    .content h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1c1917;
+      margin-top: 3rem;
+      margin-bottom: 0.75rem;
+    }
+    .content h2:first-child { margin-top: 0; }
+    .content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1c1917;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    .content p {
+      font-size: 1rem;
+      color: #57534e;
+      margin-bottom: 1rem;
+    }
+    .content ul {
+      margin: 0 0 1rem 1.25rem;
+      color: #57534e;
+    }
+    .content li { margin-bottom: 0.35rem; }
+    .content a { color: #2563eb; text-decoration: none; }
+    .content a:hover { text-decoration: underline; }
+
+    /* Code */
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85em;
+      background: #f0efed;
+      border-radius: 4px;
+      padding: 0.1em 0.35em;
+      color: #1c1917;
+    }
+    pre {
+      background: #1c1917;
+      color: #e7e5e4;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      overflow-x: auto;
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+      font-size: 0.8125rem;
+      white-space: pre;
+    }
+
+    /* Endpoint rows */
+    .endpoint {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #e7e5e4;
+      flex-wrap: wrap;
+    }
+    .endpoint:last-child { border-bottom: none; }
+    .method {
+      flex-shrink: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 5px;
+      min-width: 4.25rem;
+      text-align: center;
+      color: #fff;
+    }
+    .method.get { background: #2563eb; }
+    .method.post { background: #16a34a; }
+    .method.patch { background: #d97706; }
+    .method.delete { background: #dc2626; }
+    .endpoint .path {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      color: #1c1917;
+      font-weight: 500;
+    }
+    .endpoint .desc { font-size: 0.9rem; color: #78716c; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1.25rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.75rem 0.5rem 0;
+      border-bottom: 1px solid #e7e5e4;
+      vertical-align: top;
+      color: #57534e;
+    }
+    th { color: #1c1917; font-weight: 600; white-space: nowrap; }
+    td code { white-space: nowrap; }
+
+    /* Callout */
+    .note {
+      background: #fff;
+      border: 1px solid #e7e5e4;
+      border-left: 3px solid #d97706;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .note p { margin-bottom: 0; font-size: 0.95rem; }
+    .note p + p { margin-top: 0.6rem; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid #e7e5e4;
+      padding: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    footer a, footer span {
+      font-size: 1rem;
+      color: #78716c;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer a:hover { color: #1c1917; }
+    footer .active { font-weight: 600; color: #1c1917; }
+  </style>
+</head>
+<body>
+  <!-- Nav -->
+  <nav>
+    <a class="nav-logo" href="/">
+      <img src="/zenmode-logo.svg" alt="" />
+      <span>zenmode</span>
+    </a>
+    <div class="nav-links">
+      <a href="/manifesto/">Manifesto</a>
+      <a href="/downloads/">Downloads</a>
+      <a href="/">Sign in</a>
+      <a href="/" class="btn-signin">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>API</h1>
+    <p class="intro">
+      Read and write your zenmode tasks and notes from anywhere &mdash; a Shortcut, a shell script, a widget, or whatever you like to build. Generate a key in Settings, send it as a bearer token, and you&rsquo;re done.
+    </p>
+  </section>
+
+  <!-- Content -->
+  <section class="content">
+
+    <h2>Getting a key</h2>
+    <p>Open zenmode, go to <strong>Settings &rarr; Features &rarr; API</strong>, and generate a key. Keys start with <code>zmk_</code> and are shown exactly once &mdash; copy it before you close the banner. Only a hash is stored, so a lost key can&rsquo;t be recovered; revoke it and generate a new one.</p>
+    <p>Each key has a scope:</p>
+    <ul>
+      <li><code>items:read</code> &mdash; GET requests only.</li>
+      <li><code>items:write</code> &mdash; read plus create, update, and delete.</li>
+    </ul>
+    <p>A read-only key used on a write request gets back <code>403</code>. Keys carry the full access of your account, so treat one like a password: keep it out of client-side code and public repos, and revoke it from Settings the moment it leaks.</p>
+
+    <h2>Base URL and auth</h2>
+    <p>Every route below is relative to this base:</p>
+    <pre><code>https://api.zenmode.work/v1</code></pre>
+    <p>The Supabase URL this API was originally served from &mdash; <code>https://hlyxiyvqmfupyqjgfajj.supabase.co/functions/v1/api</code> &mdash; still works, so nothing built against it breaks. New work should use the address above.</p>
+    <p>Pass your key as a bearer token. No other headers are required beyond <code>Content-Type</code> on requests with a body.</p>
+    <pre><code>Authorization: Bearer zmk_your_key_here</code></pre>
+    <p>A missing, malformed, or revoked key returns <code>401 {"error": "Invalid or missing API key"}</code>.</p>
+
+    <h2>Endpoints</h2>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/items</span><span class="desc">List items, with filters</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/today</span><span class="desc">Today&rsquo;s items</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="path">/inbox</span><span class="desc">Inbox items</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="path">/items</span><span class="desc">Create an item</span></div>
+    <div class="endpoint"><span class="method patch">PATCH</span><span class="path">/items/:id</span><span class="desc">Update an item</span></div>
+    <div class="endpoint"><span class="method delete">DELETE</span><span class="path">/items/:id</span><span class="desc">Delete an item and its subtasks</span></div>
+
+    <h2>Reading items</h2>
+    <pre><code>curl -H "Authorization: Bearer zmk_your_key_here" \
+  "https://api.zenmode.work/v1/items?dayKey=2026-09-09"</code></pre>
+
+    <p>Query parameters on <code>/items</code>:</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Parameter</th><th>Meaning</th></tr>
+        <tr><td><code>dayKey</code></td><td>Items scheduled on a date, as <code>YYYY-MM-DD</code>.</td></tr>
+        <tr><td><code>inbox</code></td><td><code>true</code> for unscheduled items with no list.</td></tr>
+        <tr><td><code>later</code></td><td><code>true</code> for the Later bucket.</td></tr>
+        <tr><td><code>listId</code></td><td>Items in a specific custom list.</td></tr>
+        <tr><td><code>completed</code></td><td><code>true</code> or <code>false</code>. Omit for both.</td></tr>
+        <tr><td><code>limit</code></td><td>1&ndash;1000. Defaults to 200.</td></tr>
+        <tr><td><code>offset</code></td><td>Rows to skip. Defaults to 0.</td></tr>
+      </table>
+    </div>
+    <p><code>dayKey</code>, <code>inbox</code>, and <code>later</code> pick the container, so only the first one you send is applied &mdash; in that order. <code>listId</code> and <code>completed</code> narrow the result further. Archived items and subtasks are never returned; results are ordered the way they appear in the app.</p>
+
+    <p>The response wraps the items alongside the paging you asked for:</p>
+    <pre><code>{
+  "items": [
+    {
+      "id": "V1StGXR8_Z5jdHi6B-myT",
+      "type": "task",
+      "text": "Write the weekly review",
+      "completed": false,
+      "dayKey": "2026-09-09",
+      "isLater": false,
+      "order": 3,
+      "isPriority": true,
+      "isMediumPriority": false,
+      "listId": null,
+      "parentId": null,
+      "isArchived": false,
+      "notes": null,
+      "reminderAt": null,
+      "createdAt": "2026-09-09T14:02:11.402Z",
+      "updatedAt": "2026-09-09T14:02:11.402Z"
+    }
+  ],
+  "limit": 200,
+  "offset": 0,
+  "hasMore": false
+}</code></pre>
+    <p>Keep requesting the next <code>offset</code> while <code>hasMore</code> is <code>true</code>. Don&rsquo;t assume a short page means the end &mdash; check the flag.</p>
+
+    <h3>A note on /today</h3>
+    <div class="note">
+      <p><strong>Prefer <code>GET /items?dayKey=&lt;your local date&gt;</code> over <code>GET /today</code>.</strong></p>
+      <p>The server resolves &ldquo;today&rdquo; in UTC, while the app writes each item&rsquo;s day from your device&rsquo;s local date. If you are west of UTC, <code>/today</code> starts answering with tomorrow&rsquo;s list late in the day &mdash; from about 5pm Pacific onward. Sending an explicit <code>dayKey</code> avoids the question entirely.</p>
+    </div>
+
+    <h2>Creating an item</h2>
+    <p><code>text</code> is the only required field. Send nothing else and the item lands in your Inbox.</p>
+    <pre><code>curl -X POST \
+  -H "Authorization: Bearer zmk_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Call the plumber", "dayKey": "2026-09-09", "isPriority": true}' \
+  "https://api.zenmode.work/v1/items"</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+        <tr><td><code>text</code></td><td>string</td><td>Required. Whitespace is trimmed.</td></tr>
+        <tr><td><code>type</code></td><td>string</td><td><code>"task"</code> (default) or <code>"note"</code>.</td></tr>
+        <tr><td><code>dayKey</code></td><td>string</td><td><code>YYYY-MM-DD</code> to schedule it on a day.</td></tr>
+        <tr><td><code>isLater</code></td><td>boolean</td><td>Put it in the Later bucket.</td></tr>
+        <tr><td><code>listId</code></td><td>string</td><td>Add it to a custom list.</td></tr>
+        <tr><td><code>parentId</code></td><td>string</td><td>Make it a subtask of another item.</td></tr>
+        <tr><td><code>isPriority</code></td><td>boolean</td><td>High priority.</td></tr>
+        <tr><td><code>isMediumPriority</code></td><td>boolean</td><td>Medium priority.</td></tr>
+        <tr><td><code>notes</code></td><td>string</td><td>Free-form notes on the item.</td></tr>
+        <tr><td><code>reminderAt</code></td><td>string</td><td>ISO 8601 timestamp.</td></tr>
+      </table>
+    </div>
+
+    <p>The id and the item&rsquo;s position are assigned for you &mdash; new items go to the end of whichever container they land in. A successful create returns <code>201</code> with the finished item:</p>
+    <pre><code>{ "item": { "id": "kM2p...", "text": "Call the plumber", ... } }</code></pre>
+    <p>Sending an empty or missing <code>text</code> returns <code>400 {"error": "text is required"}</code>.</p>
+
+    <h2>Updating an item</h2>
+    <p>Send only the fields you want to change. Everything writable at creation can be patched, plus <code>order</code> and <code>isArchived</code>.</p>
+    <pre><code>curl -X PATCH \
+  -H "Authorization: Bearer zmk_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"completed": true}' \
+  "https://api.zenmode.work/v1/items/V1StGXR8_Z5jdHi6B-myT"</code></pre>
+    <p>Setting <code>completed</code> also records the completion time, so the item shows up correctly in your stats. Moving an item is a matter of patching its container: <code>{"dayKey": "2026-09-10"}</code> reschedules it, and <code>{"dayKey": null}</code> sends it back to the Inbox. The updated item comes back in the same <code>{ "item": ... }</code> shape; an id that isn&rsquo;t yours returns <code>404</code>, and a patch with no recognized fields returns <code>400</code>.</p>
+
+    <h2>Deleting an item</h2>
+    <pre><code>curl -X DELETE \
+  -H "Authorization: Bearer zmk_your_key_here" \
+  "https://api.zenmode.work/v1/items/V1StGXR8_Z5jdHi6B-myT"</code></pre>
+    <p>Any subtasks are deleted along with the parent. Deletion is permanent &mdash; there&rsquo;s no undo through the API. The response is <code>{"success": true}</code>.</p>
+
+    <h2>Errors</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Status</th><th>When</th></tr>
+        <tr><td><code>400</code></td><td>The body is missing something required, or has nothing to change.</td></tr>
+        <tr><td><code>401</code></td><td>The key is missing, malformed, or revoked.</td></tr>
+        <tr><td><code>403</code></td><td>A read-only key attempted a write.</td></tr>
+        <tr><td><code>404</code></td><td>Unknown route, or an item id that isn&rsquo;t yours.</td></tr>
+        <tr><td><code>500</code></td><td>Something went wrong on our side.</td></tr>
+      </table>
+    </div>
+    <p>Errors are always JSON in the shape <code>{"error": "..."}</code>.</p>
+
+    <h2>Questions</h2>
+    <p>Something unclear, or a route you wish existed? Write to <a href="mailto:l@zenhabits.net">l@zenhabits.net</a>.</p>
+
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a href="/about/">About</a>
+    <a href="/manifesto/">Manifesto</a>
+    <a href="/downloads/">Downloads</a>
+    <a href="/privacy/">Privacy Policy</a>
+    <a href="/changelog/">Changelog</a>
+  </footer>
+</body>
+</html>

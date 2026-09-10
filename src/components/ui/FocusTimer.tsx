@@ -4,6 +4,8 @@ type TimerStatus = 'idle' | 'running' | 'paused' | 'done';
 
 function playBeep() {
   const ctx = new AudioContext();
+  // A context created while the tab is hidden starts suspended; the timer can finish there.
+  if (ctx.state === 'suspended') ctx.resume();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
@@ -71,6 +73,10 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
   const editInputRef = useRef<HTMLInputElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const draggingRef = useRef(false);
+  // Absolute wall-clock time (ms) when the running timer hits zero. Background tabs throttle
+  // setInterval to about once a minute, so the countdown is derived from this instead of
+  // decrementing once per fired tick.
+  const deadlineRef = useRef<number | null>(null);
 
   const triggerCelebration = useCallback((elapsed: number) => {
     playBeep();
@@ -78,20 +84,30 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
     setShowCelebration(true);
   }, [onSessionComplete]);
 
-  // Timer interval
+  // Timer interval — recomputed from the deadline each tick so a throttled or suspended
+  // background tab still shows the right time, and resynced the moment the tab is visible again.
   useEffect(() => {
     if (status !== 'running') return;
-    const id = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(id);
-          setStatus('done');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
+    const tick = () => {
+      const deadline = deadlineRef.current;
+      if (deadline === null) return;
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      if (remaining === 0) {
+        deadlineRef.current = null;
+        setStatus('done');
+      }
+    };
+    tick();
+    const id = setInterval(tick, 250);
+    const handleVisibility = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [status]);
 
   // When timer naturally reaches 0
@@ -121,6 +137,7 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
       const newTotal = mins * 60;
       setTotalSeconds(newTotal);
       setRemainingSeconds(newTotal);
+      deadlineRef.current = null;
       setStatus('idle');
     }
     setEditingTime(false);
@@ -128,17 +145,29 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
 
   const handleStartPauseResume = () => {
     if (status === 'idle' || status === 'done') {
+      const seconds = status === 'done' ? totalSeconds : remainingSeconds;
       if (status === 'done') setRemainingSeconds(totalSeconds);
+      deadlineRef.current = Date.now() + seconds * 1000;
       setStatus('running');
     } else if (status === 'running') {
+      // Snap to the exact remaining time before dropping the deadline.
+      if (deadlineRef.current !== null) {
+        setRemainingSeconds(Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000)));
+      }
+      deadlineRef.current = null;
       setStatus('paused');
     } else if (status === 'paused') {
+      deadlineRef.current = Date.now() + remainingSeconds * 1000;
       setStatus('running');
     }
   };
 
   const handleComplete = () => {
-    const elapsed = totalSeconds - remainingSeconds;
+    const liveRemaining = deadlineRef.current !== null
+      ? Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000))
+      : remainingSeconds;
+    const elapsed = totalSeconds - liveRemaining;
+    deadlineRef.current = null;
     setStatus('done');
     triggerCelebration(elapsed);
     onComplete?.();
@@ -146,6 +175,7 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
 
   const handleReset = () => {
     setRemainingSeconds(totalSeconds);
+    deadlineRef.current = null;
     setStatus('idle');
   };
 
@@ -177,6 +207,7 @@ export function FocusTimer({ onSessionComplete, onComplete }: FocusTimerProps) {
     const newTotal = mins * 60;
     setTotalSeconds(newTotal);
     setRemainingSeconds(newTotal);
+    deadlineRef.current = null;
   }, [status]);
 
   const handlePointerUp = useCallback(() => {
