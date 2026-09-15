@@ -25,6 +25,12 @@ cd desktop-tauri && npm run tauri dev  # Desktop dev
 - **Mobile:** `cd mobile && npx eas build --platform [android|ios] --profile production --non-interactive`
   - Bump `versionCode` (Android) / `buildNumber` (iOS) in `mobile/app.json` before each build
   - iOS submit: `npx eas submit --platform ios --latest --non-interactive`
+  - TestFlight builds expire 90 days after upload and cannot be renewed — a new build is the only fix
+  - Before an iOS build you actually need, smoke-test pod resolution locally (~2 min):
+    `cd mobile && npx expo prebuild --platform ios --clean && cd ios && pod install`
+    This is a managed (CNG) project with no committed `Podfile.lock`, so CocoaPods re-resolves
+    transitive native deps on every build — an upstream release can break an unchanged tree.
+    `/ios` and `/android` are gitignored, so prebuild leaves nothing behind. Needs `brew install cocoapods`.
 - **Desktop:** Tag `desktop-v*` → CI builds macOS + Windows, creates GitHub Release with updater artifacts
   - Bump version in `desktop-tauri/src-tauri/tauri.conf.json` before tagging
   - Update download links in `public/downloads/index.html`
