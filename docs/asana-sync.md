@@ -217,9 +217,37 @@ Trigger on `items` UPDATE,
 `WHEN (NEW.asana_gid IS NOT NULL AND (OLD.completed IS DISTINCT FROM NEW.completed OR OLD.day_key IS DISTINCT FROM NEW.day_key))`.
 Call via `pg_net`.
 
-**[revised] No new shared secret.** `auto-move-items` already authenticates by
-accepting the service role key as a bearer token. Follow that pattern rather
-than introducing a second mechanism.
+**[revised] Auth is a dedicated secret, read from Vault.** An earlier draft
+reused the service role key, as `auto-move-items` does. Both functions now check
+`ASANA_SYNC_SECRET` instead, so triggering a sync does not require the
+credential that can read and write every table for every user, and nothing
+breaks when the project finishes moving off legacy JWT keys. The trigger reads
+the token from `vault.decrypted_secrets`, not inlined into the function body
+where anyone who can read `pg_catalog` would see it.
+
+`asana_push_trigger()` must be `SECURITY DEFINER` to read Vault, which also
+exposed it at `/rest/v1/rpc/asana_push_trigger`. `EXECUTE` is revoked from
+`anon` and `authenticated`; the trigger still fires, because PostgreSQL checks
+that privilege when a trigger is created rather than each time it runs.
+
+**[revised] Dry run by default, and every attempt is logged.** `PUSH_DRY_RUN`
+must be exactly `'false'` to let anything reach Asana. Each attempt writes to
+`asana_push_log` either way — this is the one part of the sync that mutates
+state Leo's team depends on, so there is a record of what was sent, separate
+from the per-row `asana_sync_error`.
+
+**[revised] The completion note is claimed before it is sent.** Two trigger
+invocations can overlap, and a story posted twice to Asana cannot be unposted.
+The function sets `completion_note_posted_at` with
+`... WHERE completion_note_posted_at IS NULL RETURNING id` and only posts if it
+got the row. If the post then fails it releases the claim, so the note is not
+silently lost and reconcile can retry.
+
+**The trigger never raises.** It runs inside the user's own write transaction,
+so an exception would fail the `UPDATE` the app was performing — turning a sync
+problem into data loss. Every failure path warns and returns. A push that never
+fires is recovered by reconcile, which looks for rows where `day_key` and
+`asana_day_key` disagree.
 
 The function's own writes touch only `asana_*` columns, so they don't re-fire the
 trigger. Logic, re-reading the row fresh:
@@ -370,7 +398,13 @@ duplicates of tasks the sync has already placed.
    `%FM Business%Weekly call%` was added to the exclusions before the run.
 6. Ship the client changes: the rollover skip first, then the UI. The rollover
    skip must land **before** date pushes are enabled.
-7. Deploy `asana-push` and the trigger. Add reconcile's push-retry half.
+7. ~~Deploy `asana-push` and the trigger.~~ **Done, in dry run.** Verified end
+   to end: an `UPDATE` to a linked row's `day_key` fires the trigger, reaches
+   the function through pg_net, and logs the computed Asana call
+   (`{"due_on": "..."}`) without sending it. Re-verified as the `authenticated`
+   role with `request.jwt.claims` set, after the `EXECUTE` revoke, since that is
+   the role the app actually writes as. Still to do: set `PUSH_DRY_RUN=false`,
+   and add reconcile's push-retry half.
 8. Add the pg_cron schedule for `asana-pull`. **Do not authenticate it with
    `current_setting('supabase.service_role_key')`** -- that parameter does not
    exist on this project, and a cron job using it fails in Postgres before the
