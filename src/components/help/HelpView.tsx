@@ -168,6 +168,10 @@ const sections: HelpSection[] = [
         q: 'How do I configure rituals?',
         a: 'Go to Settings to enable/disable the Daily Planning Ritual and Daily Review Ritual. You can also set the preferred hour for each ritual prompt.',
       },
+      {
+        q: 'Can I access my tasks from other apps?',
+        a: 'Yes. zenmode has an API you can call from Shortcuts, a shell script, Zapier, or anything else that can make an HTTP request.\nGo to Settings and find the API section to generate a key. Pick `items:read` if what you are building only needs to see your tasks, or `items:write` if it needs to add or change them. Copy the key when it appears — it is only shown once.\nRequests go to `https://api.zenmode.work/v1` with the key in an Authorization header:\n```\ncurl -H "Authorization: Bearer zmk_your_key_here" \\\n  "https://api.zenmode.work/v1/items?dayKey=2026-09-09"\n```\nThat returns the tasks scheduled for that day as JSON. You can also create, update, and delete items — the [full API reference](/api/) has every route with examples.\nA key can reach everything in your account, so treat it like a password: keep it out of anything public, and revoke it from Settings if it leaks.',
+      },
     ],
   },
 ];
@@ -184,6 +188,7 @@ const featuredDocs = [
 
 const resourceLinks = [
   { title: 'About', href: '/about', description: 'Learn about the zenmode philosophy' },
+  { title: 'API', href: '/api', description: 'Read and write your tasks from other apps' },
   { title: 'Manifesto', href: '/manifesto', description: 'Our principles for calm productivity' },
   { title: 'Changelog', href: '/changelog', description: 'Latest updates and improvements' },
 ];
@@ -232,11 +237,70 @@ function SectionIcon({ icon, className }: { icon: string; className?: string }) 
   }
 }
 
+// Inline markup inside a line: [label](href) links and `code` spans.
+const INLINE_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)|`([^`]+)`/g;
+
+// Only these can appear in an href. Anything else (javascript:, data:) renders as
+// plain text rather than a link.
+function isSafeHref(href: string): boolean {
+  return /^(https?:\/\/|mailto:|\/)/.test(href);
+}
+
+function renderInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  let match: RegExpExecArray | null;
+
+  INLINE_PATTERN.lastIndex = 0;
+  while ((match = INLINE_PATTERN.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const [full, linkLabel, linkHref, codeText] = match;
+
+    if (codeText !== undefined) {
+      parts.push(
+        <code
+          key={key++}
+          className="px-1.5 py-0.5 rounded text-[0.9em] font-mono bg-[var(--color-surface)] text-[var(--color-text-primary)]"
+        >
+          {codeText}
+        </code>
+      );
+    } else if (isSafeHref(linkHref)) {
+      const external = !linkHref.startsWith('/');
+      parts.push(
+        <a
+          key={key++}
+          href={linkHref}
+          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+          className="text-[var(--color-accent)] hover:underline"
+        >
+          {linkLabel}
+        </a>
+      );
+    } else {
+      parts.push(full);
+    }
+
+    lastIndex = match.index + full.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length === 1 ? parts[0] : parts;
+}
+
 function RichText({ text }: { text: string }) {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
   let olItems: string[] = [];
   let ulItems: string[] = [];
+  let codeLines: string[] | null = null;
   let key = 0;
 
   const flushOl = () => {
@@ -244,7 +308,7 @@ function RichText({ text }: { text: string }) {
     elements.push(
       <ol key={key++} className="list-decimal list-inside space-y-1.5 my-3 text-base text-[var(--color-text-secondary)] leading-relaxed">
         {olItems.map((li, i) => (
-          <li key={i}>{li}</li>
+          <li key={i}>{renderInline(li)}</li>
         ))}
       </ol>
     );
@@ -256,14 +320,47 @@ function RichText({ text }: { text: string }) {
     elements.push(
       <ul key={key++} className="list-disc list-inside space-y-1.5 my-3 text-base text-[var(--color-text-secondary)] leading-relaxed">
         {ulItems.map((li, i) => (
-          <li key={i}>{li}</li>
+          <li key={i}>{renderInline(li)}</li>
         ))}
       </ul>
     );
     ulItems = [];
   };
 
+  const flushCode = () => {
+    if (codeLines === null) return;
+    elements.push(
+      <pre
+        key={key++}
+        className="my-3 p-4 rounded-lg overflow-x-auto bg-[var(--color-surface)] border border-[var(--color-border)]"
+      >
+        <code className="text-[13px] font-mono leading-relaxed text-[var(--color-text-primary)] whitespace-pre">
+          {codeLines.join('\n')}
+        </code>
+      </pre>
+    );
+    codeLines = null;
+  };
+
   for (const line of lines) {
+    // Fenced block: everything between ``` markers is verbatim, including list
+    // and heading characters that would otherwise be parsed.
+    if (line.trimStart().startsWith('```')) {
+      if (codeLines === null) {
+        flushOl();
+        flushUl();
+        codeLines = [];
+      } else {
+        flushCode();
+      }
+      continue;
+    }
+
+    if (codeLines !== null) {
+      codeLines.push(line);
+      continue;
+    }
+
     const olMatch = line.match(/^\d+\.\s+(.*)/);
     const ulMatch = line.match(/^[•\-]\s*(.*)/);
     if (olMatch) {
@@ -278,7 +375,7 @@ function RichText({ text }: { text: string }) {
       if (line.trim()) {
         elements.push(
           <p key={key++} className="text-base text-[var(--color-text-secondary)] leading-relaxed">
-            {line}
+            {renderInline(line)}
           </p>
         );
       }
@@ -286,6 +383,8 @@ function RichText({ text }: { text: string }) {
   }
   flushOl();
   flushUl();
+  // An unterminated fence still renders as code rather than vanishing.
+  flushCode();
 
   return <div className="space-y-1">{elements}</div>;
 }

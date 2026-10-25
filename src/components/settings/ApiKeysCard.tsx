@@ -109,7 +109,16 @@ export function ApiKeysCard() {
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-settings)] p-6">
       <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-1">API</h2>
       <p className="text-sm text-[var(--color-text-muted)] mb-4">
-        Generate API keys to access your items programmatically.
+        Generate API keys to access your items programmatically.{' '}
+        <a
+          href="/api/"
+          target="_blank"
+          rel="noreferrer"
+          className="text-[var(--color-accent)] hover:underline"
+        >
+          Read the API docs
+        </a>
+        .
       </p>
 
       {/* Newly generated key banner */}
