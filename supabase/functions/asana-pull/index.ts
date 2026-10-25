@@ -24,6 +24,10 @@ const PULL_OVERLAP_MINUTES = 10;
 // so it runs at most this often regardless of the pull cadence.
 const RECONCILE_INTERVAL_MINUTES = 60;
 
+// Cap on push retries per reconcile pass, so a systemic Asana outage produces a
+// bounded number of calls per run instead of one per linked row every hour.
+const PUSH_RETRY_LIMIT = 25;
+
 const PAGE_SIZE = 1000;
 
 interface ItemRow {
@@ -530,6 +534,51 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Retry pushes that never landed. The trigger is fire-and-forget through
+    // pg_net: if that call fails, or the function errors, the row keeps its
+    // divergence and nothing else notices. asana-push re-reads the row and does
+    // only what is still outstanding, so invoking it again is safe.
+    //
+    // A row carrying only a stale asana_sync_error is included deliberately --
+    // asana-push clears it when it finds nothing to do, which is what takes the
+    // warning badge off a task that has since come right.
+    let pushRetries = 0;
+    if (reconcileDue) {
+      const archiving = new Set(
+        actions.filter((a) => a.kind === 'archive').map((a) => a.itemId),
+      );
+      const pendingPush = items
+        .filter((i) =>
+          i.asana_gid
+          && !i.is_archived
+          && !archiving.has(i.id)
+          && (
+            i.completed !== (i.asana_completed ?? false)
+            || (!i.is_later && i.day_key !== null && i.day_key !== i.asana_day_key)
+            || i.asana_sync_error !== null
+          ))
+        .slice(0, PUSH_RETRY_LIMIT);
+
+      for (const item of pendingPush) {
+        pushRetries++;
+        try {
+          const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/asana-push`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${invokeSecret}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ item_id: item.id }),
+          });
+          if (!res.ok) errors.push(`push retry ${item.id}: ${res.status}`);
+        } catch (retryErr) {
+          errors.push(
+            `push retry ${item.id}: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          );
+        }
+      }
+    }
+
     // --- Apply, or report ---
 
     let applied = 0;
@@ -576,6 +625,7 @@ Deno.serve(async (req) => {
       zenmode_rows_scanned: items.length,
       reconcile_ran: reconcileDue,
       reconcile_requests: reconciled,
+      push_retries: pushRetries,
       counts: {
         insert: actions.filter((a) => a.kind === 'insert').length,
         link: actions.filter((a) => a.kind === 'link').length,

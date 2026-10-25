@@ -425,11 +425,27 @@ duplicates of tasks the sync has already placed.
    Nothing was pending at the time: 0 diverged rows, 0 completion mismatches,
    0 sync errors, so switching it on fired no pushes.
 
-**Open gap now that push is live:** reconcile's push-retry half does not exist,
-and the sync-error badge is not built. A push that fails leaves
-`asana_sync_error` set and the divergence in place, and nothing retries it or
-shows it. Until both land, a failed push is silent — `asana_push_log` is the
-only place it surfaces.
+**That gap is now closed.** Reconcile retries pending pushes — rows where
+`completed` disagrees with `asana_completed`, or `day_key` with
+`asana_day_key`, or that carry an `asana_sync_error` — by invoking `asana-push`
+per row, capped at 25 a pass so an Asana outage produces bounded traffic rather
+than one call per linked row every hour. `asana-push` clears a stale error when
+it finds nothing outstanding, which is what takes the badge off a task that has
+since come right. `TaskItem` shows a small amber warning with the error in its
+`title`.
+
+Verified: an error set on a row whose Asana task had never been modified was
+cleared by the retry, with `updated_at` bumped, on a pull that reported
+`applied: 0` and every count at 0 — so the pull's own error-clearing cannot
+have been what did it. A first attempt at this test was ambiguous, because the
+chosen row *was* in the Asana modified window and the pull clears errors too.
+
+**Reconcile cost, for later.** 91 linked rows takes about 23–25s and 91 Asana
+requests, one per open linked row. Two thresholds worth remembering: Asana's
+free-tier limit is 150 requests a minute, so a pass starts risking 429s somewhere
+past ~150 linked rows, and the edge function's wall clock puts a ceiling not far
+beyond that. Batching, or reconciling a slice of rows per pass, is the fix when
+either gets close.
 8. Add the pg_cron schedule for `asana-pull`. **Do not authenticate it with
    `current_setting('supabase.service_role_key')`** -- that parameter does not
    exist on this project, and a cron job using it fails in Postgres before the

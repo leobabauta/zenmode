@@ -36,6 +36,9 @@ export interface PlannerItem {
   // deliberately does not emit it, which is what stops a client upsert from
   // clobbering the asana_* mirror columns. See docs/asana-sync.md.
   asanaGid?: string;
+  // Also sync-owned and read-only on the client: the last push or pull failure
+  // for this row, surfaced as a warning badge on the task.
+  asanaSyncError?: string;
 }
 
 export interface CustomList {

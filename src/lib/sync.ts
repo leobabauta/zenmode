@@ -68,6 +68,7 @@ interface ItemRow {
   // lists asana_gid in its ON CONFLICT DO UPDATE SET and cannot null the
   // sync's mirror columns.
   asana_gid?: string | null;
+  asana_sync_error?: string | null;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -120,6 +121,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     notes: row.notes ?? undefined,
     reminderAt: row.reminder_at ?? undefined,
     asanaGid: row.asana_gid ?? undefined,
+    asanaSyncError: row.asana_sync_error ?? undefined,
   };
 }
 

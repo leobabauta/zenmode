@@ -321,6 +321,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Nothing was outstanding, yet the row still carries an error from an
+    // earlier attempt. It is stale -- the divergence that caused it is gone --
+    // and leaving it would keep a warning badge on the task indefinitely. The
+    // block below turns this into the clearing write, updated_at included.
+    if (!dryRun && attempts.length === 0 && row.asana_sync_error) {
+      mirrors.asana_sync_error = null;
+    }
+
     // --- Persist mirrors ----------------------------------------------------
 
     if (!dryRun && Object.keys(mirrors).length > 0) {
