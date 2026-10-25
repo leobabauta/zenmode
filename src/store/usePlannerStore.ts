@@ -784,7 +784,13 @@ export const usePlannerStore = create<PlannerState>()(
               !i.completed &&
               !i.isLater &&
               !i.parentId &&
-              i.type !== 'note'
+              i.type !== 'note' &&
+              // Asana-linked tasks are rolled by auto-move-items instead, which
+              // advances asana_day_key in the same UPDATE as day_key. Moving one
+              // here would leave the two diverged, which asana-push reads as a
+              // deliberate reschedule and would send a new due date to Asana for
+              // every overdue task. See docs/asana-sync.md.
+              !i.asanaGid
           );
 
           // Nothing to move — skip the rest

@@ -64,6 +64,10 @@ interface ItemRow {
   is_archived: boolean;
   notes: string | null;
   reminder_at: string | null;
+  // Optional on purpose: itemToRow must not emit this, so a client upsert never
+  // lists asana_gid in its ON CONFLICT DO UPDATE SET and cannot null the
+  // sync's mirror columns.
+  asana_gid?: string | null;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -115,6 +119,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     isArchived: row.is_archived || undefined,
     notes: row.notes ?? undefined,
     reminderAt: row.reminder_at ?? undefined,
+    asanaGid: row.asana_gid ?? undefined,
   };
 }
 
