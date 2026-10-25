@@ -106,6 +106,20 @@ function stripName(name: string): string {
     .trim();
 }
 
+/**
+ * Jaccard overlap of the two strings' word sets. Only used to flag probable
+ * duplicates in the dry-run report -- linking is still decided by exact match
+ * on the stripped text, so a near-miss never links anything on its own.
+ */
+function wordSimilarity(a: string, b: string): number {
+  const wa = new Set(a.toLowerCase().split(/[^a-z0-9]+/i).filter(Boolean));
+  const wb = new Set(b.toLowerCase().split(/[^a-z0-9]+/i).filter(Boolean));
+  if (wa.size === 0 || wb.size === 0) return 0;
+  let shared = 0;
+  for (const w of wa) if (wb.has(w)) shared++;
+  return shared / (wa.size + wb.size - shared);
+}
+
 /** Convert a SQL ILIKE pattern into an anchored, case-insensitive RegExp. */
 function ilikeToRegExp(pattern: string): RegExp {
   const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -119,10 +133,14 @@ async function asanaFetch(pat: string, path: string): Promise<Response> {
 }
 
 /** Fetch every page of an Asana collection endpoint. */
+let lastFetchPages = 0;
+
 async function asanaFetchAll(pat: string, path: string): Promise<AsanaTask[]> {
   const out: AsanaTask[] = [];
   let next: string | null = path;
+  lastFetchPages = 0;
   while (next) {
+    lastFetchPages++;
     const res = await asanaFetch(pat, next);
     if (!res.ok) {
       throw new Error(`Asana ${res.status} on ${next.split('?')[0]}: ${await res.text()}`);
@@ -136,7 +154,14 @@ async function asanaFetchAll(pat: string, path: string): Promise<AsanaTask[]> {
 }
 
 type Action =
-  | { kind: 'insert'; gid: string; name: string; dayKey: string; row: Record<string, unknown> }
+  | {
+      kind: 'insert';
+      gid: string;
+      name: string;
+      dayKey: string;
+      nearMiss?: { text: string; score: number; rows: number };
+      row: Record<string, unknown>;
+    }
   | { kind: 'link'; gid: string; name: string; itemId: string; itemText: string; patch: Record<string, unknown> }
   | { kind: 'update'; gid: string; itemId: string; reasons: string[]; patch: Record<string, unknown> }
   | { kind: 'ambiguous'; gid: string; name: string; candidateIds: string[] }
@@ -169,9 +194,15 @@ Deno.serve(async (req) => {
   // 'false', so a missing or misspelled variable can never start writing.
   const dryRun = Deno.env.get('DRY_RUN') !== 'false';
 
-  if (!pat || !userId) {
+  // Name the missing secret: "one of these is unset" is hard to act on when
+  // the usual cause is a single `secrets set` that didn't take.
+  const missing = [
+    !pat ? 'ASANA_PAT' : null,
+    !userId ? 'ASANA_SYNC_USER_ID' : null,
+  ].filter(Boolean);
+  if (missing.length > 0) {
     return new Response(
-      JSON.stringify({ error: 'ASANA_PAT and ASANA_SYNC_USER_ID must both be set' }),
+      JSON.stringify({ error: `Missing required secret(s): ${missing.join(', ')}` }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } },
     );
   }
@@ -324,11 +355,22 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        let best: { text: string; score: number; count: number } | null = null;
+        for (const [key, rows] of unlinkedByText) {
+          const score = wordSimilarity(stripped, key);
+          if (score > (best?.score ?? 0)) {
+            best = { text: rows[0].text, score, count: rows.length };
+          }
+        }
+
         actions.push({
           kind: 'insert',
           gid: task.gid,
           name: stripped,
           dayKey,
+          ...(best && best.score >= 0.6
+            ? { nearMiss: { text: best.text, score: Number(best.score.toFixed(2)), rows: best.count } }
+            : {}),
           row: {
             id: nanoid(),
             user_id: userId,
@@ -508,6 +550,7 @@ Deno.serve(async (req) => {
       timezone: tz,
       today: todayKey,
       asana_tasks_seen: tasks.length,
+      asana_pages_fetched: lastFetchPages,
       zenmode_rows_scanned: items.length,
       reconcile_ran: reconcileDue,
       reconcile_requests: reconciled,
