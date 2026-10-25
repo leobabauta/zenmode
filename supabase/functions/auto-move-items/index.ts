@@ -21,6 +21,8 @@ interface ItemRow {
   consecutive_moves: number;
   is_priority: boolean;
   is_medium_priority: boolean;
+  asana_gid: string | null;
+  asana_day_key: string | null;
 }
 
 // PostgREST caps every response at `max_rows` (1000 on hosted Supabase) and
@@ -52,8 +54,18 @@ function todayInTimezone(tz: string): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: tz });
 }
 
-/** Run auto-move logic for a single user's items, returning DB operations */
-function computeAutoMove(items: ItemRow[], todayKey: string) {
+/**
+ * Run auto-move logic for a single user's items, returning DB operations.
+ *
+ * `onlyLinked` restricts the move to Asana-linked rows and skips the
+ * housekeeping passes. It exists because the daily `last_auto_move_date` guard
+ * is stamped by whichever rollover runs first, and the web client's own
+ * rollover usually wins -- which would otherwise leave linked rows rolled by
+ * nobody on any day the user opens the web app. Linked rows therefore roll on
+ * every run, ungated, and the client-side rollover skips them so it never has
+ * to write an asana_* mirror. See docs/asana-sync.md.
+ */
+function computeAutoMove(items: ItemRow[], todayKey: string, onlyLinked = false) {
   const toDelete: string[] = [];
   const toUpdate: Partial<ItemRow & { id: string }>[] = [];
   const now = new Date().toISOString();
@@ -63,7 +75,7 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
 
   // --- Deduplicate recurring tasks on same day ---
   const seen = new Map<string, string>(); // "dayKey|text|recType|recInterval" → id
-  for (const item of items) {
+  for (const item of onlyLinked ? [] : items) {
     if (!item.recurrence || !item.day_key || item.completed || item.parent_id) continue;
     const key = `${item.day_key}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
     if (seen.has(key)) {
@@ -74,7 +86,7 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
   }
 
   // --- Clear stale priority flags from past days ---
-  for (const item of items) {
+  for (const item of onlyLinked ? [] : items) {
     if (item.day_key && item.day_key < todayKey && !item.completed && (item.is_priority || item.is_medium_priority)) {
       toUpdate.push({ id: item.id, is_priority: false, is_medium_priority: false, updated_at: now });
     }
@@ -89,6 +101,7 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
       !i.is_later &&
       !i.parent_id &&
       i.type !== 'note' &&
+      (!onlyLinked || i.asana_gid !== null) &&
       !toDelete.includes(i.id)
   );
 
@@ -139,6 +152,9 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
         order: laterMax,
         consecutive_moves: moves,
         updated_at: now,
+        // Keep the mirror level with day_key so this never looks like a user
+        // move. is_later already suppresses the push, but the two must not drift.
+        ...(item.asana_gid ? { asana_day_key: null } : {}),
       });
     } else {
       // Move to today
@@ -149,6 +165,9 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
         order: maxOrder,
         consecutive_moves: moves,
         updated_at: now,
+        // A rollover is not a user move: advance the mirror in the same UPDATE
+        // so day_key and asana_day_key never diverge and asana-push stays quiet.
+        ...(item.asana_gid ? { asana_day_key: todayKey } : {}),
       });
     }
 
@@ -172,7 +191,7 @@ function computeAutoMove(items: ItemRow[], todayKey: string) {
   for (const u of toUpdate) finalDay.set(u.id!, u.day_key ?? finalDay.get(u.id!) ?? null);
 
   const seen2 = new Map<string, string>();
-  for (const item of items) {
+  for (const item of onlyLinked ? [] : items) {
     if (toDelete.includes(item.id)) continue;
     if (!item.recurrence || item.completed || item.parent_id) continue;
     const dk = finalDay.get(item.id);
@@ -243,8 +262,30 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Skip if already processed today
-      if (last_auto_move_date === todayKey) continue;
+      // The daily guard belongs to the general rollover only. Asana-linked rows
+      // roll on every run, because this guard is stamped by whichever rollover
+      // ran first and that is usually the web client's -- see computeAutoMove.
+      const alreadyProcessed = last_auto_move_date === todayKey;
+      if (alreadyProcessed) {
+        // Cheap existence probe so an already-processed user costs one HEAD
+        // query instead of a full paged read of their items. Mirrors the
+        // pastIncomplete filter in computeAutoMove: a row with is_later set has
+        // a null day_key and is excluded by the day_key bound already.
+        const { count, error: probeError } = await supabase
+          .from('items')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user_id)
+          .not('asana_gid', 'is', null)
+          .lt('day_key', todayKey)
+          .eq('completed', false)
+          .is('parent_id', null)
+          .neq('type', 'note');
+        if (probeError) {
+          console.error(`Linked-row probe failed for user ${user_id}:`, probeError);
+          continue;
+        }
+        if (!count) continue;
+      }
 
       // Fetch this user's items (paged — auto-move reasons over the whole set,
       // so a truncated read would skip forwarding items past the cap)
@@ -263,14 +304,16 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const { toDelete, toUpdate } = computeAutoMove(items, todayKey);
+      const { toDelete, toUpdate } = computeAutoMove(items, todayKey, alreadyProcessed);
 
       if (toDelete.length === 0 && toUpdate.length === 0) {
         // No changes needed, but still mark as processed
-        await supabase
-          .from('user_preferences')
-          .update({ last_auto_move_date: todayKey })
-          .eq('user_id', user_id);
+        if (!alreadyProcessed) {
+          await supabase
+            .from('user_preferences')
+            .update({ last_auto_move_date: todayKey })
+            .eq('user_id', user_id);
+        }
         continue;
       }
 
@@ -301,10 +344,12 @@ Deno.serve(async (req) => {
       }
 
       // Mark this user as processed for today
-      await supabase
-        .from('user_preferences')
-        .update({ last_auto_move_date: todayKey })
-        .eq('user_id', user_id);
+      if (!alreadyProcessed) {
+        await supabase
+          .from('user_preferences')
+          .update({ last_auto_move_date: todayKey })
+          .eq('user_id', user_id);
+      }
 
       usersProcessed++;
     }
