@@ -403,8 +403,23 @@ duplicates of tasks the sync has already placed.
    the function through pg_net, and logs the computed Asana call
    (`{"due_on": "..."}`) without sending it. Re-verified as the `authenticated`
    role with `request.jwt.claims` set, after the `EXECUTE` revoke, since that is
-   the role the app actually writes as. Still to do: set `PUSH_DRY_RUN=false`,
-   and add reconcile's push-retry half.
+   the role the app actually writes as.
+
+   One **real** push was then run against `Barb's Tasks in FLA`, whose due date
+   was already three weeks past: `2026-10-04` → `2026-10-05` → back. Both
+   directions logged `status: ok` with `dry_run: false`, and the read-back
+   confirmed Asana itself held `due_on: 2026-10-05` and then `2026-10-04` again.
+   Mirrors tracked it, nothing diverged, no sync errors. `PUSH_DRY_RUN` was set
+   back to `true` afterwards.
+
+   Still untested, because none of it is reversible the way a date is: the
+   completion path, the reopen path, and the timed-task branch (the DST-aware
+   offset iteration in particular is reasoned-about, not exercised). Completing
+   a real task writes activity to its history and may notify followers, so
+   these want a throwaway Asana task rather than one of Leo's.
+
+   Still to do: set `PUSH_DRY_RUN=false` for good, and add reconcile's
+   push-retry half.
 8. Add the pg_cron schedule for `asana-pull`. **Do not authenticate it with
    `current_setting('supabase.service_role_key')`** -- that parameter does not
    exist on this project, and a cron job using it fails in Postgres before the

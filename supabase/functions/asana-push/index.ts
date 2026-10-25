@@ -280,6 +280,47 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- Read back what Asana now holds -------------------------------------
+    //
+    // Logging the payload we sent only proves what we intended. One GET after a
+    // successful write records what Asana actually stored, which is the thing
+    // worth having in an audit trail of changes to someone else's deadlines --
+    // and it is how a real push gets verified without reading the function's
+    // own optimism back to ourselves.
+
+    if (!dryRun && attempts.some((a) => a.status === 'ok')) {
+      try {
+        const res = await fetch(
+          `${ASANA_BASE}/tasks/${row.asana_gid}?opt_fields=due_on,due_at,completed`,
+          { headers: { Authorization: `Bearer ${pat}`, Accept: 'application/json' } },
+        );
+        if (res.ok) {
+          const body = await res.json();
+          await logAttempt(row, {
+            action: 'verify',
+            payload: {
+              due_on: body.data?.due_on ?? null,
+              due_at: body.data?.due_at ?? null,
+              completed: body.data?.completed ?? null,
+            },
+            status: 'ok',
+          });
+        } else {
+          await logAttempt(row, {
+            action: 'verify', payload: null, status: 'error',
+            error: `Asana GET ${res.status}`,
+          });
+        }
+      } catch (verifyErr) {
+        // A failed read-back says nothing about whether the write landed, so it
+        // is recorded and otherwise ignored.
+        await logAttempt(row, {
+          action: 'verify', payload: null, status: 'error',
+          error: verifyErr instanceof Error ? verifyErr.message : String(verifyErr),
+        });
+      }
+    }
+
     // --- Persist mirrors ----------------------------------------------------
 
     if (!dryRun && Object.keys(mirrors).length > 0) {
