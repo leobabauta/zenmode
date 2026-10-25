@@ -468,6 +468,34 @@ either gets close.
    carry directly or read from Vault.
 9. Update the two skills.
 
+## 9a. Incident, 2026-10-25
+
+The client-side rollover skip was committed but never merged or deployed, so
+production still ran the old rollover while `PUSH_DRY_RUN` was off. The
+overnight rollover moved every past-due linked row forward without advancing
+`asana_day_key`, the trigger read ~70 of those as deliberate reschedules, and
+fired them at once. Asana rate-limited most (429); **22 landed**. 19 of those
+tasks had deliberately had no due date — some since 2022 — and now read as due
+today to the team. This is the exact failure the `asana_day_key` design exists
+to prevent, and the rollout order in this document says in as many words that
+the skip must land before date pushes are enabled.
+
+Archived rows were the bulk of it: neither rollover excludes them, so the 66
+archived the day before were rolled and pushed too.
+
+Recovery: Asana's own story history gave the prior state for all 22 (19
+undated, 3 with real dates), reverted in one batch. Mirrors realigned,
+`asana_day_key` advanced to match `day_key` as the rollover should have done,
+429 errors cleared.
+
+Three fixes: the trigger now skips archived rows (would have stopped 19 of 22
+alone); the rollover skip is merged and deployed; push stays off until both are
+live.
+
+**Rule this earns:** `PUSH_DRY_RUN=false` requires the client rollover skip to
+be *deployed*, not merely committed. Committed and deployed are different
+states and only one of them matters.
+
 ## 10. Test plan
 
 - [ ] Assigned with due date → appears in Zenmode on that date within 5 min
