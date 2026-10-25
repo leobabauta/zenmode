@@ -69,6 +69,9 @@ interface ItemRow {
   // sync's mirror columns.
   asana_gid?: string | null;
   asana_sync_error?: string | null;
+  // Client-owned, so unlike the asana_* mirrors this one is emitted by
+  // itemToRow. The server only ever adds completion_note_posted_at beside it.
+  completion_note?: string | null;
 }
 
 export function itemToRow(item: PlannerItem, userId: string): ItemRow {
@@ -95,6 +98,7 @@ export function itemToRow(item: PlannerItem, userId: string): ItemRow {
     is_archived: item.isArchived ?? false,
     notes: item.notes ?? null,
     reminder_at: item.reminderAt ?? null,
+    completion_note: item.completionNote ?? null,
   };
 }
 
@@ -122,6 +126,7 @@ export function rowToItem(row: ItemRow): PlannerItem {
     reminderAt: row.reminder_at ?? undefined,
     asanaGid: row.asana_gid ?? undefined,
     asanaSyncError: row.asana_sync_error ?? undefined,
+    completionNote: row.completion_note ?? undefined,
   };
 }
 
