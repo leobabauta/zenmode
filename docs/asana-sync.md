@@ -455,7 +455,11 @@ free-tier limit is 150 requests a minute, so a pass starts risking 429s somewher
 past ~150 linked rows, and the edge function's wall clock puts a ceiling not far
 beyond that. Batching, or reconciling a slice of rows per pass, is the fix when
 either gets close.
-8. Add the pg_cron schedule for `asana-pull`. **Do not authenticate it with
+8. ~~Add the pg_cron schedule for `asana-pull`.~~ **Done.** `asana-pull-5min`,
+   `*/5 * * * *`, jobid 5, reading the token from Vault. The command body was
+   run by hand first and confirmed to return HTTP 200 and advance
+   `last_pull_at`, so the scheduler is the only part not directly exercised.
+   **Do not authenticate it with
    `current_setting('supabase.service_role_key')`** -- that parameter does not
    exist on this project, and a cron job using it fails in Postgres before the
    HTTP call is made, silently, forever. A duplicate `auto-move-items` job did
