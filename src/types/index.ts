@@ -39,6 +39,10 @@ export interface PlannerItem {
   // Also sync-owned and read-only on the client: the last push or pull failure
   // for this row, surfaced as a warning badge on the task.
   asanaSyncError?: string;
+  // Unlike the other sync fields this one is written by the client: it must be
+  // set in the SAME update as completed = true, so the single debounced upsert
+  // carries both and asana-push finds the note when the trigger fires.
+  completionNote?: string;
 }
 
 export interface CustomList {

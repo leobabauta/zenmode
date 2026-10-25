@@ -88,7 +88,7 @@ interface PlannerState {
   insertItemAfter: (afterId: string, text: string) => string;
   setExpandedTask: (id: string | null) => void;
   setExpandedTaskFullScreen: (full: boolean) => void;
-  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'notes'>>) => void;
+  updateItem: (id: string, patch: Partial<Pick<PlannerItem, 'text' | 'completed' | 'type' | 'isPriority' | 'isMediumPriority' | 'notes' | 'completionNote'>>) => void;
   addTimerSession: (taskId: string, session: { startedAt: string; duration: number }) => void;
   deleteItem: (id: string) => void;
   undoDelete: () => void;

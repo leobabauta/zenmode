@@ -59,6 +59,13 @@ export function TaskItem({
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [editText, setEditText] = useState(item.text);
   const [pendingComplete, setPendingComplete] = useState(false);
+  // Checking off an Asana-linked task opens an optional note that posts to the
+  // task as a comment. The task completes either way -- Enter attaches the
+  // note, Escape or an empty field completes without one -- so the checkbox
+  // shows as checked the moment it is clicked rather than waiting.
+  const [awaitingNote, setAwaitingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const noteInputRef = useRef<HTMLInputElement>(null);
   const starRef = useRef<HTMLButtonElement>(null);
   const [starSparks, setStarSparks] = useState<{ id: number; color: string; angle: number; speed: number; size: number }[]>([]);
   const [starOrigin, setStarOrigin] = useState({ x: 0, y: 0 });
@@ -83,6 +90,34 @@ export function TaskItem({
     setStarSparks(sparks);
     setTimeout(() => setStarSparks([]), 900);
   }, [item.isPriority]);
+
+  const isSynced = !!item.asanaGid;
+
+  /**
+   * Complete or reopen, prompting for an Asana comment first where that applies.
+   * Completing a synced task is deferred only until the note is resolved; every
+   * exit from the prompt completes it, so it can never strand a half-checked task.
+   */
+  const requestCompletion = useCallback((checked: boolean) => {
+    if (!checked || !isSynced || item.completed) {
+      updateItem(item.id, { completed: checked });
+      return;
+    }
+    setNoteDraft('');
+    setAwaitingNote(true);
+  }, [isSynced, item.completed, item.id, updateItem]);
+
+  const finishNote = useCallback((note: string | undefined) => {
+    // Both fields in ONE update: the debounced push sends a single row, and the
+    // trigger fires once with the note already on it.
+    updateItem(item.id, { completed: true, completionNote: note });
+    setAwaitingNote(false);
+    setNoteDraft('');
+  }, [item.id, updateItem]);
+
+  useEffect(() => {
+    if (awaitingNote) noteInputRef.current?.focus();
+  }, [awaitingNote]);
 
   const lastKeyRef = useRef<{ key: string; time: number }>({ key: '', time: 0 });
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -295,7 +330,7 @@ export function TaskItem({
           <button
             type="button"
             onClick={() => {
-              updateItem(item.id, { completed: !item.completed });
+              requestCompletion(!item.completed);
             }}
             className={cn(
               'flex items-center justify-center w-5 h-5 rounded-full transition-all',
@@ -319,7 +354,7 @@ export function TaskItem({
           </button>
         ) : (
           <Checkbox
-            checked={item.completed}
+            checked={item.completed || awaitingNote}
             onPendingChange={(pending) => {
               setPendingComplete(pending);
               if (pending && (item.isPriority || item.isMediumPriority)) {
@@ -327,6 +362,10 @@ export function TaskItem({
               }
             }}
             onChange={(checked) => {
+              if (checked && isSynced && !item.completed) {
+                requestCompletion(true);
+                return;
+              }
               updateItem(item.id, { completed: checked });
               if (checked && !item.dayKey && !item.listId) {
                 const isInboxOrLater = !item.dayKey;
@@ -448,6 +487,32 @@ export function TaskItem({
               </span>
             )}
           </span>
+        )}
+
+        {awaitingNote && (
+          <input
+            ref={noteInputRef}
+            type="text"
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // This row has its own global key handling for navigation and
+              // editing; none of it should see these keystrokes.
+              e.stopPropagation();
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                finishNote(noteDraft.trim() || undefined);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                finishNote(undefined);
+              }
+            }}
+            // Clicking away still completes the task, with whatever was typed.
+            // Leaving it checked but incomplete would be the worse outcome.
+            onBlur={() => finishNote(noteDraft.trim() || undefined)}
+            placeholder="Comment for Asana — Enter to post, Esc to skip"
+            className="mt-1 w-full bg-transparent border-b border-[var(--color-border)] pb-0.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-[var(--color-accent)]"
+          />
         )}
       </div>
 
