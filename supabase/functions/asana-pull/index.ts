@@ -162,7 +162,7 @@ type Action =
       kind: 'insert';
       gid: string;
       name: string;
-      dayKey: string;
+      dayKey: string | null;
       nearMiss?: { text: string; score: number; rows: number };
       row: Record<string, unknown>;
     }
@@ -214,6 +214,60 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, serviceRoleKey);
   const actions: Action[] = [];
   const errors: string[] = [];
+
+  let inspect = false;
+  try {
+    const body = await req.json();
+    inspect = body?.inspect === true;
+  } catch {
+    // No body is the normal case for a scheduled run.
+  }
+
+  if (inspect) {
+    const meRes = await asanaFetch(pat, '/users/me?opt_fields=gid,name,email');
+    const me = meRes.ok ? (await meRes.json()).data : { error: meRes.status };
+
+    const linked = await fetchAllRows<{ id: string; text: string; asana_gid: string; day_key: string | null }>(
+      (from, to) => supabase
+        .from('items')
+        .select('id, text, asana_gid, day_key')
+        .eq('user_id', userId)
+        .not('asana_gid', 'is', null)
+        .eq('completed', false)
+        .range(from, to),
+    );
+
+    const byAssignee = new Map<string, { name: string; gid: string; count: number; examples: string[] }>();
+    const problems: unknown[] = [];
+
+    for (const row of linked) {
+      const res = await asanaFetch(
+        pat,
+        `/tasks/${row.asana_gid}?opt_fields=name,assignee.gid,assignee.name,due_on,completed`,
+      );
+      if (!res.ok) {
+        problems.push({ item: row.text, gid: row.asana_gid, status: res.status });
+        continue;
+      }
+      const t = (await res.json()).data;
+      const key = t?.assignee?.gid ?? 'unassigned';
+      const entry = byAssignee.get(key)
+        ?? { name: t?.assignee?.name ?? '(unassigned)', gid: key, count: 0, examples: [] };
+      entry.count++;
+      if (entry.examples.length < 5) entry.examples.push(row.text);
+      byAssignee.set(key, entry);
+    }
+
+    return new Response(JSON.stringify({
+      inspect: true,
+      pat_belongs_to: me,
+      hardcoded_user_gid: ASANA_USER_GID,
+      pat_matches_hardcoded_gid: me?.gid === ASANA_USER_GID,
+      linked_open_rows: linked.length,
+      by_assignee: [...byAssignee.values()],
+      problems,
+    }, null, 2), { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+  }
 
   try {
     // --- State, preferences, exclusions ---
@@ -294,10 +348,13 @@ Deno.serve(async (req) => {
 
     // Next order per day, seeded from existing rows so inserts land at the end
     // of a day rather than colliding at position 0.
+    const LATER_BUCKET = '__later__';
+    const INBOX_BUCKET = '__inbox__';
     const nextOrder = new Map<string, number>();
     for (const item of items) {
       if (item.parent_id) continue;
-      const key = item.day_key ?? '__later__';
+      const key = item.day_key
+        ?? (item.is_later ? LATER_BUCKET : INBOX_BUCKET);
       nextOrder.set(key, Math.max(nextOrder.get(key) ?? -1, item.order));
     }
     const takeOrder = (dayKey: string): number => {
@@ -317,8 +374,13 @@ Deno.serve(async (req) => {
       if (!existing) {
         if (task.completed) continue; // Nothing to represent.
 
-        const dayKey = task.due_on
-          ?? (task.due_at ? localDateOf(task.due_at, tz) : todayKey);
+        // No due date in Asana means Later, not today. Most of Leo's Asana
+        // tasks are undated -- 66 of the first 91 -- so defaulting them to
+        // today buries the day under things Asana never claimed were due.
+        // They sit in Later until he pulls them onto a day himself, which is
+        // also invisible to Asana: the push ignores anything in Later.
+        const dueDay: string | null = task.due_on
+          ?? (task.due_at ? localDateOf(task.due_at, tz) : null);
 
         const mirrors = {
           asana_gid: task.gid,
@@ -327,7 +389,7 @@ Deno.serve(async (req) => {
           asana_due_on: task.due_on ?? null,
           asana_due_at: task.due_at ?? null,
           asana_completed: false,
-          asana_day_key: dayKey,
+          asana_day_key: dueDay,
           asana_synced_at: now,
           asana_sync_error: null,
         };
@@ -352,11 +414,11 @@ Deno.serve(async (req) => {
           // escalates the task back to Later immediately.
           const reposition = inLater && hasAsanaDate
             ? {
-                day_key: dayKey,
+                day_key: dueDay!,
                 is_later: false,
-                order: takeOrder(dayKey),
+                order: takeOrder(dueDay!),
                 consecutive_moves: 0,
-                asana_day_key: dayKey,
+                asana_day_key: dueDay!,
               }
             : { asana_day_key: match.day_key };
 
@@ -393,7 +455,7 @@ Deno.serve(async (req) => {
           kind: 'insert',
           gid: task.gid,
           name: stripped,
-          dayKey,
+          dayKey: dueDay,
           ...(best && best.score >= 0.6
             ? { nearMiss: { text: best.text, score: Number(best.score.toFixed(2)), rows: best.count } }
             : {}),
@@ -403,9 +465,9 @@ Deno.serve(async (req) => {
             type: 'task',
             text: stripped,
             completed: false,
-            day_key: dayKey,
-            is_later: false,
-            order: takeOrder(dayKey),
+            day_key: dueDay,
+            is_later: dueDay === null,
+            order: takeOrder(dueDay ?? LATER_BUCKET),
             created_at: now,
             updated_at: now,
             recurrence: null, // Asana owns recurrence.

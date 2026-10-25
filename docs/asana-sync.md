@@ -71,7 +71,11 @@ Asana indicator, or the error badge.
 
 ## Decisions
 
-1. No due date in Asana → the task goes on today in Zenmode. Leo moves it if needed.
+1. **[revised 2026-10-25]** No due date in Asana → the task goes to **Later**,
+   not today. The original rule put it on today, which reads fine for one
+   arriving task and badly for a backfill: 66 of the first 91 were undated and
+   all landed on one day. Leo pulls them onto a day himself, which Asana never
+   sees — the push ignores anything in Later.
 2. Rescheduling in Zenmode updates the Asana due date.
 3. The daily checkin ("What did you work on today?") **is** included in the sync.
 4. An Asana-side complete→reopen inside one pull window reads as unchanged. Accepted.
@@ -166,7 +170,12 @@ New tables (RLS enabled, service role + owner only):
      lands at the same position.
    - `text` — stripped name. Strip emojis and decorative characters (`★`, `🟡`,
      `🔷`, `⋆`); keep `•` and `|` only where they read as plain separators.
-   - `day_key` — `due_on`, else the LA-local date of `due_at`, else today (LA)
+   - `day_key` — `due_on`, else the LA-local date of `due_at`, else `null` with
+     `is_later = true` (decision 1). `asana_day_key` matches, so an undated task
+     carries no divergence and pushes nothing.
+   - Order comes from the bucket the row lands in. `day_key IS NULL` means Later
+     or Inbox depending on `is_later`, and those are separate containers — one
+     shared bucket computed a Later order against Inbox rows.
    - `asana_day_key = day_key`, `asana_completed = false`, mirrors set
    - `recurrence = NULL` — Asana owns recurrence
    - **[revised] `notes` is left alone.** The original wrote the permalink into
