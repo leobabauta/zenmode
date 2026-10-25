@@ -71,7 +71,11 @@ Asana indicator, or the error badge.
 
 ## Decisions
 
-1. No due date in Asana → the task goes on today in Zenmode. Leo moves it if needed.
+1. **[revised 2026-10-25]** No due date in Asana → the task goes to **Later**,
+   not today. The original rule put it on today, which reads fine for one
+   arriving task and badly for a backfill: 66 of the first 91 were undated and
+   all landed on one day. Leo pulls them onto a day himself, which Asana never
+   sees — the push ignores anything in Later.
 2. Rescheduling in Zenmode updates the Asana due date.
 3. The daily checkin ("What did you work on today?") **is** included in the sync.
 4. An Asana-side complete→reopen inside one pull window reads as unchanged. Accepted.
@@ -148,6 +152,16 @@ New tables (RLS enabled, service role + owner only):
    report the ambiguity.** With ~1,000 rows and names like "FMP Weekly Call,"
    collisions are likely, and an arbitrary link is worse than no link.
 
+   **Linking leaves the row where it is**, with one exception: a row sitting in
+   Later while the Asana task has a real due date is placed on that date, with
+   `is_later` cleared and `consecutive_moves` reset to 0 — without the reset the
+   first rollover afterwards escalates it straight back. It fires at **link time
+   only**; applying it to rows that are already linked would make Later unusable
+   for a synced task, because the next pull would drag it back out, and decision
+   6 says moving a task to Later is a legitimate thing to do. Added after the
+   first backfill, where the single text-matched row turned out to be sitting in
+   Later at 4 consecutive moves while Asana showed it due 2026-10-30.
+
    Otherwise insert, setting explicitly:
    - `id` — same format the client generates
    - `type` — `'task'`
@@ -156,7 +170,12 @@ New tables (RLS enabled, service role + owner only):
      lands at the same position.
    - `text` — stripped name. Strip emojis and decorative characters (`★`, `🟡`,
      `🔷`, `⋆`); keep `•` and `|` only where they read as plain separators.
-   - `day_key` — `due_on`, else the LA-local date of `due_at`, else today (LA)
+   - `day_key` — `due_on`, else the LA-local date of `due_at`, else `null` with
+     `is_later = true` (decision 1). `asana_day_key` matches, so an undated task
+     carries no divergence and pushes nothing.
+   - Order comes from the bucket the row lands in. `day_key IS NULL` means Later
+     or Inbox depending on `is_later`, and those are separate containers — one
+     shared bucket computed a Later order against Inbox rows.
    - `asana_day_key = day_key`, `asana_completed = false`, mirrors set
    - `recurrence = NULL` — Asana owns recurrence
    - **[revised] `notes` is left alone.** The original wrote the permalink into
@@ -207,9 +226,37 @@ Trigger on `items` UPDATE,
 `WHEN (NEW.asana_gid IS NOT NULL AND (OLD.completed IS DISTINCT FROM NEW.completed OR OLD.day_key IS DISTINCT FROM NEW.day_key))`.
 Call via `pg_net`.
 
-**[revised] No new shared secret.** `auto-move-items` already authenticates by
-accepting the service role key as a bearer token. Follow that pattern rather
-than introducing a second mechanism.
+**[revised] Auth is a dedicated secret, read from Vault.** An earlier draft
+reused the service role key, as `auto-move-items` does. Both functions now check
+`ASANA_SYNC_SECRET` instead, so triggering a sync does not require the
+credential that can read and write every table for every user, and nothing
+breaks when the project finishes moving off legacy JWT keys. The trigger reads
+the token from `vault.decrypted_secrets`, not inlined into the function body
+where anyone who can read `pg_catalog` would see it.
+
+`asana_push_trigger()` must be `SECURITY DEFINER` to read Vault, which also
+exposed it at `/rest/v1/rpc/asana_push_trigger`. `EXECUTE` is revoked from
+`anon` and `authenticated`; the trigger still fires, because PostgreSQL checks
+that privilege when a trigger is created rather than each time it runs.
+
+**[revised] Dry run by default, and every attempt is logged.** `PUSH_DRY_RUN`
+must be exactly `'false'` to let anything reach Asana. Each attempt writes to
+`asana_push_log` either way — this is the one part of the sync that mutates
+state Leo's team depends on, so there is a record of what was sent, separate
+from the per-row `asana_sync_error`.
+
+**[revised] The completion note is claimed before it is sent.** Two trigger
+invocations can overlap, and a story posted twice to Asana cannot be unposted.
+The function sets `completion_note_posted_at` with
+`... WHERE completion_note_posted_at IS NULL RETURNING id` and only posts if it
+got the row. If the post then fails it releases the claim, so the note is not
+silently lost and reconcile can retry.
+
+**The trigger never raises.** It runs inside the user's own write transaction,
+so an exception would fail the `UPDATE` the app was performing — turning a sync
+problem into data loss. Every failure path warns and returns. A push that never
+fires is recovered by reconcile, which looks for rows where `day_key` and
+`asana_day_key` disagree.
 
 The function's own writes touch only `asana_*` columns, so they don't re-fire the
 trigger. Logic, re-reading the row fresh:
@@ -350,13 +397,69 @@ duplicates of tasks the sync has already placed.
    can reach Asana.
 3. ~~Server-side rollover pass for linked rows.~~ **Deployed.** Inert until the
    first row is linked.
-4. Run the dry run. Review the text-matched links and any refused ambiguous
-   matches with Leo.
-5. Run for real. Confirm no duplicates.
+4. ~~Run the dry run.~~ **Done.** 100 Asana tasks over 1 page, verified by
+   re-running at `limit=50`, which walked 2 pages for the same 100. 91 inserts,
+   1 link, 3 refused as ambiguous, 2 inserts flagged as probable duplicates.
+5. ~~Run for real.~~ **Done 2026-10-24.** 91 rows written, 0 errors, 66 on
+   today. Verified: 91 distinct gids, 0 rows for any other user, `notes` empty
+   on all 91, no `recurrence` set, and an immediate re-run wrote nothing, so the
+   `updated_at` discipline holds. `DRY_RUN=false` is now set permanently, and
+   `%FM Business%Weekly call%` was added to the exclusions before the run.
 6. Ship the client changes: the rollover skip first, then the UI. The rollover
    skip must land **before** date pushes are enabled.
-7. Deploy `asana-push` and the trigger. Add reconcile's push-retry half.
-8. Add the pg_cron schedule for `asana-pull`. **Do not authenticate it with
+7. ~~Deploy `asana-push` and the trigger.~~ **Done, in dry run.** Verified end
+   to end: an `UPDATE` to a linked row's `day_key` fires the trigger, reaches
+   the function through pg_net, and logs the computed Asana call
+   (`{"due_on": "..."}`) without sending it. Re-verified as the `authenticated`
+   role with `request.jwt.claims` set, after the `EXECUTE` revoke, since that is
+   the role the app actually writes as.
+
+   One **real** push was then run against `Barb's Tasks in FLA`, whose due date
+   was already three weeks past: `2026-10-04` → `2026-10-05` → back. Both
+   directions logged `status: ok` with `dry_run: false`, and the read-back
+   confirmed Asana itself held `due_on: 2026-10-05` and then `2026-10-04` again.
+   Mirrors tracked it, nothing diverged, no sync errors. `PUSH_DRY_RUN` was set
+   back to `true` afterwards.
+
+   Still untested, because none of it is reversible the way a date is: the
+   completion path, the reopen path, and the timed-task branch (the DST-aware
+   offset iteration in particular is reasoned-about, not exercised). Completing
+   a real task writes activity to its history and may notify followers, so
+   these want a throwaway Asana task rather than one of Leo's.
+
+   `PUSH_DRY_RUN=false` was set for good on 2026-10-25, with the completion,
+   reopen and timed-task paths still unexercised — Leo's call, after the
+   caveats. Confirmed live by invoking the function on a task with nothing
+   pending, which reported `dry_run: false` with no attempts and no write.
+   Nothing was pending at the time: 0 diverged rows, 0 completion mismatches,
+   0 sync errors, so switching it on fired no pushes.
+
+**That gap is now closed.** Reconcile retries pending pushes — rows where
+`completed` disagrees with `asana_completed`, or `day_key` with
+`asana_day_key`, or that carry an `asana_sync_error` — by invoking `asana-push`
+per row, capped at 25 a pass so an Asana outage produces bounded traffic rather
+than one call per linked row every hour. `asana-push` clears a stale error when
+it finds nothing outstanding, which is what takes the badge off a task that has
+since come right. `TaskItem` shows a small amber warning with the error in its
+`title`.
+
+Verified: an error set on a row whose Asana task had never been modified was
+cleared by the retry, with `updated_at` bumped, on a pull that reported
+`applied: 0` and every count at 0 — so the pull's own error-clearing cannot
+have been what did it. A first attempt at this test was ambiguous, because the
+chosen row *was* in the Asana modified window and the pull clears errors too.
+
+**Reconcile cost, for later.** 91 linked rows takes about 23–25s and 91 Asana
+requests, one per open linked row. Two thresholds worth remembering: Asana's
+free-tier limit is 150 requests a minute, so a pass starts risking 429s somewhere
+past ~150 linked rows, and the edge function's wall clock puts a ceiling not far
+beyond that. Batching, or reconciling a slice of rows per pass, is the fix when
+either gets close.
+8. ~~Add the pg_cron schedule for `asana-pull`.~~ **Done.** `asana-pull-5min`,
+   `*/5 * * * *`, jobid 5, reading the token from Vault. The command body was
+   run by hand first and confirmed to return HTTP 200 and advance
+   `last_pull_at`, so the scheduler is the only part not directly exercised.
+   **Do not authenticate it with
    `current_setting('supabase.service_role_key')`** -- that parameter does not
    exist on this project, and a cron job using it fails in Postgres before the
    HTTP call is made, silently, forever. A duplicate `auto-move-items` job did
@@ -364,6 +467,34 @@ duplicates of tasks the sync has already placed.
    authenticates on `ASANA_SYNC_SECRET` instead, which the cron command can
    carry directly or read from Vault.
 9. Update the two skills.
+
+## 9a. Incident, 2026-10-25
+
+The client-side rollover skip was committed but never merged or deployed, so
+production still ran the old rollover while `PUSH_DRY_RUN` was off. The
+overnight rollover moved every past-due linked row forward without advancing
+`asana_day_key`, the trigger read ~70 of those as deliberate reschedules, and
+fired them at once. Asana rate-limited most (429); **22 landed**. 19 of those
+tasks had deliberately had no due date — some since 2022 — and now read as due
+today to the team. This is the exact failure the `asana_day_key` design exists
+to prevent, and the rollout order in this document says in as many words that
+the skip must land before date pushes are enabled.
+
+Archived rows were the bulk of it: neither rollover excludes them, so the 66
+archived the day before were rolled and pushed too.
+
+Recovery: Asana's own story history gave the prior state for all 22 (19
+undated, 3 with real dates), reverted in one batch. Mirrors realigned,
+`asana_day_key` advanced to match `day_key` as the rollover should have done,
+429 errors cleared.
+
+Three fixes: the trigger now skips archived rows (would have stopped 19 of 22
+alone); the rollover skip is merged and deployed; push stays off until both are
+live.
+
+**Rule this earns:** `PUSH_DRY_RUN=false` requires the client rollover skip to
+be *deployed*, not merely committed. Committed and deployed are different
+states and only one of them matters.
 
 ## 10. Test plan
 

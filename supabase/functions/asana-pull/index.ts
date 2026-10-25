@@ -24,6 +24,10 @@ const PULL_OVERLAP_MINUTES = 10;
 // so it runs at most this often regardless of the pull cadence.
 const RECONCILE_INTERVAL_MINUTES = 60;
 
+// Cap on push retries per reconcile pass, so a systemic Asana outage produces a
+// bounded number of calls per run instead of one per linked row every hour.
+const PUSH_RETRY_LIMIT = 25;
+
 const PAGE_SIZE = 1000;
 
 interface ItemRow {
@@ -106,6 +110,20 @@ function stripName(name: string): string {
     .trim();
 }
 
+/**
+ * Jaccard overlap of the two strings' word sets. Only used to flag probable
+ * duplicates in the dry-run report -- linking is still decided by exact match
+ * on the stripped text, so a near-miss never links anything on its own.
+ */
+function wordSimilarity(a: string, b: string): number {
+  const wa = new Set(a.toLowerCase().split(/[^a-z0-9]+/i).filter(Boolean));
+  const wb = new Set(b.toLowerCase().split(/[^a-z0-9]+/i).filter(Boolean));
+  if (wa.size === 0 || wb.size === 0) return 0;
+  let shared = 0;
+  for (const w of wa) if (wb.has(w)) shared++;
+  return shared / (wa.size + wb.size - shared);
+}
+
 /** Convert a SQL ILIKE pattern into an anchored, case-insensitive RegExp. */
 function ilikeToRegExp(pattern: string): RegExp {
   const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -119,10 +137,14 @@ async function asanaFetch(pat: string, path: string): Promise<Response> {
 }
 
 /** Fetch every page of an Asana collection endpoint. */
+let lastFetchPages = 0;
+
 async function asanaFetchAll(pat: string, path: string): Promise<AsanaTask[]> {
   const out: AsanaTask[] = [];
   let next: string | null = path;
+  lastFetchPages = 0;
   while (next) {
+    lastFetchPages++;
     const res = await asanaFetch(pat, next);
     if (!res.ok) {
       throw new Error(`Asana ${res.status} on ${next.split('?')[0]}: ${await res.text()}`);
@@ -136,7 +158,14 @@ async function asanaFetchAll(pat: string, path: string): Promise<AsanaTask[]> {
 }
 
 type Action =
-  | { kind: 'insert'; gid: string; name: string; dayKey: string; row: Record<string, unknown> }
+  | {
+      kind: 'insert';
+      gid: string;
+      name: string;
+      dayKey: string | null;
+      nearMiss?: { text: string; score: number; rows: number };
+      row: Record<string, unknown>;
+    }
   | { kind: 'link'; gid: string; name: string; itemId: string; itemText: string; patch: Record<string, unknown> }
   | { kind: 'update'; gid: string; itemId: string; reasons: string[]; patch: Record<string, unknown> }
   | { kind: 'ambiguous'; gid: string; name: string; candidateIds: string[] }
@@ -169,9 +198,15 @@ Deno.serve(async (req) => {
   // 'false', so a missing or misspelled variable can never start writing.
   const dryRun = Deno.env.get('DRY_RUN') !== 'false';
 
-  if (!pat || !userId) {
+  // Name the missing secret: "one of these is unset" is hard to act on when
+  // the usual cause is a single `secrets set` that didn't take.
+  const missing = [
+    !pat ? 'ASANA_PAT' : null,
+    !userId ? 'ASANA_SYNC_USER_ID' : null,
+  ].filter(Boolean);
+  if (missing.length > 0) {
     return new Response(
-      JSON.stringify({ error: 'ASANA_PAT and ASANA_SYNC_USER_ID must both be set' }),
+      JSON.stringify({ error: `Missing required secret(s): ${missing.join(', ')}` }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } },
     );
   }
@@ -179,6 +214,60 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, serviceRoleKey);
   const actions: Action[] = [];
   const errors: string[] = [];
+
+  let inspect = false;
+  try {
+    const body = await req.json();
+    inspect = body?.inspect === true;
+  } catch {
+    // No body is the normal case for a scheduled run.
+  }
+
+  if (inspect) {
+    const meRes = await asanaFetch(pat, '/users/me?opt_fields=gid,name,email');
+    const me = meRes.ok ? (await meRes.json()).data : { error: meRes.status };
+
+    const linked = await fetchAllRows<{ id: string; text: string; asana_gid: string; day_key: string | null }>(
+      (from, to) => supabase
+        .from('items')
+        .select('id, text, asana_gid, day_key')
+        .eq('user_id', userId)
+        .not('asana_gid', 'is', null)
+        .eq('completed', false)
+        .range(from, to),
+    );
+
+    const byAssignee = new Map<string, { name: string; gid: string; count: number; examples: string[] }>();
+    const problems: unknown[] = [];
+
+    for (const row of linked) {
+      const res = await asanaFetch(
+        pat,
+        `/tasks/${row.asana_gid}?opt_fields=name,assignee.gid,assignee.name,due_on,completed`,
+      );
+      if (!res.ok) {
+        problems.push({ item: row.text, gid: row.asana_gid, status: res.status });
+        continue;
+      }
+      const t = (await res.json()).data;
+      const key = t?.assignee?.gid ?? 'unassigned';
+      const entry = byAssignee.get(key)
+        ?? { name: t?.assignee?.name ?? '(unassigned)', gid: key, count: 0, examples: [] };
+      entry.count++;
+      if (entry.examples.length < 5) entry.examples.push(row.text);
+      byAssignee.set(key, entry);
+    }
+
+    return new Response(JSON.stringify({
+      inspect: true,
+      pat_belongs_to: me,
+      hardcoded_user_gid: ASANA_USER_GID,
+      pat_matches_hardcoded_gid: me?.gid === ASANA_USER_GID,
+      linked_open_rows: linked.length,
+      by_assignee: [...byAssignee.values()],
+      problems,
+    }, null, 2), { headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } });
+  }
 
   try {
     // --- State, preferences, exclusions ---
@@ -259,10 +348,13 @@ Deno.serve(async (req) => {
 
     // Next order per day, seeded from existing rows so inserts land at the end
     // of a day rather than colliding at position 0.
+    const LATER_BUCKET = '__later__';
+    const INBOX_BUCKET = '__inbox__';
     const nextOrder = new Map<string, number>();
     for (const item of items) {
       if (item.parent_id) continue;
-      const key = item.day_key ?? '__later__';
+      const key = item.day_key
+        ?? (item.is_later ? LATER_BUCKET : INBOX_BUCKET);
       nextOrder.set(key, Math.max(nextOrder.get(key) ?? -1, item.order));
     }
     const takeOrder = (dayKey: string): number => {
@@ -282,8 +374,13 @@ Deno.serve(async (req) => {
       if (!existing) {
         if (task.completed) continue; // Nothing to represent.
 
-        const dayKey = task.due_on
-          ?? (task.due_at ? localDateOf(task.due_at, tz) : todayKey);
+        // No due date in Asana means Later, not today. Most of Leo's Asana
+        // tasks are undated -- 66 of the first 91 -- so defaulting them to
+        // today buries the day under things Asana never claimed were due.
+        // They sit in Later until he pulls them onto a day himself, which is
+        // also invisible to Asana: the push ignores anything in Later.
+        const dueDay: string | null = task.due_on
+          ?? (task.due_at ? localDateOf(task.due_at, tz) : null);
 
         const mirrors = {
           asana_gid: task.gid,
@@ -292,7 +389,7 @@ Deno.serve(async (req) => {
           asana_due_on: task.due_on ?? null,
           asana_due_at: task.due_at ?? null,
           asana_completed: false,
-          asana_day_key: dayKey,
+          asana_day_key: dueDay,
           asana_synced_at: now,
           asana_sync_error: null,
         };
@@ -300,16 +397,38 @@ Deno.serve(async (req) => {
         const candidates = unlinkedByText.get(stripped.toLowerCase()) ?? [];
         if (candidates.length === 1) {
           const match = candidates[0];
-          // Linking only sets mirrors. `text`, `notes` and `day_key` stay as
-          // they are: the row is already where the user put it, and `notes` may
-          // hold their own writing.
+          const hasAsanaDate = Boolean(task.due_on || task.due_at);
+          const inLater = match.is_later === true || match.day_key === null;
+
+          // Linking otherwise leaves text, notes and day_key alone: the row is
+          // already where the user put it. The one exception is a row sitting in
+          // Later while Asana has a real due date -- keeping that position hides
+          // a task the team expects on a day, and nothing later recovers it,
+          // since the pull only reacts to Asana's date *changing*.
+          //
+          // This fires at link time only. Applying it to rows that are already
+          // linked would make Later unusable for a synced task: the next pull
+          // would drag it straight back out.
+          //
+          // consecutive_moves resets as well, or the first rollover after this
+          // escalates the task back to Later immediately.
+          const reposition = inLater && hasAsanaDate
+            ? {
+                day_key: dueDay!,
+                is_later: false,
+                order: takeOrder(dueDay!),
+                consecutive_moves: 0,
+                asana_day_key: dueDay!,
+              }
+            : { asana_day_key: match.day_key };
+
           actions.push({
             kind: 'link',
             gid: task.gid,
             name: stripped,
             itemId: match.id,
             itemText: match.text,
-            patch: { ...mirrors, asana_day_key: match.day_key, updated_at: now },
+            patch: { ...mirrors, ...reposition, updated_at: now },
           });
           unlinkedByText.delete(stripped.toLowerCase());
           continue;
@@ -324,20 +443,31 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        let best: { text: string; score: number; count: number } | null = null;
+        for (const [key, rows] of unlinkedByText) {
+          const score = wordSimilarity(stripped, key);
+          if (score > (best?.score ?? 0)) {
+            best = { text: rows[0].text, score, count: rows.length };
+          }
+        }
+
         actions.push({
           kind: 'insert',
           gid: task.gid,
           name: stripped,
-          dayKey,
+          dayKey: dueDay,
+          ...(best && best.score >= 0.6
+            ? { nearMiss: { text: best.text, score: Number(best.score.toFixed(2)), rows: best.count } }
+            : {}),
           row: {
             id: nanoid(),
             user_id: userId,
             type: 'task',
             text: stripped,
             completed: false,
-            day_key: dayKey,
-            is_later: false,
-            order: takeOrder(dayKey),
+            day_key: dueDay,
+            is_later: dueDay === null,
+            order: takeOrder(dueDay ?? LATER_BUCKET),
             created_at: now,
             updated_at: now,
             recurrence: null, // Asana owns recurrence.
@@ -466,6 +596,51 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Retry pushes that never landed. The trigger is fire-and-forget through
+    // pg_net: if that call fails, or the function errors, the row keeps its
+    // divergence and nothing else notices. asana-push re-reads the row and does
+    // only what is still outstanding, so invoking it again is safe.
+    //
+    // A row carrying only a stale asana_sync_error is included deliberately --
+    // asana-push clears it when it finds nothing to do, which is what takes the
+    // warning badge off a task that has since come right.
+    let pushRetries = 0;
+    if (reconcileDue) {
+      const archiving = new Set(
+        actions.filter((a) => a.kind === 'archive').map((a) => a.itemId),
+      );
+      const pendingPush = items
+        .filter((i) =>
+          i.asana_gid
+          && !i.is_archived
+          && !archiving.has(i.id)
+          && (
+            i.completed !== (i.asana_completed ?? false)
+            || (!i.is_later && i.day_key !== null && i.day_key !== i.asana_day_key)
+            || i.asana_sync_error !== null
+          ))
+        .slice(0, PUSH_RETRY_LIMIT);
+
+      for (const item of pendingPush) {
+        pushRetries++;
+        try {
+          const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/asana-push`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${invokeSecret}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ item_id: item.id }),
+          });
+          if (!res.ok) errors.push(`push retry ${item.id}: ${res.status}`);
+        } catch (retryErr) {
+          errors.push(
+            `push retry ${item.id}: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          );
+        }
+      }
+    }
+
     // --- Apply, or report ---
 
     let applied = 0;
@@ -508,9 +683,11 @@ Deno.serve(async (req) => {
       timezone: tz,
       today: todayKey,
       asana_tasks_seen: tasks.length,
+      asana_pages_fetched: lastFetchPages,
       zenmode_rows_scanned: items.length,
       reconcile_ran: reconcileDue,
       reconcile_requests: reconciled,
+      push_retries: pushRetries,
       counts: {
         insert: actions.filter((a) => a.kind === 'insert').length,
         link: actions.filter((a) => a.kind === 'link').length,

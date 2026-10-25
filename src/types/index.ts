@@ -31,6 +31,14 @@ export interface PlannerItem {
   isArchived?: boolean;
   notes?: string;
   reminderAt?: string;  // ISO datetime — hidden until this time, then appears in Today
+  // Set by the Asana sync, never by the client. Present so the UI can tell a
+  // synced task apart and so the rollover can leave it alone; itemToRow
+  // deliberately does not emit it, which is what stops a client upsert from
+  // clobbering the asana_* mirror columns. See docs/asana-sync.md.
+  asanaGid?: string;
+  // Also sync-owned and read-only on the client: the last push or pull failure
+  // for this row, surfaced as a warning badge on the task.
+  asanaSyncError?: string;
 }
 
 export interface CustomList {
