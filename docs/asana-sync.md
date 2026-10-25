@@ -148,6 +148,16 @@ New tables (RLS enabled, service role + owner only):
    report the ambiguity.** With ~1,000 rows and names like "FMP Weekly Call,"
    collisions are likely, and an arbitrary link is worse than no link.
 
+   **Linking leaves the row where it is**, with one exception: a row sitting in
+   Later while the Asana task has a real due date is placed on that date, with
+   `is_later` cleared and `consecutive_moves` reset to 0 — without the reset the
+   first rollover afterwards escalates it straight back. It fires at **link time
+   only**; applying it to rows that are already linked would make Later unusable
+   for a synced task, because the next pull would drag it back out, and decision
+   6 says moving a task to Later is a legitimate thing to do. Added after the
+   first backfill, where the single text-matched row turned out to be sitting in
+   Later at 4 consecutive moves while Asana showed it due 2026-10-30.
+
    Otherwise insert, setting explicitly:
    - `id` — same format the client generates
    - `type` — `'task'`
@@ -350,9 +360,14 @@ duplicates of tasks the sync has already placed.
    can reach Asana.
 3. ~~Server-side rollover pass for linked rows.~~ **Deployed.** Inert until the
    first row is linked.
-4. Run the dry run. Review the text-matched links and any refused ambiguous
-   matches with Leo.
-5. Run for real. Confirm no duplicates.
+4. ~~Run the dry run.~~ **Done.** 100 Asana tasks over 1 page, verified by
+   re-running at `limit=50`, which walked 2 pages for the same 100. 91 inserts,
+   1 link, 3 refused as ambiguous, 2 inserts flagged as probable duplicates.
+5. ~~Run for real.~~ **Done 2026-10-24.** 91 rows written, 0 errors, 66 on
+   today. Verified: 91 distinct gids, 0 rows for any other user, `notes` empty
+   on all 91, no `recurrence` set, and an immediate re-run wrote nothing, so the
+   `updated_at` discipline holds. `DRY_RUN=false` is now set permanently, and
+   `%FM Business%Weekly call%` was added to the exclusions before the run.
 6. Ship the client changes: the rollover skip first, then the UI. The rollover
    skip must land **before** date pushes are enabled.
 7. Deploy `asana-push` and the trigger. Add reconcile's push-retry half.

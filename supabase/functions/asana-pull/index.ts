@@ -331,16 +331,38 @@ Deno.serve(async (req) => {
         const candidates = unlinkedByText.get(stripped.toLowerCase()) ?? [];
         if (candidates.length === 1) {
           const match = candidates[0];
-          // Linking only sets mirrors. `text`, `notes` and `day_key` stay as
-          // they are: the row is already where the user put it, and `notes` may
-          // hold their own writing.
+          const hasAsanaDate = Boolean(task.due_on || task.due_at);
+          const inLater = match.is_later === true || match.day_key === null;
+
+          // Linking otherwise leaves text, notes and day_key alone: the row is
+          // already where the user put it. The one exception is a row sitting in
+          // Later while Asana has a real due date -- keeping that position hides
+          // a task the team expects on a day, and nothing later recovers it,
+          // since the pull only reacts to Asana's date *changing*.
+          //
+          // This fires at link time only. Applying it to rows that are already
+          // linked would make Later unusable for a synced task: the next pull
+          // would drag it straight back out.
+          //
+          // consecutive_moves resets as well, or the first rollover after this
+          // escalates the task back to Later immediately.
+          const reposition = inLater && hasAsanaDate
+            ? {
+                day_key: dayKey,
+                is_later: false,
+                order: takeOrder(dayKey),
+                consecutive_moves: 0,
+                asana_day_key: dayKey,
+              }
+            : { asana_day_key: match.day_key };
+
           actions.push({
             kind: 'link',
             gid: task.gid,
             name: stripped,
             itemId: match.id,
             itemText: match.text,
-            patch: { ...mirrors, asana_day_key: match.day_key, updated_at: now },
+            patch: { ...mirrors, ...reposition, updated_at: now },
           });
           unlinkedByText.delete(stripped.toLowerCase());
           continue;
