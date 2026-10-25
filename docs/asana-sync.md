@@ -418,8 +418,18 @@ duplicates of tasks the sync has already placed.
    a real task writes activity to its history and may notify followers, so
    these want a throwaway Asana task rather than one of Leo's.
 
-   Still to do: set `PUSH_DRY_RUN=false` for good, and add reconcile's
-   push-retry half.
+   `PUSH_DRY_RUN=false` was set for good on 2026-10-25, with the completion,
+   reopen and timed-task paths still unexercised — Leo's call, after the
+   caveats. Confirmed live by invoking the function on a task with nothing
+   pending, which reported `dry_run: false` with no attempts and no write.
+   Nothing was pending at the time: 0 diverged rows, 0 completion mismatches,
+   0 sync errors, so switching it on fired no pushes.
+
+**Open gap now that push is live:** reconcile's push-retry half does not exist,
+and the sync-error badge is not built. A push that fails leaves
+`asana_sync_error` set and the divergence in place, and nothing retries it or
+shows it. Until both land, a failed push is silent — `asana_push_log` is the
+only place it surfaces.
 8. Add the pg_cron schedule for `asana-pull`. **Do not authenticate it with
    `current_setting('supabase.service_role_key')`** -- that parameter does not
    exist on this project, and a cron job using it fails in Postgres before the
