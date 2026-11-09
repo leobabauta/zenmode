@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { nanoid } from 'nanoid/non-secure';
 import type { PlannerItem, ItemType, Recurrence, CustomList } from '../../../shared/types';
 import { toDayKey } from '../../../shared/lib/dates';
-import { markChanged, markDeleted, pushPreferences, isPullSuppressingDeletes } from '../../../shared/lib/sync';
+import { markChanged, markDeleted, pushPreferences, isApplyingPulledState } from '../../../shared/lib/sync';
 
 interface PlannerState {
   items: Record<string, PlannerItem>;
@@ -326,15 +326,19 @@ export const usePlannerStore = create<PlannerState>()(
 
 // --- Sync subscriber ---
 usePlannerStore.subscribe((state, prevState) => {
-  const changedIds: string[] = [];
-  for (const id of Object.keys(state.items)) {
-    if (state.items[id] !== prevState.items[id]) {
-      changedIds.push(id);
+  // Item changes and removals during a pull reflect remote state, never a local
+  // edit. Queueing them would push merged rows straight back with their old
+  // `updatedAt`, overwriting anything newer on the server. See
+  // isApplyingPulledState in shared/lib/sync.
+  if (!isApplyingPulledState()) {
+    const changedIds: string[] = [];
+    for (const id of Object.keys(state.items)) {
+      if (state.items[id] !== prevState.items[id]) {
+        changedIds.push(id);
+      }
     }
-  }
-  if (changedIds.length > 0) markChanged(changedIds);
+    if (changedIds.length > 0) markChanged(changedIds);
 
-  if (!isPullSuppressingDeletes()) {
     const deletedIds: string[] = [];
     for (const id of Object.keys(prevState.items)) {
       if (!(id in state.items)) {

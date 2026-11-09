@@ -134,14 +134,33 @@ export function rowToItem(row: ItemRow): PlannerItem {
 
 let pullInProgress = false;
 let itemsPullDone = false;
-// Suppresses the subscriber's markDeleted calls while a pull is applying merged
-// state.  Without this, any item the merge legitimately removes (or incorrectly
+// Suppresses the subscriber's markDeleted AND markChanged calls while a pull is
+// applying merged state.
+//
+// Deletes: without this, any item the merge legitimately removes (or incorrectly
 // removes due to a race) would be pushed as a DELETE to Supabase, making data
 // loss permanent.
-let suppressDeleteSync = false;
+//
+// Changes: applying the merge gives every adopted item a new object identity,
+// and the `resortAllDays()` that follows rewrites `order` on nearly every
+// remaining item without bumping `updatedAt` (deliberately -- bumping it on a
+// derived re-sort would churn timestamps on every pull). The subscriber used to
+// see all of that as local edits and queue them, so the NEXT pull's opening
+// `flushChanged()` would upsert the whole set back with their OLD `updatedAt`.
+// That is a blind whole-row write with no timestamp comparison, so it silently
+// overwrote anything newer on the server -- a server-side rollover, or another
+// device's edit -- and left the row looking older than it was. It also meant
+// every pull queued an upsert for most of the user's items, whose realtime
+// events made the other devices pull, re-sort and push back.
+//
+// Nothing here needs pushing: the merge's own `localNewer` upsert below pushes
+// what genuinely diverges, and the re-sort is derived state that every client
+// computes identically from the same merged set. User-initiated ordering is a
+// different path and still bumps `updatedAt` itself, so it still syncs.
+let applyingPulledState = false;
 
-export function isPullSuppressingDeletes(): boolean {
-  return suppressDeleteSync;
+export function isApplyingPulledState(): boolean {
+  return applyingPulledState;
 }
 
 // Supabase/PostgREST truncates any single response to `max_rows` (1000 on
@@ -261,10 +280,15 @@ export async function pullFromSupabase(): Promise<void> {
 
     // Apply merged items to store, then re-sort so completed/incomplete
     // grouping is consistent even when order values from different devices diverge.
-    suppressDeleteSync = true;
-    usePlannerStore.setState({ items: merged });
-    usePlannerStore.getState().resortAllDays();
-    suppressDeleteSync = false;
+    applyingPulledState = true;
+    try {
+      usePlannerStore.setState({ items: merged });
+      usePlannerStore.getState().resortAllDays();
+    } finally {
+      // A throw in here must not leave the flag stuck on, or the app would stop
+      // syncing local edits entirely until the next reload.
+      applyingPulledState = false;
+    }
 
     // Push local-newer items to Supabase
     if (localNewer.length > 0) {
