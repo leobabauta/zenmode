@@ -422,6 +422,14 @@ interface PrefsRow {
   active_list_id: string | null;
   timezone: string | null;
   last_auto_move_date: string | null;
+  // Null means this account has never written the setting, so the client keeps
+  // its own value instead of being reset to a default it never chose. These
+  // three were in PREF_KEYS but missing from both the row type and the pushed
+  // payload, which made them silently per-browser: one computer rolled past
+  // tasks into Today while another showed them as a "Past unfinished" pile.
+  auto_advance_enabled: boolean | null;
+  auto_advance_later_days: number | null;
+  show_past_incomplete_in_today: boolean | null;
   updated_at: string;
 }
 
@@ -496,6 +504,9 @@ export async function pullPreferences(): Promise<void> {
       weeklyReviewSnoozedUntil: Math.max(local.weeklyReviewSnoozedUntil ?? 0, row.weekly_review_snoozed_until ?? 0) || null,
       customLists: mergedLists,
       lastAutoMoveDate: bestAutoMoveDate,
+      autoAdvanceEnabled: row.auto_advance_enabled ?? local.autoAdvanceEnabled,
+      autoAdvanceLaterDays: row.auto_advance_later_days ?? local.autoAdvanceLaterDays,
+      showPastIncompleteInToday: row.show_past_incomplete_in_today ?? local.showPastIncompleteInToday,
     });
   }
   prefsPullDone = true;
@@ -545,6 +556,9 @@ async function flushPreferences(): Promise<void> {
     active_list_id: s.activeListId,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     last_auto_move_date: s.lastAutoMoveDate,
+    auto_advance_enabled: s.autoAdvanceEnabled,
+    auto_advance_later_days: s.autoAdvanceLaterDays,
+    show_past_incomplete_in_today: s.showPastIncompleteInToday,
     updated_at: new Date().toISOString(),
   };
 

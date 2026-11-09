@@ -55,17 +55,49 @@ function todayInTimezone(tz: string): string {
 }
 
 /**
+ * How far back the rollover reaches. Anything older than this is left exactly
+ * where it is -- not moved, not escalated, not deduplicated.
+ *
+ * While the rollover is healthy nothing can age past this window: an overdue
+ * task is moved to today every day, so it escalates to Later at four
+ * consecutive moves long before it is a week old. The window therefore only
+ * ever covers a backlog that accumulated while the rollover was NOT running,
+ * and that is deliberate. This function was unreachable for roughly eight
+ * months (pg_cron authenticated with a legacy service-role JWT that stopped
+ * matching the runtime key), which left 265 users holding stale past-dated
+ * rows -- thousands each, in the worst cases. Rolling that forward on the
+ * first healthy run would dump a user's entire history onto today and discard
+ * the original dates. Bounding the window keeps the fix from rewriting
+ * history; clearing an old backlog is a separate, deliberate decision.
+ */
+const ROLLOVER_LOOKBACK_DAYS = 7;
+
+/** Ids per delete request; `in()` travels in the query string. */
+const DELETE_CHUNK_SIZE = 100;
+
+/** YYYY-MM-DD for the oldest day the rollover will touch. */
+function lookbackCutoff(todayKey: string): string {
+  const d = new Date(`${todayKey}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ROLLOVER_LOOKBACK_DAYS);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
  * Run auto-move logic for a single user's items, returning DB operations.
  *
- * `onlyLinked` restricts the move to Asana-linked rows and skips the
- * housekeeping passes. It exists because the daily `last_auto_move_date` guard
- * is stamped by whichever rollover runs first, and the web client's own
- * rollover usually wins -- which would otherwise leave linked rows rolled by
- * nobody on any day the user opens the web app. Linked rows therefore roll on
- * every run, ungated, and the client-side rollover skips them so it never has
- * to write an asana_* mirror. See docs/asana-sync.md.
+ * Every pass is bounded below by `cutoffKey` (see ROLLOVER_LOOKBACK_DAYS) and
+ * above by `todayKey`.
+ *
+ * This runs on every invocation rather than once a day. The old
+ * `last_auto_move_date` guard was stamped by whichever rollover ran first and
+ * the web client's usually won, which meant the server then skipped the user's
+ * unlinked rows for the rest of the day -- so a client with auto-advance
+ * switched off left its overdue tasks rolled by nobody. Running ungated cannot
+ * double-increment `consecutive_moves`: a move lands an item on today, where
+ * the past-dated filter no longer selects it, so each item advances at most
+ * once per day no matter how many runs there are.
  */
-function computeAutoMove(items: ItemRow[], todayKey: string, onlyLinked = false) {
+function computeAutoMove(items: ItemRow[], todayKey: string, cutoffKey: string) {
   const toDelete: string[] = [];
   const toUpdate: Partial<ItemRow & { id: string }>[] = [];
   const now = new Date().toISOString();
@@ -75,8 +107,11 @@ function computeAutoMove(items: ItemRow[], todayKey: string, onlyLinked = false)
 
   // --- Deduplicate recurring tasks on same day ---
   const seen = new Map<string, string>(); // "dayKey|text|recType|recInterval" → id
-  for (const item of onlyLinked ? [] : items) {
+  for (const item of items) {
     if (!item.recurrence || !item.day_key || item.completed || item.parent_id) continue;
+    if (item.is_archived) continue;
+    // Today and future days are fair game; only the old backlog is off limits.
+    if (item.day_key < cutoffKey) continue;
     const key = `${item.day_key}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
     if (seen.has(key)) {
       toDelete.push(item.id);
@@ -86,22 +121,30 @@ function computeAutoMove(items: ItemRow[], todayKey: string, onlyLinked = false)
   }
 
   // --- Clear stale priority flags from past days ---
-  for (const item of onlyLinked ? [] : items) {
-    if (item.day_key && item.day_key < todayKey && !item.completed && (item.is_priority || item.is_medium_priority)) {
+  for (const item of items) {
+    if (item.day_key && item.day_key >= cutoffKey && item.day_key < todayKey && !item.completed && !item.is_archived && (item.is_priority || item.is_medium_priority)) {
       toUpdate.push({ id: item.id, is_priority: false, is_medium_priority: false, updated_at: now });
     }
   }
 
-  // Filter to items that need moving: past, incomplete, not Later, not children, not notes
+  // Filter to items that need moving: past but within the lookback window,
+  // incomplete, not Later, not children, not notes, not archived.
+  //
+  // is_archived matters as much as completed here. Every view filters archived
+  // rows out, so rolling one forward is invisible work that silently rewrites
+  // its day_key, climbs consecutive_moves, and eventually escalates a row the
+  // user has already put away. The client-side rollover had the same gap and
+  // had been dragging archived rows forward a day at a time.
   const pastIncomplete = items.filter(
     (i) =>
       i.day_key !== null &&
+      i.day_key >= cutoffKey &&
       i.day_key < todayKey &&
       !i.completed &&
+      !i.is_archived &&
       !i.is_later &&
       !i.parent_id &&
       i.type !== 'note' &&
-      (!onlyLinked || i.asana_gid !== null) &&
       !toDelete.includes(i.id)
   );
 
@@ -191,11 +234,12 @@ function computeAutoMove(items: ItemRow[], todayKey: string, onlyLinked = false)
   for (const u of toUpdate) finalDay.set(u.id!, u.day_key ?? finalDay.get(u.id!) ?? null);
 
   const seen2 = new Map<string, string>();
-  for (const item of onlyLinked ? [] : items) {
+  for (const item of items) {
     if (toDelete.includes(item.id)) continue;
     if (!item.recurrence || item.completed || item.parent_id) continue;
+    if (item.is_archived) continue;
     const dk = finalDay.get(item.id);
-    if (!dk) continue;
+    if (!dk || dk < cutoffKey) continue;
     const key = `${dk}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
     if (seen2.has(key)) {
       toDelete.push(item.id);
@@ -212,10 +256,20 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
-  // Verify authorization — accept service role key as bearer token
-  const authHeader = req.headers.get('Authorization');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  if (!authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
+
+  // Invocation is gated on a dedicated secret, not on a platform key. Holding
+  // it allows exactly one thing -- running the rollover -- rather than full
+  // read/write access to every table, and it is unaffected by the project's
+  // migration from legacy JWT keys to sb_secret_ ones. Gating on the platform
+  // key is what silently broke this function: pg_cron kept sending the legacy
+  // service-role JWT it was created with, the runtime's
+  // SUPABASE_SERVICE_ROLE_KEY became an sb_secret_ value, and every hourly run
+  // returned 401 for months while the rollover quietly stopped. Fails closed:
+  // if the secret is unset, nothing can authenticate.
+  const invokeSecret = Deno.env.get('AUTO_MOVE_SECRET');
+  const authHeader = req.headers.get('Authorization');
+  if (!invokeSecret || authHeader !== `Bearer ${invokeSecret}`) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -262,29 +316,35 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // The daily guard belongs to the general rollover only. Asana-linked rows
-      // roll on every run, because this guard is stamped by whichever rollover
-      // ran first and that is usually the web client's -- see computeAutoMove.
-      const alreadyProcessed = last_auto_move_date === todayKey;
-      if (alreadyProcessed) {
-        // Cheap existence probe so an already-processed user costs one HEAD
-        // query instead of a full paged read of their items. Mirrors the
-        // pastIncomplete filter in computeAutoMove: a row with is_later set has
-        // a null day_key and is excluded by the day_key bound already.
-        const { count, error: probeError } = await supabase
-          .from('items')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user_id)
-          .not('asana_gid', 'is', null)
-          .lt('day_key', todayKey)
-          .eq('completed', false)
-          .is('parent_id', null)
-          .neq('type', 'note');
-        if (probeError) {
-          console.error(`Linked-row probe failed for user ${user_id}:`, probeError);
-          continue;
+      const cutoffKey = lookbackCutoff(todayKey);
+
+      // Cheap existence probe, so an idle user costs one HEAD query instead of
+      // a full paged read of their items. Mirrors the pastIncomplete filter in
+      // computeAutoMove: a row with is_later set has a null day_key and is
+      // excluded by the day_key bounds already. This is a cost optimisation
+      // only -- correctness no longer depends on last_auto_move_date, which is
+      // still stamped below because the web client reads it through prefs sync.
+      const { count, error: probeError } = await supabase
+        .from('items')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user_id)
+        .gte('day_key', cutoffKey)
+        .lt('day_key', todayKey)
+        .eq('completed', false)
+        .is('parent_id', null)
+        .neq('type', 'note');
+      if (probeError) {
+        console.error(`Rollover probe failed for user ${user_id}:`, probeError);
+        continue;
+      }
+      if (!count) {
+        if (last_auto_move_date !== todayKey) {
+          await supabase
+            .from('user_preferences')
+            .update({ last_auto_move_date: todayKey })
+            .eq('user_id', user_id);
         }
-        if (!count) continue;
+        continue;
       }
 
       // Fetch this user's items (paged — auto-move reasons over the whole set,
@@ -304,11 +364,11 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const { toDelete, toUpdate } = computeAutoMove(items, todayKey, alreadyProcessed);
+      const { toDelete, toUpdate } = computeAutoMove(items, todayKey, cutoffKey);
 
       if (toDelete.length === 0 && toUpdate.length === 0) {
         // No changes needed, but still mark as processed
-        if (!alreadyProcessed) {
+        if (last_auto_move_date !== todayKey) {
           await supabase
             .from('user_preferences')
             .update({ last_auto_move_date: todayKey })
@@ -317,14 +377,21 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Execute deletes
+      // Execute deletes, chunked. `in('id', ids)` goes into the query string,
+      // so a few hundred UUIDs overflow the request-line limit and PostgREST
+      // answers "Bad Request" -- which this loop logged and swallowed, so a
+      // user with a large duplicate set had every delete fail silently on every
+      // run, forever.
       if (toDelete.length > 0) {
-        const { error: delError } = await supabase
-          .from('items')
-          .delete()
-          .in('id', toDelete);
-        if (delError) console.error(`Delete error for user ${user_id}:`, delError);
-        else itemsDeleted += toDelete.length;
+        for (let i = 0; i < toDelete.length; i += DELETE_CHUNK_SIZE) {
+          const chunk = toDelete.slice(i, i + DELETE_CHUNK_SIZE);
+          const { error: delError } = await supabase
+            .from('items')
+            .delete()
+            .in('id', chunk);
+          if (delError) console.error(`Delete error for user ${user_id}:`, delError);
+          else itemsDeleted += chunk.length;
+        }
       }
 
       // Execute updates — batch by identical field sets where possible
@@ -344,7 +411,7 @@ Deno.serve(async (req) => {
       }
 
       // Mark this user as processed for today
-      if (!alreadyProcessed) {
+      if (last_auto_move_date !== todayKey) {
         await supabase
           .from('user_preferences')
           .update({ last_auto_move_date: todayKey })
