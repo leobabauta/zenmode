@@ -293,23 +293,26 @@ sight of what's late. **Rollovers must not push.**
 
 Mobile has neither and relies on the server one.
 
-**[revised] The server rollover cannot simply take over linked rows.** It skips
-any user whose `user_preferences.last_auto_move_date` already equals today, and
-the web client stamps exactly that field in its own rollover and pushes it
-(`src/lib/sync.ts:535`). So on any day Leo opens the web app, the client rolls
-first, stamps the date, and the server skips him for the rest of the day. The
-first draft of this plan had the client skip linked rows and the server handle
-them, which would have left linked rows rolled by nobody, every day.
+**[superseded 2026-11-09] The daily guard is gone.** This section used to
+describe an `onlyLinked` flag on `computeAutoMove`, which existed because the
+server skipped any user whose `user_preferences.last_auto_move_date` already
+equalled today, and the web client stamps exactly that field in its own
+rollover and pushes it (`src/lib/sync.ts`). On any day Leo opened the web app
+the client stamped first, so the server skipped him — which is why linked rows
+needed their own ungated path.
 
-What is implemented instead:
+That guard turned out to be the cause of a worse bug: on a client with
+`autoAdvanceEnabled` switched off, the stamp still suppressed the server's
+general pass, so *unlinked* overdue rows were rolled by nobody. The guard was
+removed. `computeAutoMove` now runs on every invocation, bounded by
+`ROLLOVER_LOOKBACK_DAYS`, and takes a `cutoffKey` instead of `onlyLinked`.
+Running ungated cannot double-increment `consecutive_moves`, because a move
+lands a row on today where the past-dated filter no longer selects it.
+`last_auto_move_date` is still stamped, since the client reads it through prefs
+sync, but nothing in the server's correctness depends on it any more.
 
-- **`computeAutoMove` takes an `onlyLinked` flag.** When the daily guard says
-  the user has already been processed, a cheap indexed `HEAD` count checks
-  whether they have any past-due linked rows; if so the function runs again in
-  `onlyLinked` mode, which narrows the move set to rows with an `asana_gid` and
-  skips the recurring-dedup and stale-priority passes so nothing else is touched
-  on an already-stamped day. A linked-only run does not re-stamp
-  `last_auto_move_date`, so the general rollover still gets its own pass.
+What remains true:
+
 - **Both move branches advance `asana_day_key` in the same `UPDATE` as
   `day_key`** — `todayKey` on the move-to-today branch, `null` on the
   escalate-to-Later branch. There is no window in which the two disagree, so

@@ -760,6 +760,7 @@ export const usePlannerStore = create<PlannerState>()(
           const seen = new Map<string, string>(); // "dayKey|text|recType|recInterval" → id
           Object.values(state.items).forEach((item) => {
             if (!item.recurrence || !item.dayKey || item.completed || item.parentId) return;
+            if (item.isArchived) return;
             const key = `${item.dayKey}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
             if (seen.has(key)) {
               // Duplicate — delete this one
@@ -771,7 +772,7 @@ export const usePlannerStore = create<PlannerState>()(
 
           // Clear stale priority flags from past days (keep on completed items for stats)
           Object.values(state.items).forEach((item) => {
-            if (item.dayKey && item.dayKey !== todayKey && !item.completed && (item.isPriority || item.isMediumPriority)) {
+            if (item.dayKey && item.dayKey !== todayKey && !item.completed && !item.isArchived && (item.isPriority || item.isMediumPriority)) {
               delete item.isPriority;
               delete item.isMediumPriority;
             }
@@ -782,6 +783,10 @@ export const usePlannerStore = create<PlannerState>()(
               i.dayKey !== null &&
               i.dayKey < todayKey &&
               !i.completed &&
+              // Archived rows are filtered out of every view, so rolling one
+              // forward is invisible work that rewrites its dayKey and climbs
+              // consecutiveMoves until it escalates something already put away.
+              !i.isArchived &&
               !i.isLater &&
               !i.parentId &&
               i.type !== 'note' &&
@@ -862,6 +867,7 @@ export const usePlannerStore = create<PlannerState>()(
           const seen2 = new Map<string, string>();
           Object.values(state.items).forEach((item) => {
             if (!item.recurrence || !item.dayKey || item.completed || item.parentId) return;
+            if (item.isArchived) return;
             const key = `${item.dayKey}|${item.text}|${item.recurrence.type}|${item.recurrence.interval}`;
             if (seen2.has(key)) {
               delete state.items[item.id];

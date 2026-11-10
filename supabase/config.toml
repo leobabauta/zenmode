@@ -1,2 +1,10 @@
 [api]
 enabled = false
+
+# Invocation is gated on AUTO_MOVE_SECRET inside the function, not on a
+# platform key, so the gateway must not also demand a JWT -- pg_cron sends the
+# vault secret as its bearer token and that is not JWT-shaped. Recorded here so
+# a later `functions deploy` without --no-verify-jwt cannot silently re-enable
+# JWT verification and start returning 401 on every run.
+[functions.auto-move-items]
+verify_jwt = false
