@@ -1334,23 +1334,27 @@ if (typeof window !== 'undefined') {
 }
 
 // --- Sync subscriber: detect item changes/deletes and preference changes ---
-import { markChanged, markDeleted, pushPreferences, isPullSuppressingDeletes } from '../lib/sync';
+import { markChanged, markDeleted, pushPreferences, isApplyingPulledState } from '../lib/sync';
 
 const PREF_KEYS = ['theme', 'accentColor', 'view', 'activeHashtag', 'labelColors', 'lastRitualDate', 'planningRitualEnabled', 'planningRitualHour', 'planningRitualSnoozedUntil', 'reviewRitualEnabled', 'reviewRitualHour', 'reviewRitualSnoozedUntil', 'lastReviewRitualDate', 'customLists', 'activeListId', 'weeklyPlans', 'weeklyReviews', 'weeklyPlanningEnabled', 'weeklyPlanningDay', 'weeklyPlanningHour', 'weeklyPlanningSnoozedUntil', 'weeklyReviewEnabled', 'weeklyReviewDay', 'weeklyReviewHour', 'weeklyReviewMinute', 'weeklyReviewSnoozedUntil', 'lastWeeklyPlanningDate', 'lastWeeklyReviewDate', 'navOrder', 'labelOrder', 'autoAdvanceEnabled', 'autoAdvanceLaterDays', 'lastAutoMoveDate', 'showPastIncompleteInToday'] as const;
 
 usePlannerStore.subscribe((state, prevState) => {
-  // Detect changed items
-  const changedIds: string[] = [];
-  for (const id of Object.keys(state.items)) {
-    if (state.items[id] !== prevState.items[id]) {
-      changedIds.push(id);
+  // Item changes and removals during a pull reflect remote state, or the
+  // derived re-sort that follows it — never a local edit. Queueing them would
+  // push merged rows straight back with their old `updatedAt`, overwriting
+  // anything newer on the server, and would re-push removals as hard deletes.
+  // See isApplyingPulledState in ../lib/sync.
+  if (!isApplyingPulledState()) {
+    // Detect changed items
+    const changedIds: string[] = [];
+    for (const id of Object.keys(state.items)) {
+      if (state.items[id] !== prevState.items[id]) {
+        changedIds.push(id);
+      }
     }
-  }
-  if (changedIds.length > 0) markChanged(changedIds);
+    if (changedIds.length > 0) markChanged(changedIds);
 
-  // Detect deleted items — but NOT during a pull, where removals reflect
-  // remote state and must not be re-pushed as deletes.
-  if (!isPullSuppressingDeletes()) {
+    // Detect deleted items
     const deletedIds: string[] = [];
     for (const id of Object.keys(prevState.items)) {
       if (!(id in state.items)) {

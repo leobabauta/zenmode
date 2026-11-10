@@ -155,10 +155,24 @@ export function rowToItem(row: ItemRow): PlannerItem {
 // --- Pull from Supabase ---
 
 let pullInProgress = false;
-let suppressDeleteSync = false;
 
-export function isPullSuppressingDeletes(): boolean {
-  return suppressDeleteSync;
+// Suppresses the subscriber's markDeleted AND markChanged calls while a pull is
+// applying merged state.
+//
+// Deletes: without this, any item the merge removes would be pushed back as a
+// hard DELETE, making a merge mistake permanent.
+//
+// Changes: applying the merge gives every adopted item a new object identity,
+// which the subscriber used to read as a local edit. The next pull's opening
+// `flushChanged()` then upserted the whole set back with their OLD `updatedAt`
+// -- a blind whole-row write with no timestamp comparison -- so anything newer
+// on the server (a rollover, or a web edit) was silently overwritten and the
+// row was left looking older than it was. The merge's own `localNewer` upsert
+// below already pushes what genuinely diverges.
+let applyingPulledState = false;
+
+export function isApplyingPulledState(): boolean {
+  return applyingPulledState;
 }
 
 // Supabase/PostgREST truncates any single response to `max_rows` (1000 on
@@ -271,9 +285,14 @@ export async function pullFromSupabase(): Promise<void> {
       }
     }
 
-    suppressDeleteSync = true;
-    _setItems(merged);
-    suppressDeleteSync = false;
+    applyingPulledState = true;
+    try {
+      _setItems(merged);
+    } finally {
+      // A throw here must not leave the flag stuck on, or the app would stop
+      // syncing local edits entirely until it is restarted.
+      applyingPulledState = false;
+    }
 
     if (localNewer.length > 0) {
       const rows = localNewer.map((item) => itemToRow(item, user.id));
